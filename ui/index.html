@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>太刀动作演示</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div><p class="eyebrow">LONGSWORD / 04</p><h1>一刀，接下一刀。</h1><p class="intro">女管理员 · 怪物猎人风格动作演示</p></div>
+      <span class="badge" id="connection">正在读取状态</span>
+    </header>
+    <section class="hero" aria-label="动作展示">
+      <div class="hero-copy">
+        <span class="small-tag">动作展示 · 无伤害接入</span>
+        <h2>按下 <kbd>F8</kbd><br>开始你的连段。</h2>
+        <p>左键起手，右键突刺，鼠标向前侧键接气刃。动作之间支持提前输入，保留连贯的挥刀节奏。</p>
+        <div class="actions"><button class="primary" id="demo">自动演示 · F9</button><button id="toggle">手动切换 · F8</button><button id="stop">结束</button></div>
+        <p class="hint" id="demo-info">自动演示从普通斩、气刃、见切、居合一直到登龙；按攻击键即可接管。</p>
+        <p class="hint">普通挥刀使用终末地原声；气刃、见切、居合、纳刀与登龙使用怪猎音效。声音统一播放，见切成功声仅作演示提示。</p>
+        <p class="hint">第一版适配女管理员；动作资源预览与游戏内表现分别验证。</p>
+      </div>
+      <div class="preview">
+        <canvas id="motion" aria-label="怪猎源骨骼动作预览"></canvas>
+        <div class="preview-caption"><span id="preview-title">源骨骼预览</span><button class="text-button" id="pause" aria-label="暂停预览">暂停</button></div>
+        <div class="preview-controls"><label class="sr-only" for="preview-clip">预览动作</label><select id="preview-clip" disabled><option>正在载入动作</option></select><label class="file-button" id="load-preview">载入预览文件<input id="preview-file" type="file" accept=".json,application/json"></label></div>
+        <p class="hint" id="preview-note">这里显示源骨骼，用于确认动作；女管理员握刀与重定向需在游戏中检查。</p>
+      </div>
+    </section>
+    <div class="columns">
+      <section class="panel">
+        <div class="section-top"><h2>运行状态</h2><button class="text-button" id="refresh">刷新</button></div>
+        <dl class="status-grid"><div><dt>游戏连接</dt><dd id="runtime-state">等待连接</dd></div><div><dt>演示状态</dt><dd id="active-state">未读取</dd></div><div><dt>当前角色</dt><dd id="character-state">—</dd></div><div><dt>当前动作</dt><dd id="slot-state">—</dd></div><div><dt>武器显示</dt><dd id="weapon-state">等待演示</dd></div><div><dt>太刀音效</dt><dd id="sound-state">等待音源</dd></div></dl>
+        <p id="detail" class="hint" role="status">从 E Mod Loader 打开此页面可以查看运行状态；直接打开可预览动作和设置。</p>
+        <p id="sound-detail" class="hint" role="status">音效状态会在连接游戏后显示；网页可独立试听。</p>
+        <p id="ground-detail" class="hint" role="status">开始演示后显示脚底与场景地面校准状态。</p>
+      </section>
+      <section class="panel">
+        <div class="section-top"><h2>动作设置</h2><span class="subtle">保存后生效</span></div>
+        <form id="settings">
+          <label class="switch-row"><span>启用模块</span><input id="enabled" type="checkbox" checked></label>
+          <label class="setting-row" for="speed"><span>播放速度<small>正常为 1 倍</small></span><span class="range-control"><input id="speed" type="range" min="0.25" max="2" step="0.05" value="1"><output id="speed-value">1.00×</output></span></label>
+          <label class="setting-row" for="blend"><span>动作过渡<small>越短越利落</small></span><span class="number-control"><input id="blend" type="number" min="0.02" max="0.5" step="0.01" value="0.12">秒</span></label>
+          <label class="setting-row" for="buffer"><span>提前输入<small>保留下一招的输入</small></span><span class="number-control"><input id="buffer" type="number" min="0.08" max="1" step="0.01" value="0.3">秒</span></label>
+          <label class="switch-row"><span>跟随动作位移<small>角色随源动作移动</small></span><input id="root-motion" type="checkbox" checked></label>
+          <label class="switch-row"><span>保持武器显示<small>演示时握持装备长剑，结束后恢复</small></span><input id="show-prop" type="checkbox" checked></label>
+          <label class="setting-row" for="grip-strength"><span>双手握刀校正<small>只在源动作双手靠近时校正左手；设为 0 可关闭</small></span><span class="range-control"><input id="grip-strength" type="range" min="0" max="1" step="0.05" value="1"><output id="grip-strength-value">100%</output></span></label>
+          <label class="switch-row"><span>本地怪物练习 · 实验<small>附近怪物作为目标，只扣除模拟血量</small></span><input id="local-practice" type="checkbox"></label>
+          <label class="setting-row" for="practice-hp"><span>模拟血量<small>每个练习目标的独立血量</small></span><input id="practice-hp" type="number" min="1" max="1000000" value="1000"></label>
+          <label class="setting-row" for="practice-damage"><span>模拟基础伤害<small>招式乘数仅用于本地练习</small></span><input id="practice-damage" type="number" min="1" max="100000" value="100"></label>
+          <details><summary>练习范围校准</summary>
+            <p class="hint">判定范围为近似值；调整这些参数不会修改游戏碰撞或真实伤害。</p>
+            <label class="setting-row" for="practice-blade-length"><span>模拟刀长<small>按角色比例缩放，单位米</small></span><input id="practice-blade-length" type="number" min="0.1" max="3" step="0.05" value="1.25"></label>
+            <label class="setting-row" for="practice-radius"><span>目标判定半径<small>体型较大或较小的怪物可调整</small></span><input id="practice-radius" type="number" min="0.05" max="3" step="0.05" value="0.65"></label>
+            <label class="setting-row" for="practice-height"><span>目标判定高度<small>相对怪物位置的高度，单位米</small></span><input id="practice-height" type="number" min="0" max="5" step="0.05" value="0.9"></label>
+          </details>
+          <label class="switch-row"><span>太刀音效<small>普通挥刀、气刃、见切、居合、纳刀与登龙</small></span><input id="sound-enabled" type="checkbox" checked></label>
+          <label class="setting-row" for="sound-volume"><span>音效音量<small>同时用于网页试听</small></span><span class="range-control"><input id="sound-volume" type="range" min="0" max="1" step="0.01" value="0.65"><output id="sound-volume-value">65%</output></span></label>
+          <div class="form-footer"><button type="submit" class="primary">保存设置</button><span id="save-state" class="hint" role="status"></span></div>
+        </form>
+      </section>
+    </div>
+    <section class="panel" aria-label="本地怪物练习">
+      <div class="section-top"><h2>本地怪物练习 · 实验</h2><button type="button" data-action="practice_reset">重置模拟血量与统计</button></div>
+      <p id="practice-detail" class="hint" role="status">默认关闭。开启后读取 20 米内怪物位置，用近似刀刃范围检测命中。</p>
+      <p id="practice-stats">命中 0 次 · 模拟伤害 0</p>
+      <p id="practice-targets" class="hint">暂无目标</p>
+      <p class="hint">模拟血量归零只代表练习完成；同一演示内短暂离开范围不会回血。怪物真实血量、死亡、掉落和仇恨保持游戏规则。该功能不调用伤害或发包接口；游戏自身仍会正常通信。</p>
+    </section>
+    <section class="panel sound-preview" aria-label="太刀音效试听">
+      <div class="section-top"><h2>听一刀。</h2><span class="subtle">仅网页试听</span></div>
+      <div class="sound-buttons"><button type="button" data-audio="audio-foresight" data-sound-label="见切">试听见切</button><button type="button" data-audio="audio-iai" data-sound-label="小居合">试听小居合</button><button type="button" data-audio="audio-helm" data-sound-label="登龙">试听登龙</button><span id="audio-preview-state" class="hint" role="status">网页试听为原文件音量；游戏内播放会自动平衡音量。</span></div>
+      <audio id="audio-foresight" preload="none" src="../assets/audio/367971202.wav"></audio>
+      <audio id="audio-iai" preload="none" src="../assets/audio/12607224.wav"></audio>
+      <audio id="audio-helm" preload="none" src="../assets/audio/35004545.wav"></audio>
+      <p class="hint"><button type="button" data-audio="audio-swing" data-sound-label="普通挥刀 · 终末地原声">试听普通挥刀</button> 普通招式与怪猎招式共用音效开关和音量。</p>
+      <audio id="audio-swing" preload="none" src="../assets/audio/endfield_swing_1.wav"></audio>
+    </section>
+    <section class="panel bindings">
+      <div class="section-top"><h2>键位与连招</h2><span class="subtle">怪物猎人：世界 · 键鼠习惯</span></div>
+      <p class="hint">气刃键默认为鼠标向前侧键，也接受 <kbd>Ctrl</kbd>。以下按键在演示开启时使用；网页按钮可以发送同样的动作请求。</p>
+      <div class="binding-grid">
+        <button data-command="slash"><span>普通斩击</span><kbd>左键</kbd></button>
+        <button data-command="thrust"><span>突刺</span><kbd>右键</kbd></button>
+        <button data-command="spirit"><span>气刃连段</span><kbd>向前侧键 / Ctrl</kbd></button>
+        <button data-command="fade"><span>袈裟斩</span><kbd>左键 + 右键</kbd></button>
+        <button data-command="foresight"><span>见切斩</span><kbd>气刃键 + 右键</kbd></button>
+        <button data-command="helm"><span>登龙 / 气刃兜割</span><kbd>气刃键 + 左键</kbd></button>
+        <button data-command="sheathe"><span>特殊纳刀</span><kbd>气刃键 + 空格</kbd></button>
+        <button data-command="iai"><span>居合拔刀斩</span><kbd>特殊纳刀后 · 左键</kbd></button>
+        <button data-command="iai_spirit"><span>居合拔刀气刃斩</span><kbd>特殊纳刀后 · 气刃键</kbd></button>
+        <button data-command="dodge"><span>翻滚</span><kbd>空格</kbd></button>
+        <button data-command="normal_sheathe"><span>普通纳刀</span><kbd>Shift / R</kbd></button>
+        <div class="binding-item"><span>开启 / 结束演示</span><kbd>F8</kbd></div>
+        <button data-action="demo"><span>自动连段演示</span><kbd>F9</kbd></button>
+      </div>
+      <p class="example">试试：<strong>左键 → 右键 → 左键 → 气刃连段</strong>，或斩击后按 <strong>气刃键 + 空格</strong>，再接居合。</p>
+    </section>
+    <details class="panel debug"><summary>动作检查</summary><p class="hint">按动作编号播放，帮助检查动作映射。1000 为组合登龙；编号与姿势仍需实机确认。</p><form id="slot-form"><label for="slot">源动作编号</label><input id="slot" type="number" min="0" max="1000" step="1" value="1"><button type="submit">播放此动作</button></form><pre id="log" aria-live="polite">尚无消息</pre></details>
+    <footer><span>太刀动作演示 · 0.5.5-dev</span><span>首版校准：女管理员 · Windows x64</span></footer>
+  </main>
+  <script src="preview-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

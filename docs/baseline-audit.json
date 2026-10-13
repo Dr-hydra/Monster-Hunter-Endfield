@@ -1,0 +1,2383 @@
+{
+  "schema_version": 1,
+  "audited_at": "2026-10-13T14:32:52.761966+00:00",
+  "root": "G:\\Monster Hunter Endfield",
+  "scope": {
+    "read_only_runtime": true,
+    "built": false,
+    "executed_game_or_server": false,
+    "calculated_hashes": false,
+    "changed_runtime_code": false,
+    "writes": [
+      "docs/BASELINE_AUDIT.md",
+      "docs/baseline-audit.json"
+    ]
+  },
+  "migration_context": {
+    "provided_by_root": "647 files, 1.19 GB moved on same volume, zero manifest differences; source gaps existed before migration",
+    "historical_root": "G:\\Endfield Longsword Showcase",
+    "source_gaps_are_migration_regressions": false
+  },
+  "status": {
+    "full_native_build_ready": false,
+    "full_runtime_assets_ready": false,
+    "package_ready": false,
+    "ui_embedded_preview_available": true,
+    "existing_release_binary_available": false
+  },
+  "counts": {
+    "native": {
+      "files": 2,
+      "bytes": 96760
+    },
+    "tests": {
+      "files": 1,
+      "bytes": 7791
+    },
+    "third_party": {
+      "files": 0,
+      "bytes": 0
+    },
+    "profiles": {
+      "files": 1,
+      "bytes": 325
+    },
+    "assets": {
+      "files": 153,
+      "bytes": 4830075
+    },
+    "preview": {
+      "files": 158,
+      "bytes": 27687422
+    },
+    "ui": {
+      "files": 4,
+      "bytes": 309272
+    },
+    "tools": {
+      "files": 3,
+      "bytes": 16473
+    },
+    "build": {
+      "files": 48,
+      "bytes": 1577008
+    },
+    "output": {
+      "files": 0,
+      "bytes": 0
+    },
+    "dist": {
+      "files": 0,
+      "bytes": 0
+    }
+  },
+  "required_paths": [
+    {
+      "path": "native/module.cpp",
+      "exists": true,
+      "bytes": 84549,
+      "kind": "build_source",
+      "contract": "CMakeLists add_library(longsword)"
+    },
+    {
+      "path": "native/core.h",
+      "exists": true,
+      "bytes": 12211,
+      "kind": "local_header",
+      "contract": "module.cpp:4"
+    },
+    {
+      "path": "native/retarget.h",
+      "exists": false,
+      "bytes": null,
+      "kind": "local_header",
+      "contract": "module.cpp:5"
+    },
+    {
+      "path": "native/weapon_pose.h",
+      "exists": false,
+      "bytes": null,
+      "kind": "local_header",
+      "contract": "module.cpp:6"
+    },
+    {
+      "path": "native/grip.h",
+      "exists": false,
+      "bytes": null,
+      "kind": "local_header",
+      "contract": "module.cpp:7"
+    },
+    {
+      "path": "native/grounding.h",
+      "exists": false,
+      "bytes": null,
+      "kind": "local_header",
+      "contract": "module.cpp:8"
+    },
+    {
+      "path": "native/practice.h",
+      "exists": false,
+      "bytes": null,
+      "kind": "local_header",
+      "contract": "module.cpp:9"
+    },
+    {
+      "path": "native/practice_hud.h",
+      "exists": false,
+      "bytes": null,
+      "kind": "local_header",
+      "contract": "module.cpp:10"
+    },
+    {
+      "path": "native/audio.h",
+      "exists": false,
+      "bytes": null,
+      "kind": "local_header",
+      "contract": "module.cpp:11"
+    },
+    {
+      "path": "native/audio_timeline.h",
+      "exists": false,
+      "bytes": null,
+      "kind": "local_header",
+      "contract": "module.cpp:12"
+    },
+    {
+      "path": "third_party/include/BetterEndfield/ThirdPartyModule.h",
+      "exists": false,
+      "bytes": null,
+      "kind": "sdk_header",
+      "contract": "CMake SDK_INCLUDE default; module.cpp:1"
+    },
+    {
+      "path": "third_party/include/nlohmann/json.hpp",
+      "exists": false,
+      "bytes": null,
+      "kind": "sdk_header",
+      "contract": "CMake SDK_INCLUDE default; module.cpp:3"
+    },
+    {
+      "path": "tests/core_tests.cpp",
+      "exists": true,
+      "bytes": 7791,
+      "kind": "test_source",
+      "contract": "CMake core_tests target"
+    },
+    {
+      "path": "tests/runtime_tests.cpp",
+      "exists": false,
+      "bytes": null,
+      "kind": "test_source",
+      "contract": "CMake runtime_tests target"
+    },
+    {
+      "path": "tests/audio_tests.cpp",
+      "exists": false,
+      "bytes": null,
+      "kind": "test_source",
+      "contract": "CMake audio_tests target"
+    },
+    {
+      "path": "tests/retarget_tests.cpp",
+      "exists": false,
+      "bytes": null,
+      "kind": "test_source",
+      "contract": "CMake retarget_tests target"
+    },
+    {
+      "path": "tests/practice_tests.cpp",
+      "exists": false,
+      "bytes": null,
+      "kind": "test_source",
+      "contract": "CMake practice_tests target"
+    },
+    {
+      "path": "tests/weapon_tests.cpp",
+      "exists": false,
+      "bytes": null,
+      "kind": "test_source",
+      "contract": "CMake weapon_tests target"
+    },
+    {
+      "path": "profiles/female_admin.json",
+      "exists": false,
+      "bytes": null,
+      "kind": "runtime_required",
+      "contract": "ReadAssets + package.py"
+    },
+    {
+      "path": "assets/catalog.json",
+      "exists": true,
+      "bytes": 16419,
+      "kind": "runtime_required",
+      "contract": "ReadAssets motion catalog"
+    },
+    {
+      "path": "assets/source_rig.json",
+      "exists": true,
+      "bytes": 7988,
+      "kind": "runtime_required",
+      "contract": "ReadAssets + package.py"
+    },
+    {
+      "path": "assets/source_weapon_tracks.json",
+      "exists": false,
+      "bytes": null,
+      "kind": "runtime_required",
+      "contract": "ReadAssets + package.py"
+    },
+    {
+      "path": "assets/ground_tracks.json",
+      "exists": false,
+      "bytes": null,
+      "kind": "runtime_required",
+      "contract": "ReadAssets + package.py"
+    },
+    {
+      "path": "assets/grip_tracks.json",
+      "exists": false,
+      "bytes": null,
+      "kind": "runtime_required",
+      "contract": "ReadAssets + package.py; referenced LSG files required"
+    },
+    {
+      "path": "assets/hit_windows.json",
+      "exists": false,
+      "bytes": null,
+      "kind": "runtime_required",
+      "contract": "ReadAssets + package.py"
+    },
+    {
+      "path": "assets/moves.json",
+      "exists": false,
+      "bytes": null,
+      "kind": "runtime_required",
+      "contract": "ReadAssets command map"
+    },
+    {
+      "path": "assets/audio/cues.json",
+      "exists": false,
+      "bytes": null,
+      "kind": "package_required_runtime_optional",
+      "contract": "package.py requires; ReadAudio catches failure and disables sound"
+    },
+    {
+      "path": "assets/ui_preview.json",
+      "exists": false,
+      "bytes": null,
+      "kind": "ui_optional",
+      "contract": "app.js fallback fetch; package.py embeds if present"
+    },
+    {
+      "path": "ui/index.html",
+      "exists": true,
+      "bytes": 11863,
+      "kind": "ui_required",
+      "contract": "module.json UI entry"
+    },
+    {
+      "path": "ui/style.css",
+      "exists": true,
+      "bytes": 5951,
+      "kind": "ui_required",
+      "contract": "index.html stylesheet"
+    },
+    {
+      "path": "ui/app.js",
+      "exists": true,
+      "bytes": 16675,
+      "kind": "ui_required",
+      "contract": "index.html script"
+    },
+    {
+      "path": "ui/preview-data.js",
+      "exists": true,
+      "bytes": 274783,
+      "kind": "ui_preview_present",
+      "contract": "index.html embedded preview script"
+    },
+    {
+      "path": "assets/audio/367971202.wav",
+      "exists": false,
+      "bytes": null,
+      "kind": "ui_audition",
+      "contract": "index.html foresight"
+    },
+    {
+      "path": "assets/audio/12607224.wav",
+      "exists": false,
+      "bytes": null,
+      "kind": "ui_audition",
+      "contract": "index.html iai"
+    },
+    {
+      "path": "assets/audio/35004545.wav",
+      "exists": false,
+      "bytes": null,
+      "kind": "ui_audition",
+      "contract": "index.html helm"
+    },
+    {
+      "path": "assets/audio/endfield_swing_1.wav",
+      "exists": false,
+      "bytes": null,
+      "kind": "ui_audition",
+      "contract": "index.html swing"
+    },
+    {
+      "path": "build/package/native/windows-x64/endfield.longsword.showcase.dll",
+      "exists": false,
+      "bytes": null,
+      "kind": "package_required",
+      "contract": "package.py uses module.json libraries"
+    },
+    {
+      "path": "tools/bake_audio.py",
+      "exists": false,
+      "bytes": null,
+      "kind": "documented_tool",
+      "contract": "README describes missing rebake tool"
+    },
+    {
+      "path": "README.md",
+      "exists": true,
+      "bytes": 3087,
+      "kind": "package_required",
+      "contract": "package.py"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "exists": true,
+      "bytes": 4461,
+      "kind": "package_required",
+      "contract": "package.py"
+    },
+    {
+      "path": "module.json",
+      "exists": true,
+      "bytes": 841,
+      "kind": "package_required",
+      "contract": "package.py format 1 ABI 1"
+    }
+  ],
+  "motions": {
+    "catalog_count": 151,
+    "present_lsm_count": 150,
+    "checked_payloads": 150,
+    "missing": [
+      {
+        "slot": 1000,
+        "file": "clip_1000.lsm",
+        "catalog_frames": 303,
+        "exists": false
+      }
+    ],
+    "invalid": [],
+    "entries": [
+      {
+        "slot": 1,
+        "file": "clip_001.lsm",
+        "catalog_frames": 203,
+        "exists": true,
+        "frames": 203,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 70660,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 2,
+        "file": "clip_002.lsm",
+        "catalog_frames": 71,
+        "exists": true,
+        "frames": 71,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 24724,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 3,
+        "file": "clip_003.lsm",
+        "catalog_frames": 58,
+        "exists": true,
+        "frames": 58,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 20200,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 4,
+        "file": "clip_004.lsm",
+        "catalog_frames": 51,
+        "exists": true,
+        "frames": 51,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 17764,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 5,
+        "file": "clip_005.lsm",
+        "catalog_frames": 61,
+        "exists": true,
+        "frames": 61,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 21244,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 6,
+        "file": "clip_006.lsm",
+        "catalog_frames": 71,
+        "exists": true,
+        "frames": 71,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 24724,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 7,
+        "file": "clip_007.lsm",
+        "catalog_frames": 71,
+        "exists": true,
+        "frames": 71,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 24724,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 8,
+        "file": "clip_008.lsm",
+        "catalog_frames": 58,
+        "exists": true,
+        "frames": 58,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 20200,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 9,
+        "file": "clip_009.lsm",
+        "catalog_frames": 159,
+        "exists": true,
+        "frames": 159,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 55348,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 10,
+        "file": "clip_010.lsm",
+        "catalog_frames": 111,
+        "exists": true,
+        "frames": 111,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 38644,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 11,
+        "file": "clip_011.lsm",
+        "catalog_frames": 81,
+        "exists": true,
+        "frames": 81,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 28204,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 12,
+        "file": "clip_012.lsm",
+        "catalog_frames": 77,
+        "exists": true,
+        "frames": 77,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 26812,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 13,
+        "file": "clip_013.lsm",
+        "catalog_frames": 77,
+        "exists": true,
+        "frames": 77,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 26812,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 14,
+        "file": "clip_014.lsm",
+        "catalog_frames": 64,
+        "exists": true,
+        "frames": 64,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 22288,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 15,
+        "file": "clip_015.lsm",
+        "catalog_frames": 58,
+        "exists": true,
+        "frames": 58,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 20200,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 50,
+        "file": "clip_050.lsm",
+        "catalog_frames": 57,
+        "exists": true,
+        "frames": 57,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 19852,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 51,
+        "file": "clip_051.lsm",
+        "catalog_frames": 153,
+        "exists": true,
+        "frames": 153,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 53260,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 52,
+        "file": "clip_052.lsm",
+        "catalog_frames": 31,
+        "exists": true,
+        "frames": 31,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 10804,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 53,
+        "file": "clip_053.lsm",
+        "catalog_frames": 47,
+        "exists": true,
+        "frames": 47,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 16372,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 54,
+        "file": "clip_054.lsm",
+        "catalog_frames": 47,
+        "exists": true,
+        "frames": 47,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 16372,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 61,
+        "file": "clip_061.lsm",
+        "catalog_frames": 53,
+        "exists": true,
+        "frames": 53,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 18460,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 62,
+        "file": "clip_062.lsm",
+        "catalog_frames": 73,
+        "exists": true,
+        "frames": 73,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 25420,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 63,
+        "file": "clip_063.lsm",
+        "catalog_frames": 43,
+        "exists": true,
+        "frames": 43,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 14980,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 70,
+        "file": "clip_070.lsm",
+        "catalog_frames": 151,
+        "exists": true,
+        "frames": 151,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 52564,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 101,
+        "file": "clip_101.lsm",
+        "catalog_frames": 151,
+        "exists": true,
+        "frames": 151,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 52564,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 102,
+        "file": "clip_102.lsm",
+        "catalog_frames": 161,
+        "exists": true,
+        "frames": 161,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 56044,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 103,
+        "file": "clip_103.lsm",
+        "catalog_frames": 99,
+        "exists": true,
+        "frames": 99,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 34468,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 104,
+        "file": "clip_104.lsm",
+        "catalog_frames": 143,
+        "exists": true,
+        "frames": 143,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 49780,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 105,
+        "file": "clip_105.lsm",
+        "catalog_frames": 131,
+        "exists": true,
+        "frames": 131,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 45604,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 106,
+        "file": "clip_106.lsm",
+        "catalog_frames": 121,
+        "exists": true,
+        "frames": 121,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 42124,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 107,
+        "file": "clip_107.lsm",
+        "catalog_frames": 137,
+        "exists": true,
+        "frames": 137,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 47692,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 108,
+        "file": "clip_108.lsm",
+        "catalog_frames": 170,
+        "exists": true,
+        "frames": 170,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 59176,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 109,
+        "file": "clip_109.lsm",
+        "catalog_frames": 63,
+        "exists": true,
+        "frames": 63,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 21940,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 110,
+        "file": "clip_110.lsm",
+        "catalog_frames": 117,
+        "exists": true,
+        "frames": 117,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 40732,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 111,
+        "file": "clip_111.lsm",
+        "catalog_frames": 25,
+        "exists": true,
+        "frames": 25,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 8716,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 113,
+        "file": "clip_113.lsm",
+        "catalog_frames": 20,
+        "exists": true,
+        "frames": 20,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 6976,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 114,
+        "file": "clip_114.lsm",
+        "catalog_frames": 37,
+        "exists": true,
+        "frames": 37,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 12892,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 115,
+        "file": "clip_115.lsm",
+        "catalog_frames": 33,
+        "exists": true,
+        "frames": 33,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 11500,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 116,
+        "file": "clip_116.lsm",
+        "catalog_frames": 20,
+        "exists": true,
+        "frames": 20,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 6976,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 117,
+        "file": "clip_117.lsm",
+        "catalog_frames": 23,
+        "exists": true,
+        "frames": 23,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 8020,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 118,
+        "file": "clip_118.lsm",
+        "catalog_frames": 15,
+        "exists": true,
+        "frames": 15,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 5236,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 119,
+        "file": "clip_119.lsm",
+        "catalog_frames": 23,
+        "exists": true,
+        "frames": 23,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 8020,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 120,
+        "file": "clip_120.lsm",
+        "catalog_frames": 19,
+        "exists": true,
+        "frames": 19,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 6628,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 121,
+        "file": "clip_121.lsm",
+        "catalog_frames": 23,
+        "exists": true,
+        "frames": 23,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 8020,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 122,
+        "file": "clip_122.lsm",
+        "catalog_frames": 11,
+        "exists": true,
+        "frames": 11,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 3844,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 123,
+        "file": "clip_123.lsm",
+        "catalog_frames": 21,
+        "exists": true,
+        "frames": 21,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 7324,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 124,
+        "file": "clip_124.lsm",
+        "catalog_frames": 21,
+        "exists": true,
+        "frames": 21,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 7324,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 125,
+        "file": "clip_125.lsm",
+        "catalog_frames": 29,
+        "exists": true,
+        "frames": 29,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 10108,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 126,
+        "file": "clip_126.lsm",
+        "catalog_frames": 29,
+        "exists": true,
+        "frames": 29,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 10108,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 127,
+        "file": "clip_127.lsm",
+        "catalog_frames": 91,
+        "exists": true,
+        "frames": 91,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 31684,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 128,
+        "file": "clip_128.lsm",
+        "catalog_frames": 89,
+        "exists": true,
+        "frames": 89,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 30988,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 129,
+        "file": "clip_129.lsm",
+        "catalog_frames": 30,
+        "exists": true,
+        "frames": 30,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 10456,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 130,
+        "file": "clip_130.lsm",
+        "catalog_frames": 50,
+        "exists": true,
+        "frames": 50,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 17416,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 131,
+        "file": "clip_131.lsm",
+        "catalog_frames": 49,
+        "exists": true,
+        "frames": 49,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 17068,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 132,
+        "file": "clip_132.lsm",
+        "catalog_frames": 45,
+        "exists": true,
+        "frames": 45,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 15676,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 140,
+        "file": "clip_140.lsm",
+        "catalog_frames": 187,
+        "exists": true,
+        "frames": 187,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 65092,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 150,
+        "file": "clip_150.lsm",
+        "catalog_frames": 115,
+        "exists": true,
+        "frames": 115,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 40036,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 151,
+        "file": "clip_151.lsm",
+        "catalog_frames": 25,
+        "exists": true,
+        "frames": 25,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 8716,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 153,
+        "file": "clip_153.lsm",
+        "catalog_frames": 105,
+        "exists": true,
+        "frames": 105,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 36556,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 154,
+        "file": "clip_154.lsm",
+        "catalog_frames": 91,
+        "exists": true,
+        "frames": 91,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 31684,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 155,
+        "file": "clip_155.lsm",
+        "catalog_frames": 117,
+        "exists": true,
+        "frames": 117,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 40732,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 156,
+        "file": "clip_156.lsm",
+        "catalog_frames": 71,
+        "exists": true,
+        "frames": 71,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 24724,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 157,
+        "file": "clip_157.lsm",
+        "catalog_frames": 111,
+        "exists": true,
+        "frames": 111,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 38644,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 158,
+        "file": "clip_158.lsm",
+        "catalog_frames": 170,
+        "exists": true,
+        "frames": 170,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 59176,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 160,
+        "file": "clip_160.lsm",
+        "catalog_frames": 104,
+        "exists": true,
+        "frames": 104,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 36208,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 172,
+        "file": "clip_172.lsm",
+        "catalog_frames": 134,
+        "exists": true,
+        "frames": 134,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 46648,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 173,
+        "file": "clip_173.lsm",
+        "catalog_frames": 115,
+        "exists": true,
+        "frames": 115,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 40036,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 174,
+        "file": "clip_174.lsm",
+        "catalog_frames": 147,
+        "exists": true,
+        "frames": 147,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 51172,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 200,
+        "file": "clip_200.lsm",
+        "catalog_frames": 397,
+        "exists": true,
+        "frames": 397,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 138172,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 201,
+        "file": "clip_201.lsm",
+        "catalog_frames": 434,
+        "exists": true,
+        "frames": 434,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 151048,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 202,
+        "file": "clip_202.lsm",
+        "catalog_frames": 397,
+        "exists": true,
+        "frames": 397,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 138172,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 214,
+        "file": "clip_214.lsm",
+        "catalog_frames": 52,
+        "exists": true,
+        "frames": 52,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 18112,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 215,
+        "file": "clip_215.lsm",
+        "catalog_frames": 52,
+        "exists": true,
+        "frames": 52,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 18112,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 216,
+        "file": "clip_216.lsm",
+        "catalog_frames": 52,
+        "exists": true,
+        "frames": 52,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 18112,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 217,
+        "file": "clip_217.lsm",
+        "catalog_frames": 52,
+        "exists": true,
+        "frames": 52,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 18112,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 221,
+        "file": "clip_221.lsm",
+        "catalog_frames": 75,
+        "exists": true,
+        "frames": 75,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 26116,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 290,
+        "file": "clip_290.lsm",
+        "catalog_frames": 77,
+        "exists": true,
+        "frames": 77,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 26812,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 291,
+        "file": "clip_291.lsm",
+        "catalog_frames": 77,
+        "exists": true,
+        "frames": 77,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 26812,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 292,
+        "file": "clip_292.lsm",
+        "catalog_frames": 77,
+        "exists": true,
+        "frames": 77,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 26812,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 293,
+        "file": "clip_293.lsm",
+        "catalog_frames": 77,
+        "exists": true,
+        "frames": 77,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 26812,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 294,
+        "file": "clip_294.lsm",
+        "catalog_frames": 56,
+        "exists": true,
+        "frames": 56,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 19504,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 295,
+        "file": "clip_295.lsm",
+        "catalog_frames": 56,
+        "exists": true,
+        "frames": 56,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 19504,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 296,
+        "file": "clip_296.lsm",
+        "catalog_frames": 101,
+        "exists": true,
+        "frames": 101,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 35164,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 297,
+        "file": "clip_297.lsm",
+        "catalog_frames": 101,
+        "exists": true,
+        "frames": 101,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 35164,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 298,
+        "file": "clip_298.lsm",
+        "catalog_frames": 96,
+        "exists": true,
+        "frames": 96,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 33424,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 301,
+        "file": "clip_301.lsm",
+        "catalog_frames": 123,
+        "exists": true,
+        "frames": 123,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 42820,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 303,
+        "file": "clip_303.lsm",
+        "catalog_frames": 32,
+        "exists": true,
+        "frames": 32,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 11152,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 304,
+        "file": "clip_304.lsm",
+        "catalog_frames": 55,
+        "exists": true,
+        "frames": 55,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 19156,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 305,
+        "file": "clip_305.lsm",
+        "catalog_frames": 55,
+        "exists": true,
+        "frames": 55,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 19156,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 306,
+        "file": "clip_306.lsm",
+        "catalog_frames": 272,
+        "exists": true,
+        "frames": 272,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 94672,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 307,
+        "file": "clip_307.lsm",
+        "catalog_frames": 138,
+        "exists": true,
+        "frames": 138,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 48040,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 308,
+        "file": "clip_308.lsm",
+        "catalog_frames": 177,
+        "exists": true,
+        "frames": 177,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 61612,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 312,
+        "file": "clip_312.lsm",
+        "catalog_frames": 90,
+        "exists": true,
+        "frames": 90,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 31336,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 318,
+        "file": "clip_318.lsm",
+        "catalog_frames": 68,
+        "exists": true,
+        "frames": 68,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 23680,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 319,
+        "file": "clip_319.lsm",
+        "catalog_frames": 20,
+        "exists": true,
+        "frames": 20,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 6976,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 320,
+        "file": "clip_320.lsm",
+        "catalog_frames": 68,
+        "exists": true,
+        "frames": 68,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 23680,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 321,
+        "file": "clip_321.lsm",
+        "catalog_frames": 68,
+        "exists": true,
+        "frames": 68,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 23680,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 322,
+        "file": "clip_322.lsm",
+        "catalog_frames": 68,
+        "exists": true,
+        "frames": 68,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 23680,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 323,
+        "file": "clip_323.lsm",
+        "catalog_frames": 68,
+        "exists": true,
+        "frames": 68,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 23680,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 326,
+        "file": "clip_326.lsm",
+        "catalog_frames": 107,
+        "exists": true,
+        "frames": 107,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 37252,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 327,
+        "file": "clip_327.lsm",
+        "catalog_frames": 107,
+        "exists": true,
+        "frames": 107,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 37252,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 332,
+        "file": "clip_332.lsm",
+        "catalog_frames": 134,
+        "exists": true,
+        "frames": 134,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 46648,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 333,
+        "file": "clip_333.lsm",
+        "catalog_frames": 134,
+        "exists": true,
+        "frames": 134,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 46648,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 334,
+        "file": "clip_334.lsm",
+        "catalog_frames": 134,
+        "exists": true,
+        "frames": 134,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 46648,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 335,
+        "file": "clip_335.lsm",
+        "catalog_frames": 105,
+        "exists": true,
+        "frames": 105,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 36556,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 336,
+        "file": "clip_336.lsm",
+        "catalog_frames": 41,
+        "exists": true,
+        "frames": 41,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 14284,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 337,
+        "file": "clip_337.lsm",
+        "catalog_frames": 117,
+        "exists": true,
+        "frames": 117,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 40732,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 338,
+        "file": "clip_338.lsm",
+        "catalog_frames": 20,
+        "exists": true,
+        "frames": 20,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 6976,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 339,
+        "file": "clip_339.lsm",
+        "catalog_frames": 60,
+        "exists": true,
+        "frames": 60,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 20896,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 340,
+        "file": "clip_340.lsm",
+        "catalog_frames": 71,
+        "exists": true,
+        "frames": 71,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 24724,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 341,
+        "file": "clip_341.lsm",
+        "catalog_frames": 201,
+        "exists": true,
+        "frames": 201,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 69964,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 342,
+        "file": "clip_342.lsm",
+        "catalog_frames": 120,
+        "exists": true,
+        "frames": 120,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 41776,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 343,
+        "file": "clip_343.lsm",
+        "catalog_frames": 40,
+        "exists": true,
+        "frames": 40,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 13936,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 344,
+        "file": "clip_344.lsm",
+        "catalog_frames": 33,
+        "exists": true,
+        "frames": 33,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 11500,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 345,
+        "file": "clip_345.lsm",
+        "catalog_frames": 60,
+        "exists": true,
+        "frames": 60,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 20896,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 346,
+        "file": "clip_346.lsm",
+        "catalog_frames": 137,
+        "exists": true,
+        "frames": 137,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 47692,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 347,
+        "file": "clip_347.lsm",
+        "catalog_frames": 67,
+        "exists": true,
+        "frames": 67,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 23332,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 348,
+        "file": "clip_348.lsm",
+        "catalog_frames": 134,
+        "exists": true,
+        "frames": 134,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 46648,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 349,
+        "file": "clip_349.lsm",
+        "catalog_frames": 134,
+        "exists": true,
+        "frames": 134,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 46648,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 351,
+        "file": "clip_351.lsm",
+        "catalog_frames": 162,
+        "exists": true,
+        "frames": 162,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 56392,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 352,
+        "file": "clip_352.lsm",
+        "catalog_frames": 14,
+        "exists": true,
+        "frames": 14,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 4888,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 353,
+        "file": "clip_353.lsm",
+        "catalog_frames": 31,
+        "exists": true,
+        "frames": 31,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 10804,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 354,
+        "file": "clip_354.lsm",
+        "catalog_frames": 37,
+        "exists": true,
+        "frames": 37,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 12892,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 356,
+        "file": "clip_356.lsm",
+        "catalog_frames": 58,
+        "exists": true,
+        "frames": 58,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 20200,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 358,
+        "file": "clip_358.lsm",
+        "catalog_frames": 34,
+        "exists": true,
+        "frames": 34,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 11848,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 359,
+        "file": "clip_359.lsm",
+        "catalog_frames": 23,
+        "exists": true,
+        "frames": 23,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 8020,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 360,
+        "file": "clip_360.lsm",
+        "catalog_frames": 21,
+        "exists": true,
+        "frames": 21,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 7324,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 361,
+        "file": "clip_361.lsm",
+        "catalog_frames": 23,
+        "exists": true,
+        "frames": 23,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 8020,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 362,
+        "file": "clip_362.lsm",
+        "catalog_frames": 25,
+        "exists": true,
+        "frames": 25,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 8716,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 363,
+        "file": "clip_363.lsm",
+        "catalog_frames": 43,
+        "exists": true,
+        "frames": 43,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 14980,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 365,
+        "file": "clip_365.lsm",
+        "catalog_frames": 33,
+        "exists": true,
+        "frames": 33,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 11500,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 366,
+        "file": "clip_366.lsm",
+        "catalog_frames": 23,
+        "exists": true,
+        "frames": 23,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 8020,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 367,
+        "file": "clip_367.lsm",
+        "catalog_frames": 49,
+        "exists": true,
+        "frames": 49,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 17068,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 427,
+        "file": "clip_427.lsm",
+        "catalog_frames": 78,
+        "exists": true,
+        "frames": 78,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 27160,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 428,
+        "file": "clip_428.lsm",
+        "catalog_frames": 50,
+        "exists": true,
+        "frames": 50,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 17416,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 429,
+        "file": "clip_429.lsm",
+        "catalog_frames": 151,
+        "exists": true,
+        "frames": 151,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 52564,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 430,
+        "file": "clip_430.lsm",
+        "catalog_frames": 78,
+        "exists": true,
+        "frames": 78,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 27160,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 431,
+        "file": "clip_431.lsm",
+        "catalog_frames": 151,
+        "exists": true,
+        "frames": 151,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 52564,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 432,
+        "file": "clip_432.lsm",
+        "catalog_frames": 58,
+        "exists": true,
+        "frames": 58,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 20200,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 433,
+        "file": "clip_433.lsm",
+        "catalog_frames": 90,
+        "exists": true,
+        "frames": 90,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 31336,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 434,
+        "file": "clip_434.lsm",
+        "catalog_frames": 90,
+        "exists": true,
+        "frames": 90,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 31336,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 435,
+        "file": "clip_435.lsm",
+        "catalog_frames": 49,
+        "exists": true,
+        "frames": 49,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 17068,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 436,
+        "file": "clip_436.lsm",
+        "catalog_frames": 49,
+        "exists": true,
+        "frames": 49,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 17068,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 437,
+        "file": "clip_437.lsm",
+        "catalog_frames": 67,
+        "exists": true,
+        "frames": 67,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 23332,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 438,
+        "file": "clip_438.lsm",
+        "catalog_frames": 67,
+        "exists": true,
+        "frames": 67,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 23332,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 440,
+        "file": "clip_440.lsm",
+        "catalog_frames": 101,
+        "exists": true,
+        "frames": 101,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 35164,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 451,
+        "file": "clip_451.lsm",
+        "catalog_frames": 173,
+        "exists": true,
+        "frames": 173,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 60220,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 460,
+        "file": "clip_460.lsm",
+        "catalog_frames": 266,
+        "exists": true,
+        "frames": 266,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 92584,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 461,
+        "file": "clip_461.lsm",
+        "catalog_frames": 243,
+        "exists": true,
+        "frames": 243,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 84580,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 463,
+        "file": "clip_463.lsm",
+        "catalog_frames": 563,
+        "exists": true,
+        "frames": 563,
+        "bones": 21,
+        "fps": 60,
+        "bytes": 195940,
+        "header_valid": true,
+        "payload_valid": true
+      },
+      {
+        "slot": 1000,
+        "file": "clip_1000.lsm",
+        "catalog_frames": 303,
+        "exists": false
+      }
+    ]
+  },
+  "source_rig": {
+    "exists": true,
+    "bone_count": 21,
+    "required_21_positions_valid": true,
+    "hand_anatomy_sides": [
+      "left",
+      "right"
+    ]
+  },
+  "ui": {
+    "npm_build_required": false,
+    "embedded_preview_clips": 17,
+    "embedded_slots": [
+      1,
+      9,
+      11,
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      127,
+      128,
+      306,
+      307,
+      308,
+      1000
+    ],
+    "fallback_json_exists": false,
+    "audio_preview_ready": false
+  },
+  "versions": {
+    "manifest": "0.5.6-dev",
+    "cmake": "0.5.5",
+    "ui_footer": "0.5.5-dev",
+    "README_current_heading": "New Monster Hunter Endfield entry README; historical details in docs/LEGACY_LONGSWORD_README.md",
+    "alignment_required": true,
+    "legacy_README_current_heading": "0.5.6",
+    "legacy_README_install_example": "0.5.5-dev",
+    "cmake_minimum_required": "3.25"
+  },
+  "source_stock": {
+    "external_root": "G:\\Better Endfield\\research\\actions\\mhw-longsword\\20261012",
+    "external_all_files": {
+      "files": 684,
+      "bytes": 55896718
+    },
+    "local_root": "G:\\Monster Hunter Endfield\\research\\mhw-longsword\\20261012",
+    "local_copy": {
+      "files": 518,
+      "bytes": 44065901
+    },
+    "copied_by_root": true,
+    "excluded_from_copy": [
+      ".git",
+      "__pycache__"
+    ],
+    "bake_inputs": [
+      {
+        "path": "appearance-zxc/nativePC/pl/m_equip/pl043_0000/body/mod/m_body043_0000.mod3",
+        "exists": true,
+        "bytes": 181092
+      },
+      {
+        "path": "rise/nativePC/hm/wp/wp03/mot/w03_00/w03_00.lmt",
+        "exists": true,
+        "bytes": 4457344
+      },
+      {
+        "path": "tooling/MHW_Model_Editor/addons/MHW_Model_Editor/modules/mod3/file_mod3.py",
+        "exists": true,
+        "bytes": 22383
+      },
+      {
+        "path": "tooling/MHW_Model_Editor/addons/MHW_Model_Editor/modules/mod3/mod3_parser.py",
+        "exists": true,
+        "bytes": 23703
+      },
+      {
+        "path": "tooling/MHW_Model_Editor/addons/MHW_Model_Editor/modules/mod3/mod3_functions.py",
+        "exists": true,
+        "bytes": 34451
+      },
+      {
+        "path": "tooling/mhw-anim-tools/core/formats/lmt/reader.py",
+        "exists": true,
+        "bytes": 5212
+      },
+      {
+        "path": "tooling/mhw-anim-tools/core/formats/lmt/pose_evaluation.py",
+        "exists": true,
+        "bytes": 10148
+      },
+      {
+        "path": "tooling/mhw-anim-tools/core/formats/lmt/semantics.py",
+        "exists": true,
+        "bytes": 5054
+      },
+      {
+        "path": "tooling/mhw-anim-tools/blender_adapter/space.py",
+        "exists": true,
+        "bytes": 10075
+      },
+      {
+        "path": "tooling/mhw-anim-tools/blender_adapter/armature.py",
+        "exists": true,
+        "bytes": 12071
+      }
+    ],
+    "copy_more_needed_for_current_bake": false,
+    "bake_path_declaration": [
+      "RESEARCH = ROOT / 'research' / 'mhw-longsword' / '20261012'"
+    ],
+    "warning": "Body bake alone does not recreate source_weapon/grip/ground/hit/moves/audio or synthetic slot1000. Do not overwrite extant material to disguise source gaps.",
+    "bake_path_localized": true
+  },
+  "preserved_research": {
+    "expansion": {
+      "files": 274,
+      "bytes": 1157173697
+    },
+    "groups": {
+      "laevat-sword-effect-tree": {
+        "files": 9,
+        "bytes": 53654
+      },
+      "laevat-weapon-inputs": {
+        "files": 19,
+        "bytes": 322510166
+      },
+      "special-weapon-config-trees": {
+        "files": 15,
+        "bytes": 170232
+      },
+      "special-weapon-model-inputs": {
+        "files": 46,
+        "bytes": 330228785
+      },
+      "special-weapons-inputs": {
+        "files": 164,
+        "bytes": 483703913
+      }
+    },
+    "evidence_files": [
+      "research/expansion-20261013/ENDFIELD_ADAPTATION.md",
+      "research/expansion-20261013/endfield-adaptation-evidence.json",
+      "research/expansion-20261013/SPECIAL_WEAPONS.md",
+      "research/expansion-20261013/special-weapons-evidence.json",
+      "research/expansion-20261013/mhw_archive_headers.json"
+    ],
+    "interpretation": "Cached input bundles, parsed object graphs and research reports remain useful evidence; not current-version or in-game proof."
+  },
+  "old_path_references": {
+    "source_or_documentation": [],
+    "generated_build_files": [
+      "build/ALL_BUILD.vcxproj.filters",
+      "build/audio_tests.vcxproj",
+      "build/core_tests.vcxproj",
+      "build/core_tests.vcxproj.filters",
+      "build/longsword.vcxproj.filters",
+      "build/runtime_tests.vcxproj",
+      "build/RUN_TESTS.vcxproj",
+      "build/RUN_TESTS.vcxproj.filters",
+      "build/ZERO_CHECK.vcxproj",
+      "build/ZERO_CHECK.vcxproj.filters",
+      "build/CMakeFiles/4.3.3/CompilerIdCXX/Debug/CompilerIdCXX.tlog/Cl.items.tlog",
+      "build/core_tests.dir/Release/core_tests.tlog/CustomBuild.command.1.tlog",
+      "build/x64/Release/ZERO_CHECK/ZERO_CHECK.tlog/CustomBuild.command.1.tlog"
+    ],
+    "generated_build_remedy": "After real source recovery, configure a fresh build directory; do not patch generated vcxproj/tlog files.",
+    "historical_docs_remedy": "Root README points to new workspace; old README retained in docs/LEGACY_LONGSWORD_README.md. Preserve history and docs/MIGRATION.md mapping.",
+    "active_tool_remedy": "bake_actions source-stock path localized to ROOT/research/mhw-longsword/20261012; package.py and preview_sheet.py derive root from __file__."
+  },
+  "priority_actions": [
+    {
+      "priority": "P0",
+      "action": "Recover original missing native headers, SDK and 5 test sources from real source history; no stub implementations."
+    },
+    {
+      "priority": "P0",
+      "action": "Recover profile, source_weapon/grip/ground/hit/moves/audio manifests, referenced LSG and WAV files, and 303-frame clip_1000.lsm; source_rig is intact."
+    },
+    {
+      "priority": "P1",
+      "action": "After recovery, configure new build directory, compile, test resource contracts and EML package/import."
+    },
+    {
+      "priority": "P1",
+      "action": "Align versions and active paths; retain module ID and ABI until deliberate migration."
+    },
+    {
+      "priority": "P2",
+      "action": "Preserve 150 body clips, source rig, 17 UI previews, donor Blender scene and expansion research inputs."
+    }
+  ]
+}

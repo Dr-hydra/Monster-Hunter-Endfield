@@ -1,0 +1,33 @@
+{
+  "format": 1,
+  "id": "endfield.longsword.showcase",
+  "name": "太刀动作演示",
+  "author": "Better Endfield contributors",
+  "version": "0.5.6-dev",
+  "abi": 1,
+  "libraries": {
+    "windows-x64": "native/windows-x64/endfield.longsword.showcase.dll"
+  },
+  "ui": "ui/index.html",
+  "default_configuration": {
+    "enabled": true,
+    "toggle_key": 119,
+    "speed": 1.0,
+    "blend_seconds": 0.12,
+    "buffer_seconds": 0.3,
+    "root_motion": true,
+    "show_prop": true,
+    "sound_enabled": true,
+    "sound_volume": 0.65,
+    "spirit_key": 6,
+    "spirit_alt_key": 17,
+    "grip_strength": 1.0,
+    "local_practice": false,
+    "practice_hp": 1000,
+    "practice_damage": 100,
+    "practice_radius": 0.65,
+    "practice_height": 0.9,
+    "practice_blade_length": 1.25
+  },
+  "dependencies": []
+}

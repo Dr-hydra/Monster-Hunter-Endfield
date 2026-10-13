@@ -1,0 +1,14 @@
+{
+  "source_copy": {
+    "files": 518,
+    "byte_comparison_differences": 0,
+    "extra_files": 0
+  },
+  "python_syntax_checked": [
+    "tools/bake_actions.py",
+    "tools/package.py",
+    "tools/preview_sheet.py",
+    "research/expansion-20261013/scout_endfield_adaptation.py"
+  ],
+  "artifact_hashes_computed": false
+}
