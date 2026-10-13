@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "resource_id": "wpn_misc_0016",
+  "asset_path": "assets/beyond/dynamicassets/gameplay/prefabs/weapons/wpn_misc_0016.prefab",
+  "asset_path_hash": "381157020907152362",
+  "renderer_path": "Mesh_Sword/lod0/S_wpn_misc_00016_02_lod0",
+  "mount_bone_path": "Root/wep_quan_jnt/wep_jian_jnt",
+  "mount_reference_path": "",
+  "mount_position": [
+    0,
+    0,
+    0
+  ],
+  "mount_rotation_xyzw": [
+    0,
+    0,
+    0,
+    1
+  ],
+  "mount_mode": "experimental-authored-prefab-root-at-wep_R",
+  "mount_runtime_verified": false,
+  "mount_evidence": "Preserve the authored prefab root TRS at wep_R; exact native skill attachment was not observed. WeaponMountPoint 100 is not assumed to be a hand attachment.",
+  "blade_root_axis": [
+    1e-07,
+    1.0,
+    3e-07
+  ],
+  "edge_root_axis": [
+    1.0,
+    -1e-07,
+    -3e-07
+  ],
+  "blade_length_m": 2.068854,
+  "material_policy": "readonly-native-shared-materials",
+  "clone_policy": "pure-gameobjects-transforms-and-one-skinned-renderer",
+  "vfx_status": "native sword material only; complete flame VFX pending",
+  "runtime_verified": false,
+  "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418"
+}

@@ -40,6 +40,12 @@ def package(root: Path, package_root: Path, output: Path | None) -> Path:
     if not required_profile.is_file():
         raise FileNotFoundError(f"Required female administrator profile is missing: {required_profile}")
     json.loads(required_profile.read_text(encoding="utf-8-sig"))
+    laevatain_profile = root / "profiles" / "laevatain.json"
+    if not laevatain_profile.is_file():
+        raise FileNotFoundError(f"Required Laevatain profile is missing: {laevatain_profile}")
+    laevatain = json.loads(laevatain_profile.read_text(encoding="utf-8-sig"))
+    if laevatain.get("character_id") != "chr_0016_laevat":
+        raise ValueError("Unexpected Laevatain profile")
     for directory in ("ui", "assets", "profiles"):
         source_directory = root / directory
         if not source_directory.is_dir():

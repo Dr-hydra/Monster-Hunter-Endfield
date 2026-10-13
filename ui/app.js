@@ -2,7 +2,7 @@
 (() => {
   const $ = id => document.getElementById(id);
   const host = window.betterEndfield;
-  const defaults = {enabled:true,toggle_key:119,speed:1,blend_seconds:0.12,buffer_seconds:0.3,root_motion:true,show_prop:true,spirit_key:6,spirit_alt_key:17,sound_enabled:true,sound_volume:0.65,grip_strength:1,local_practice:false,practice_hp:1000,practice_damage:100,practice_radius:0.65,practice_height:0.9,practice_blade_length:1.25};
+  const defaults = {enabled:true,toggle_key:119,speed:1,blend_seconds:0.12,buffer_seconds:0.3,root_motion:true,show_prop:true,spirit_key:6,spirit_alt_key:17,sound_enabled:true,sound_volume:0.65,grip_strength:1,local_practice:false,laevatain_blade:true,practice_hp:1000,practice_damage:100,practice_radius:0.65,practice_height:0.9,practice_blade_length:1.25};
   let configuration = {...defaults};
   let pendingSave = false;
   const phaseLabels = {idle:'待机',slash:'普通斩',thrust:'突刺',spirit:'气刃连段',fade:'袈裟斩',foresight:'见切斩',sheathe:'特殊纳刀',normal_sheathe:'普通纳刀',iai:'居合拔刀斩',iai_spirit:'居合气刃斩',helm:'登龙',dodge:'翻滚',sheathed:'已纳刀',sheathe_hold:'纳刀待机'};
@@ -19,15 +19,16 @@
     if(Number.isFinite(body.sound_cues))soundStatus.count=body.sound_cues;
     if ('runtime_ready' in body) { $('runtime-state').textContent = body.runtime_ready ? '已就绪' : '等待游戏'; $('runtime-state').classList.toggle('good',!!body.runtime_ready); }
     if ('active' in body) { $('active-state').textContent = body.active ? (body.auto_demo ? '自动演示中' : '手动演示中') : '已结束'; $('active-state').classList.toggle('good',!!body.active); }
-    if ('character' in body) $('character-state').textContent = body.character === 'chr_0003_endminf' ? '女管理员' : body.character || '尚未识别';
+    if ('character' in body) $('character-state').textContent = ({'chr_0003_endminf':'女管理员','chr_0016_laevat':'莱万汀'})[body.character] || body.character || '尚未识别';
     if ('slot' in body) $('slot-state').textContent = Number.isInteger(body.slot) && body.slot >= 0 ? `#${body.slot}${body.phase ? ` · ${phaseLabels[body.phase] || '动作中'}` : ''}` : '—';
     if (typeof body.detail === 'string') $('detail').textContent = body.detail;
     if (typeof body.demo_seconds === 'number') $('demo-info').textContent = `自动演示每轮约 ${Math.round(body.demo_seconds)} 秒：普通斩 → 气刃 → 见切 → 居合 → 登龙 → 收势；攻击键可接管。`;
-    if (typeof body.weapon_mode === 'string') $('weapon-state').textContent = ({equipped:'装备长剑 · 保持握持',fallback:'备用演示刀',none:'等待演示'})[body.weapon_mode] || '等待演示';
+    if (typeof body.weapon_mode === 'string') $('weapon-state').textContent = ({laevatain:'莱万汀长刀 · 刀身演示',equipped:'装备长剑 · 保持握持',fallback:'备用演示刀',none:'等待演示'})[body.weapon_mode] || '等待演示';
     if (typeof body.weapon_pose_detail === 'string') {
       $('weapon-state').title = body.weapon_pose_detail;
       if (body.weapon_mode === 'equipped') $('weapon-state').textContent += body.blade_calibrated ? ' · 剑身已识别' : ' · 剑身待识别';
     }
+    if (typeof body.visual_weapon_detail === 'string') $('visual-weapon-detail').textContent=body.visual_weapon_detail;
     if ('sound_ready' in body) soundStatus.ready=!!body.sound_ready;
     if (typeof body.sound_detail === 'string') soundStatus.detail=body.sound_detail;
     renderSoundStatus();
@@ -61,6 +62,7 @@
     $('buffer').value = configuration.buffer_seconds;
     $('root-motion').checked = !!configuration.root_motion;
     $('show-prop').checked = !!configuration.show_prop;
+    $('laevatain-blade').checked = !!configuration.laevatain_blade;
     $('grip-strength').value=configuration.grip_strength;
     $('grip-strength-value').textContent=`${Math.round(Number(configuration.grip_strength)*100)}%`;
     $('local-practice').checked=!!configuration.local_practice;
@@ -79,7 +81,7 @@
   $('settings').onsubmit = async event => {
     event.preventDefault();
     if (pendingSave || !$('settings').reportValidity()) return;
-    const next = {...configuration,enabled:$('enabled').checked,speed:Number($('speed').value),blend_seconds:Number($('blend').value),buffer_seconds:Number($('buffer').value),root_motion:$('root-motion').checked,show_prop:$('show-prop').checked,sound_enabled:$('sound-enabled').checked,sound_volume:Number($('sound-volume').value)};
+    const next = {...configuration,enabled:$('enabled').checked,speed:Number($('speed').value),blend_seconds:Number($('blend').value),buffer_seconds:Number($('buffer').value),root_motion:$('root-motion').checked,show_prop:$('show-prop').checked,laevatain_blade:$('laevatain-blade').checked,sound_enabled:$('sound-enabled').checked,sound_volume:Number($('sound-volume').value)};
     Object.assign(next,{grip_strength:Number($('grip-strength').value),local_practice:$('local-practice').checked,practice_hp:Number($('practice-hp').value),practice_damage:Number($('practice-damage').value)});
     Object.assign(next,{practice_blade_length:Number($('practice-blade-length').value),practice_radius:Number($('practice-radius').value),practice_height:Number($('practice-height').value)});
     pendingSave = true;
@@ -137,7 +139,7 @@
     preview = {...data,clips}; currentClip = 0; elapsed = 0;
     $('preview-clip').replaceChildren(...clips.map((clip,index) => { const option = document.createElement('option'); option.value = String(index); option.textContent = clip.label || `源动作 #${clip.slot}`; return option; }));
     $('preview-clip').disabled = false;
-    $('preview-note').textContent = '源骨骼离线预览 · 女管理员姿势、握刀与实际位移需在游戏中检查。';
+    $('preview-note').textContent = '原版源骨骼离线预览；登龙下降为展示控制。莱万汀与女管理员的握刀、姿势和位移需进游戏检查。';
     $('load-preview').hidden = true;
   }
   $('preview-clip').onchange = () => { currentClip = Number($('preview-clip').value); elapsed = 0; };

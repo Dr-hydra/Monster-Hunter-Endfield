@@ -2,6 +2,8 @@
 #include <Windows.h>
 #include <nlohmann/json.hpp>
 #include "core.h"
+#include "character_binding.h"
+#include "visual_weapon.h"
 #include "retarget.h"
 #include "weapon_pose.h"
 #include "grip.h"
@@ -41,6 +43,7 @@ std::string detail="等待游戏运行时", phase="waiting";
 Controller controller;
 AudioPlayer soundPlayer;
 AudioTimeline soundTimeline;
+VisualWeapon::ManagedVisualWeapon visualWeapon;
 std::map<std::string,PcmClip> soundClips;
 bool soundReady=false;
 std::string soundDetail="等待音效资源";
@@ -49,7 +52,7 @@ std::map<std::string,std::string> soundLabels;
 uint64_t soundCueCount=0;
 int configuredIdleSlot=1;
 struct Configuration {
- bool enabled=true, root_motion=true, show_prop=true, sound_enabled=true, local_practice=false;
+ bool enabled=true, root_motion=true, show_prop=true, sound_enabled=true, local_practice=false, laevatain_blade=true;
  int toggle_key=VK_F8, spirit_key=VK_XBUTTON2, spirit_alt_key=VK_CONTROL;
  float speed=1,blend_seconds=.12f,buffer_seconds=.3f,sound_volume=.65f,practice_hp=1000,practice_damage=100,grip_strength=1;
  float practice_radius=.65f,practice_height=.9f,practice_blade_length=1.25f;
@@ -67,7 +70,7 @@ enum Index {MainCharacter,ModelComponent,ModelGo,Template,Valid,AliveEntity,Tran
  LineWorld,ShaderFind,MaterialCtor,RendererMaterial,MaterialColor,FrameCount,
  WeaponComponent,WeaponSetState,WeaponDisablePriority,WeaponPriorityActive,WeaponForceUpdate,
  WorldPosition,SetWorldPosition,MainCamera,AllEnemies,EntityPosition,EntityUid,EntityName,
- TerrainRaycast,TerrainSphereCast,WeaponViewPart,WeaponModel,FilterMesh,MeshBounds,MethodCount};
+ TerrainRaycast,TerrainSphereCast,WeaponViewPart,WeaponModel,FilterMesh,MeshBounds,RendererEnabled,RendererSetEnabled,MethodCount};
 Method methods[]{
  M(Game,"Beyond.Gameplay.Core","PlayerController","GetMainCharacter",nullptr,nullptr,0),
  M(Game,"Beyond.Gameplay.Core","Entity","get_modelCom",nullptr,nullptr,0),
@@ -126,12 +129,14 @@ Method methods[]{
  M(Game,"Beyond.Gameplay.View","WeaponComponent","TryGetWeaponViewPart","System.Int32|Beyond.Gameplay.View.WeaponModelViewPart&","System.Boolean",2),
  M(Game,"Beyond.Gameplay.View","BaseModelViewPart","get_model",nullptr,"UnityEngine.GameObject",0),
  M(Core,"UnityEngine","MeshFilter","get_sharedMesh",nullptr,"UnityEngine.Mesh",0),
- M(Core,"UnityEngine","Mesh","get_bounds",nullptr,"UnityEngine.Bounds",0)
+ M(Core,"UnityEngine","Mesh","get_bounds",nullptr,"UnityEngine.Bounds",0),
+ M(Core,"UnityEngine","Renderer","get_enabled",nullptr,"System.Boolean",0),
+ M(Core,"UnityEngine","Renderer","set_enabled","System.Boolean","System.Void",1)
 };
 #undef M
 static_assert(std::size(methods)==MethodCount);
 BE_ResolvedClassV1 rendererClass{},gameObjectClass{},lineClass{},materialClass{};
-BE_ResolvedClassV1 meshFilterClass{};
+BE_ResolvedClassV1 meshFilterClass{},baseRendererClass{};
 BE_ResolvedClassV1 grounderClass{};
 BE_ResolvedFieldV1 grounderSolver{},groundLayers{};
 BE_ResolvedFieldV1 templateId{};
@@ -198,9 +203,11 @@ Mat Multiply(const Mat& a,const Mat& b){Mat out;for(int r=0;r<4;++r)for(int c=0;
 struct Binding {void* transform=nullptr; void* parent=nullptr;Quat restWorld{};Vec3 restLocal{},previousPosition{},lastPosition{};
  Quat previousRotation{},lastRotation{};bool written=false,positionWritten=false;int depth=0;};
 struct Socket {Binding binding{};Vec3 handPosition{};Quat handRotation{};};
+struct RendererVisibility {void* renderer=nullptr;uint32_t pin=0;bool previous=true,written=false;};
 struct Actor {
  void* entity=nullptr;void* model=nullptr;void* root=nullptr;
  std::string character;
+ std::string skeletonPath;
  std::vector<uint32_t> pins;
  std::vector<Binding> bones;
  std::vector<int> order;
@@ -208,11 +215,14 @@ struct Actor {
  Quat sourceBasis{};bool gripAvailable=true;
  void* weapon=nullptr;int weaponHandle=-1;bool weaponHeld=false;
  std::vector<Socket> sockets;Binding weaponModel{};
+ void* equippedGo=nullptr;void* hiddenEquipment=nullptr;void* mountSocket=nullptr;
+ bool mountCaptured=false;std::string visualReason;
+ std::vector<RendererVisibility> hiddenRenderers;
  Vec3 bladeRootAxis{},bladeHandAxis{},edgeRootAxis{},modelInSocketPosition{};Quat modelInSocketRotation{};
  WeaponPose::SourceBlend weaponBlend{};WeaponPose::SourceFrame sourceWeaponFrame{};
  bool sourceWeaponActive=false;Quat gripFrameWorld{};
  std::array<bool,2> palmAligned{};
- float bladeLength=0,weaponRetry=0;bool bladeCalibrated=false;
+ float bladeLength=0,weaponRetry=0,visualFrameSeconds=0;bool bladeCalibrated=false;
  std::string weaponPoseDetail="等待武器绑定";
  void* camera=nullptr;void* cameraTransform=nullptr;
  uint32_t cameraPin=0,cameraTransformPin=0;
@@ -226,6 +236,7 @@ struct Actor {
  std::string groundDetail="等待地面校准";
 } actor;
 Json profile;
+std::map<std::string,Json> characterProfiles;
 std::array<Vec3,21> sourceRestPositions{};
 bool sourceRestReady=false;
 std::array<Quat,2> sourcePalmFrames{};
@@ -296,12 +307,54 @@ void RestoreOwned() {
   b.written=b.positionWritten=false;
  };
  restore(actor.weaponModel);for(auto& socket:actor.sockets)restore(socket.binding);
- for(auto& b:actor.bones)if(b.written&&IsAlive(b.transform)){
-  Quat q;if(Value(LocalRotation,b.transform,q)&&Close(q,b.lastRotation))SetValue(SetLocalRotation,b.transform,b.previousRotation);
-  if(b.positionWritten){Vec3 p;if(Value(LocalPosition,b.transform,p)&&Close(p,b.lastPosition))SetValue(SetLocalPosition,b.transform,b.previousPosition);}
-  b.written=b.positionWritten=false;
- }
+ for(auto& b:actor.bones)restore(b);
 }
+void RestoreEquipmentVisibility(){
+ for(auto& visibility:actor.hiddenRenderers){
+  bool current=false;
+  if(visibility.written&&IsAlive(visibility.renderer)&&Value(RendererEnabled,visibility.renderer,current)&&!current)
+   SetValue(RendererSetEnabled,visibility.renderer,visibility.previous);
+  if(visibility.pin&&api&&api->gchandle_free)api->gchandle_free(api->context,visibility.pin);
+ }
+ actor.hiddenRenderers.clear();actor.hiddenEquipment=nullptr;
+}
+void UpdateEquipmentVisibility(){
+ const bool requested=config.show_prop&&config.laevatain_blade&&visualWeapon.Ready();
+ if(!requested){visualWeapon.SetVisible(false);RestoreEquipmentVisibility();return;}
+ if(!actor.weaponHeld||!IsAlive(actor.equippedGo)){
+  visualWeapon.SetVisible(false);RestoreEquipmentVisibility();
+  actor.visualReason="原武器尚未由演示接管，保留原装备";return;
+ }
+ if(!baseRendererClass.type_object||!methods[RendererEnabled].r.method_info||!methods[RendererSetEnabled].r.method_info){
+  visualWeapon.SetVisible(false);RestoreEquipmentVisibility();
+  actor.visualReason="原装备显隐接口不可用，保留原装备";return;
+ }
+ if(actor.hiddenEquipment!=actor.equippedGo){
+  visualWeapon.SetVisible(false);RestoreEquipmentVisibility();actor.hiddenEquipment=actor.equippedGo;
+  bool include=true;void* args[]{baseRendererClass.type_object,&include};auto renderers=Call(GetComponents,actor.equippedGo,args);
+  if(Count(renderers)==0||Count(renderers)>128){actor.hiddenEquipment=nullptr;actor.visualReason="原装备显示对象未确认";return;}
+  for(int i=0;i<Count(renderers);++i){auto renderer=Item(renderers,i);bool enabled=false;
+   if(!IsAlive(renderer)||!Value(RendererEnabled,renderer,enabled)){RestoreEquipmentVisibility();actor.visualReason="原装备显示状态不可读取";return;}
+   auto pin=api->gchandle_new(api->context,renderer,1);
+   if(!pin){RestoreEquipmentVisibility();actor.visualReason="原装备对象无法保留";return;}
+   // Discover disabled LOD renderers too. If the game later enables one,
+   // record its actual pre-write state before hiding it.
+   actor.hiddenRenderers.push_back({renderer,pin,enabled,false});}
+ }
+ for(auto& visibility:actor.hiddenRenderers){bool enabled=false;
+  if(!IsAlive(visibility.renderer)||!Value(RendererEnabled,visibility.renderer,enabled)){
+   visualWeapon.SetVisible(false);RestoreEquipmentVisibility();actor.visualReason="原装备对象已变化";return;}
+  if(enabled){
+   if(!visibility.written)visibility.previous=enabled;
+   if(!SetValue(RendererSetEnabled,visibility.renderer,false)){
+    visualWeapon.SetVisible(false);RestoreEquipmentVisibility();actor.visualReason="原装备未能隐藏，保留原装备";return;}
+   visibility.written=true;
+  }
+ }
+ if(!visualWeapon.SetVisible(true)){RestoreEquipmentVisibility();actor.visualReason="演示长刀未能显示";return;}
+ actor.visualReason="独立刀身已显示；安装与火焰仍待实机校准";
+}
+
 void ReleaseWeapon() {
  if(!actor.weaponHeld||!actor.weapon)return;
  // Per-priority slots compare the handle: this releases only our state lease.
@@ -339,23 +392,29 @@ void BindWeaponSockets(const std::unordered_map<std::string,void*>& named) {
 }
 void CaptureWeaponModel() {
  using namespace Retarget;
- if(!actor.weaponHeld||actor.sockets.empty()||!methods[WeaponViewPart].r.method_info||!methods[WeaponModel].r.method_info)return;
+ if(actor.sockets.empty()||!methods[WeaponViewPart].r.method_info||!methods[WeaponModel].r.method_info){actor.equippedGo=nullptr;return;}
+ auto weapon=actor.weaponHeld?actor.weapon:Call(WeaponComponent,actor.entity);if(!weapon){actor.equippedGo=nullptr;return;}
  int index=0;void* part=nullptr;bool found=false;void* args[]{&index,&part};
- if(!Value(WeaponViewPart,actor.weapon,found,args)||!found||!part){actor.bladeCalibrated=false;actor.weaponModel={};return;}
- auto go=Call(WeaponModel,part);if(!IsAlive(go)||go==actor.model){actor.bladeCalibrated=false;actor.weaponModel={};return;}
- auto root=RootTransform(go);if(!IsAlive(root)){actor.bladeCalibrated=false;actor.weaponModel={};return;}
- if(actor.weaponModel.transform!=root){
-  actor.weaponModel={};actor.bladeCalibrated=false;actor.bladeLength=0;actor.weaponRetry=0;
-  auto parent=Call(Parent,root);if(!parent||!Pin(go)||!Pin(root)||!Pin(parent))return;
+ if(!Value(WeaponViewPart,weapon,found,args)||!found||!part){actor.equippedGo=nullptr;actor.bladeCalibrated=false;actor.weaponModel={};return;}
+ auto go=Call(WeaponModel,part);if(!IsAlive(go)||go==actor.model){actor.equippedGo=nullptr;actor.bladeCalibrated=false;actor.weaponModel={};actor.mountCaptured=false;return;}
+ auto root=RootTransform(go);if(!IsAlive(root)||root==actor.root){actor.equippedGo=nullptr;actor.bladeCalibrated=false;actor.weaponModel={};actor.mountCaptured=false;return;}
+ actor.equippedGo=go;
+ auto parent=Call(Parent,root);
+ if(actor.weaponModel.transform!=root||actor.weaponModel.parent!=parent||actor.mountSocket!=actor.sockets.front().binding.transform){
+  actor.weaponModel={};actor.mountCaptured=false;actor.bladeCalibrated=false;actor.bladeLength=0;actor.weaponRetry=0;
+  actor.mountSocket=actor.sockets.front().binding.transform;if(!parent||!Pin(go)||!Pin(root)||!Pin(parent))return;
   actor.weaponModel.transform=root;actor.weaponModel.parent=parent;
  }
  Mat modelWorld,socketWorld;
  if(!Value(WorldMatrix,root,modelWorld)||!Value(WorldMatrix,actor.sockets.front().binding.transform,socketWorld))return;
- // This relation is captured after restoring our writes, before the source
- // pose. It preserves the weapon prefab's authored mount transform.
- const auto relative=Multiply(socketWorld.inverse(),modelWorld);
- actor.modelInSocketPosition=relative.point();actor.modelInSocketRotation=relative.rotation();
- if(Len(actor.modelInSocketPosition)>.4f){actor.bladeCalibrated=false;actor.weaponPoseDetail="武器未在右手挂点，保留原生位置";return;}
+ // Sample the first near-hand runtime relation after restoring our writes.
+ // Keep it until the model, parent or socket changes; native animation must
+ // not be folded into a new installation transform every frame.
+ if(!actor.mountCaptured){
+  const auto relative=Multiply(socketWorld.inverse(),modelWorld);
+  if(Len(relative.point())>.4f){actor.bladeCalibrated=false;actor.weaponPoseDetail="武器尚未到右手挂点，保留原生位置";return;}
+  actor.modelInSocketPosition=relative.point();actor.modelInSocketRotation=relative.rotation();actor.mountCaptured=true;
+ }
  if(!actor.bladeCalibrated&&actor.entrySeconds>=actor.weaponRetry){
   actor.weaponRetry=actor.entrySeconds+.5f;WeaponPose::AxisEvidence best;Vec3 bestEdge{};
   const auto inverse=modelWorld.inverse();Vec3 grip=inverse.point(socketWorld.point());
@@ -365,7 +424,18 @@ void CaptureWeaponModel() {
    for(int i=0;i<Count(list);++i){auto component=Item(list,i);auto mesh=Call(meshMethod,component);WeaponPose::Bounds bounds;Mat world;
     if(!mesh||!Value(MeshBounds,mesh,bounds)||!Value(WorldMatrix,Call(Transform,component),world))continue;
     if(!Finite(bounds.center)||!Finite(bounds.extents)||bounds.extents.x<0||bounds.extents.y<0||bounds.extents.z<0)continue;
-    const auto meshToRoot=Multiply(inverse,world);const std::array<float,3> e{bounds.extents.x,bounds.extents.y,bounds.extents.z};
+    auto meshToRoot=Multiply(inverse,world);
+    if(meshMethod==Mesh){
+     // A skinned vertex is transformed by its bone and bind pose, not by the
+     // renderer's authored transform. Only a single-bone rigid blade admits
+     // this bounds-based calibration; deforming skins require vertex data.
+     auto skinBones=Call(Bones,component),binds=Call(Bindposes,mesh);
+     if(Count(skinBones)!=1||Count(binds)!=1)continue;
+     auto pose=Item(binds,0);auto raw=pose?api->object_unbox(api->context,pose):nullptr;
+     Mat boneWorld,bind;if(!raw||!Value(WorldMatrix,Item(skinBones,0),boneWorld))continue;
+     std::memcpy(&bind,raw,sizeof(bind));meshToRoot=Multiply(inverse,Multiply(boneWorld,bind));
+    }
+    const std::array<float,3> e{bounds.extents.x,bounds.extents.y,bounds.extents.z};
     const int axis=int(std::max_element(e.begin(),e.end())-e.begin());Vec3 half{};if(axis==0)half.x=e[0];else if(axis==1)half.y=e[1];else half.z=e[2];
     float width=0;for(int c=0;c<3;++c)if(c!=axis){Vec3 cross{};if(c==0)cross.x=e[c];else if(c==1)cross.y=e[c];else cross.z=e[c];
      width=std::max(width,2*Len(Sub(meshToRoot.point(cross),meshToRoot.point({}))));}
@@ -409,7 +479,7 @@ void ApplyWeaponSockets() {
  Mat hand;if(!Value(WorldMatrix,actor.bones[12].transform,hand))return;auto handRotation=hand.rotation();
  for(auto& socket:actor.sockets){const auto p=hand.point(socket.handPosition);const auto q=Mul(handRotation,socket.handRotation);
   WriteWeaponBinding(socket.binding,p,q);}
- if(actor.bladeCalibrated&&IsAlive(actor.weaponModel.transform)){
+ if(actor.mountCaptured&&IsAlive(actor.weaponModel.transform)){
   const auto& socket=actor.sockets.front();auto q=Mul(handRotation,socket.handRotation);
   const auto p=Retarget::Add(hand.point(socket.handPosition),Rotate(q,actor.modelInSocketPosition));
   WriteWeaponBinding(actor.weaponModel,p,Mul(q,actor.modelInSocketRotation));
@@ -420,7 +490,7 @@ void Cleanup() {
  if(!practice.targets.empty())practiceSummary=PracticeTargets();
  practice.Suspend();practice.targets.clear();enemyRefresh=0;practiceDetail=config.local_practice?"演示结束，已保留本轮统计":"本地练习未开启";
  practiceHud.Update(false,"");
- suppressInput=false;autoDemo=false;demoStep=0;controller.stop();RestoreStageMotion();RestoreOwned();ReleaseWeapon();
+ suppressInput=false;autoDemo=false;demoStep=0;controller.stop();RestoreStageMotion();RestoreOwned();RestoreEquipmentVisibility();visualWeapon.Reset();ReleaseWeapon();
  ReleaseCameraBinding();
  if(IsAlive(actor.prop)){void* args[]{actor.prop};Call(ObjectDestroy,nullptr,args);}
  if(IsAlive(actor.propMaterial)){void* args[]{actor.propMaterial};Call(ObjectDestroy,nullptr,args);}
@@ -429,8 +499,41 @@ void Cleanup() {
  if(initialized)detail="演示已结束，F8 手动 / F9 自动开始";
 }
 void Collect(void* t,std::unordered_map<std::string,void*>& map,int depth=0) {
- if(!t||depth>64||map.size()>4096)return;map.emplace(ObjectName(t),t);int n=0;
+ if(!t||depth>64||map.size()>4096)return;
+ const auto name=ObjectName(t);map.emplace(name,t);int n=0;
  if(Value(ChildCount,t,n)&&n>=0&&n<1024)for(int i=0;i<n;++i){void* args[]{&i};Collect(Call(GetChild,t,args),map,depth+1);}
+}
+struct MainSkeleton {
+ void* transform=nullptr;std::string path;
+ std::unordered_map<std::string,void*> bones;
+};
+MainSkeleton FindMainSkeleton(void* root,void* renderers){
+ std::unordered_set<void*> palette;
+ for(int r=0;r<Count(renderers);++r){auto transforms=Call(Bones,Item(renderers,r));
+  for(int i=0;i<Count(transforms);++i)if(auto bone=Item(transforms,i))palette.insert(bone);}
+ std::vector<MainSkeleton> found;std::vector<CharacterBinding::SkeletonCandidate> candidates;
+ std::size_t visited=0;
+ const auto visit=[&](auto&& self,void* transform,const std::string& path,unsigned depth)->void {
+  if(!transform||depth>64||++visited>4096)return;
+  if(ObjectName(transform)=="Bip001"){
+   MainSkeleton skeleton{transform,path,{}};Collect(transform,skeleton.bones);
+   unsigned coverage=0;bool skinned=true;
+   for(int i=0;i<21;++i){std::string name=fallback[i];
+    if(profile.contains("bones")&&profile["bones"].contains(semantic[i]))name=profile["bones"][semantic[i]].get<std::string>();
+    auto bone=skeleton.bones.find(name);
+    if(bone!=skeleton.bones.end()){++coverage;skinned=skinned&&palette.contains(bone->second);}else skinned=false;}
+   candidates.push_back({path,depth,coverage,skinned});found.push_back(std::move(skeleton));
+  }
+  int count=0;if(!Value(ChildCount,transform,count)||count<0||count>1024)return;
+  for(int i=0;i<count;++i){void* args[]{&i};auto child=Call(GetChild,transform,args);
+   const auto childName=ObjectName(child);self(self,child,path.empty()?childName:path+"/"+childName,depth+1);}
+ };
+ visit(visit,root,"",0);
+ const auto selected=CharacterBinding::SelectPrimarySkeleton(candidates,profile.value("skeleton_root_path",std::string{}));
+ return std::move(found.at(selected));
+}
+bool UnderSkeleton(void* bone,void* skeleton) {
+ for(int depth=0;bone&&depth<64;++depth){if(bone==skeleton)return true;bone=Call(Parent,bone);}return false;
 }
 
 void CreateProp() {
@@ -470,20 +573,30 @@ bool Bind() {
  Cleanup();practiceSummary=Json::array();practice.Clear();auto entity=Call(MainCharacter);bool valid=false,alive=false;
  if(!entity||!Value(Valid,entity,valid)||!valid||!Value(AliveEntity,entity,alive)||!alive){detail="当前角色尚未就绪";return false;}
  auto data=Call(Template,entity);auto id=data?api->field_get_value_object(api->context,templateId.field_info,data):nullptr;
- auto character=Text(id);if(character!="chr_0003_endminf"){detail="第一版仅适配女管理员，请切换主控角色";return false;}
+ auto character=Text(id);auto selectedProfile=characterProfiles.find(character);
+ if(selectedProfile==characterProfiles.end()){detail="当前支持莱万汀和女管理员，请切换主控角色";return false;}
+ profile=selectedProfile->second;
+ const auto practiceAxis=profile.value("practice_blade_axis",std::vector<float>{0,0,1});
+ practiceBladeAxis=Retarget::Normalize({practiceAxis[0],practiceAxis[1],practiceAxis[2]});
  auto com=Call(ModelComponent,entity);auto model=com?Call(ModelGo,com):nullptr;
  if(!IsAlive(model)){detail="角色模型未就绪";return false;}
  actor.entity=entity;actor.model=model;actor.root=RootTransform(model);actor.character=character;
  if(!actor.root||!Pin(entity)||!Pin(model)||!Pin(actor.root)){Cleanup();detail="无法保留角色对象";return false;}
- std::unordered_map<std::string,void*> named;Collect(actor.root,named);
- std::unordered_map<void*,Mat> rest;
  auto type=rendererClass.type_object;bool include=true;void* args[]{type,&include};auto renderers=Call(GetComponents,model,args);
+ auto skeleton=FindMainSkeleton(actor.root,renderers);actor.skeletonPath=skeleton.path;
+ std::unordered_map<std::string,void*> named;
+ auto rigRoot=Call(Parent,skeleton.transform);
+ Collect(rigRoot?rigRoot:skeleton.transform,named);
+ // Anatomical bones and finger roots always come from the selected skinned
+ // skeleton identity. Sibling IK sockets retain the primary rig's paths.
+ for(const auto& [name,bone]:skeleton.bones)if(name.starts_with("Bip001"))named[name]=bone;
+ std::unordered_map<void*,Mat> rest;
  Mat modelWorld;if(!Value(WorldMatrix,actor.root,modelWorld))throw std::runtime_error("Model matrix unavailable");auto modelInverse=modelWorld.inverse();
  for(int r=0;r<Count(renderers);++r){auto renderer=Item(renderers,r);auto mesh=Call(Mesh,renderer);auto transforms=Call(Bones,renderer);auto poses=mesh?Call(Bindposes,mesh):nullptr;
   int count=Count(transforms);if(count<30||count!=Count(poses))continue;
   Mat renderWorld;if(!Value(WorldMatrix,Call(Transform,renderer),renderWorld))continue;
   auto rendererInModel=Multiply(modelInverse,renderWorld);
-  for(int j=0;j<count;++j){auto trans=Item(transforms,j);auto pose=Item(poses,j);auto raw=pose?api->object_unbox(api->context,pose):nullptr;if(!trans||!raw)continue;
+  for(int j=0;j<count;++j){auto trans=Item(transforms,j);auto pose=Item(poses,j);auto raw=pose?api->object_unbox(api->context,pose):nullptr;if(!trans||!raw||!UnderSkeleton(trans,skeleton.transform))continue;
    Mat bind;std::memcpy(&bind,raw,sizeof(bind));rest.emplace(trans,Multiply(rendererInModel,bind.inverse()));}
  }
  actor.bones.resize(21);
@@ -529,13 +642,24 @@ bool Bind() {
  float foot=std::min({rest.at(actor.bones[15].transform).point().y,rest.at(actor.bones[16].transform).point().y,
   rest.at(actor.bones[19].transform).point().y,rest.at(actor.bones[20].transform).point().y});
  actor.soleOffset=std::clamp(foot,-.10f,.15f);
- actor.scale=std::clamp((hip-foot)/1.0461f,.5f,2.f);
+ float sourceHeight=1.0461f;
+ if(sourceRestReady){
+  const float sourceHip=Rotate(actor.sourceBasis,sourceRestPositions[0]).y;
+  float sourceFoot=std::numeric_limits<float>::max();
+  for(int index:{15,16,19,20})sourceFoot=std::min(sourceFoot,Rotate(actor.sourceBasis,sourceRestPositions[index]).y);
+  const float measured=sourceHip-sourceFoot;
+  if(std::isfinite(measured)&&measured>.2f&&measured<3.f)sourceHeight=measured;
+ }
+ actor.scale=std::clamp((hip-foot)/sourceHeight,.5f,2.f);
  BindGroundQueries();lastSound.clear();soundCueCount=0;
  BindWeaponSockets(named);
- if(!HoldEquippedWeapon())CreateProp();
+ const bool holding=HoldEquippedWeapon();
+ if(holding&&config.show_prop&&config.laevatain_blade&&profile.contains("visual_weapon"))
+  visualWeapon.Bind(api,profile.at("visual_weapon"));
+ if(!holding&&!visualWeapon.Available())CreateProp();
  if(!controller.start(configuredIdleSlot))throw std::runtime_error("Idle clip unavailable");
  suppressInput=true;phase="active";detail="动作演示已接管输入";
- Log("Bound female administrator from mesh bindposes; bones=21");return true;
+ Log("Bound "+character+" from main skinned bindposes; skeleton="+actor.skeletonPath+" bones=21");return true;
 }
 
 bool SkipGrip(){
@@ -688,7 +812,14 @@ bool ApplyPose() {
   }
  }
  if(!UpdateSourceGrip(modelRotation)||!ApplyGrip(blend))return false;
- ApplyWeaponSockets();return true;
+ ApplyWeaponSockets();
+ if(visualWeapon.Available()){
+  void* socket=nullptr;
+  for(const auto& entry:actor.sockets)if(ObjectName(entry.binding.transform)=="wep_R"){socket=entry.binding.transform;break;}
+  if(!socket&&!actor.sockets.empty())socket=actor.sockets.front().binding.transform;
+  visualWeapon.Tick(socket,actor.visualFrameSeconds);
+ }
+ UpdateEquipmentVisibility();return true;
 }
 
 using ObjectClassFn=void*(__cdecl*)(void*);
@@ -734,6 +865,14 @@ void TickPractice(float dt){
  if(actor.bladeCalibrated&&!actor.sockets.empty()){
   Mat hand;if(Value(WorldMatrix,actor.bones[12].transform,hand))grip=hand.point(actor.sockets.front().handPosition);}
  auto tip=Retarget::Add(grip,Rotate(rotation,Retarget::Scale(bladeAxis,config.practice_blade_length*actor.scale)));
+ if(visualWeapon.Visible()){
+  Mat weaponWorld;
+  if(!Value(WorldMatrix,visualWeapon.RootTransform(),weaponWorld)){practice.Suspend();return;}
+  // The independent blade has its own verified skinned axis and root. Its
+  // length follows the native mesh evidence, not the equipped sword's axis.
+  grip=weaponWorld.point();
+  tip=weaponWorld.point(Retarget::Scale(visualWeapon.BladeAxis(),visualWeapon.Length()));
+ }
  practice.Update(controller.motionSerial,controller.slot,controller.seconds,grip,tip,config.practice_damage);
  practiceDetail=practice.targets.empty()?"20 米内暂无可用怪物":"本地模拟中；不修改怪物真实血量";
 }
@@ -741,10 +880,16 @@ std::string RoundedAmount(double value){char buffer[64]{};std::snprintf(buffer,s
 
 uint32_t previousBits=0;bool previousToggle=false,previousEscape=false,previousDemo=false,resyncFocusKeys=false;int lastFrame=-1;
 void ResetKeys() {previousBits=0;previousToggle=false;previousEscape=false;previousDemo=false;resyncFocusKeys=false;}
-constexpr Command demoSequence[]{Command::Slash,Command::Slash,Command::Thrust,Command::Slash,
- Command::Spirit,Command::Spirit,Command::Spirit,Command::Spirit,
+bool ActorIdentityIsCurrent(void* current) {
+ bool alive=false;
+ if(current!=actor.entity||!IsAlive(actor.model)||!Value(AliveEntity,current,alive)||!alive)return false;
+ const auto component=Call(ModelComponent,current);
+ return component&&Call(ModelGo,component)==actor.model;
+}
+constexpr Command demoSequence[]{Command::Slash,Command::Slash,Command::Slash,Command::Thrust,Command::Slash,
+ Command::Spirit,Command::Spirit,Command::Spirit,Command::Spirit,Command::Spirit,
  Command::Fade,Command::Slash,Command::Foresight,
- Command::Spirit,Command::Spirit,Command::Spirit,Command::Spirit,
+ Command::Spirit,Command::Spirit,Command::Spirit,Command::Spirit,Command::Spirit,
  Command::Sheathe,Command::Iai,Command::Slash,Command::Sheathe,Command::IaiSpirit,
  Command::Helm,Command::Sheathe,Command::NormalSheathe};
 float DemoDelay(Command command,const Clip& clip,size_t nextStep) {
@@ -792,8 +937,8 @@ void Frame(float dt) {
   detail=autoDemo?"自动演示中；攻击键切回手动，F8/Esc 结束":"已切回手动演示";
  }
  if(!actor.model)return;
- auto current=Call(MainCharacter);bool alive=false;
- if(current!=actor.entity||!IsAlive(actor.model)||!Value(AliveEntity,current,alive)||!alive){Cleanup();detail="角色切换或模型释放，演示已退出";return;}
+ auto current=Call(MainCharacter);
+ if(!ActorIdentityIsCurrent(current)){Cleanup();detail="角色切换或模型替换，演示已退出";return;}
  if(previewRequest>=0){autoDemo=false;controller.start(previewRequest);previewRequest=-1;}
  auto bits=KeyBits();const auto edges=bits&~previousBits;
  if(edges||!commands.empty()){autoDemo=false;detail="手动演示中，F9 可切换自动演示";}
@@ -801,7 +946,7 @@ void Frame(float dt) {
  for(auto c:commands)controller.input(c);commands.clear();
  auto step=std::clamp(dt,0.f,.1f)*config.speed;float remaining=step;
  while(remaining>0){float sub=std::min(remaining,1.f/120);TickDemo(sub);controller.tick(sub);remaining-=sub;}
- actor.entrySeconds+=step;
+ actor.entrySeconds+=step;actor.visualFrameSeconds=std::clamp(dt,0.f,.25f);
  if(!controller.active){Cleanup();return;}
  if(!ApplyPose()){Cleanup();detail="姿势绑定失效，已恢复原生控制";return;}
  try{TickPractice(dt);}catch(const std::exception& e){practice.Suspend();practice.targets.clear();practiceDetail=std::string("怪物读取暂不可用：")+e.what();}
@@ -894,6 +1039,7 @@ bool Resolve() {
  api->resolve_class(api->context,Core,"UnityEngine","LineRenderer",&lineClass);
  api->resolve_class(api->context,Core,"UnityEngine","Material",&materialClass);
  api->resolve_class(api->context,Core,"UnityEngine","MeshFilter",&meshFilterClass);
+ api->resolve_class(api->context,Core,"UnityEngine","Renderer",&baseRendererClass);
  api->resolve_class(api->context,"RootMotion.dll","RootMotion.FinalIK","Grounder",&grounderClass);
  BE_FieldDescriptorV1 solverField{"RootMotion.dll","RootMotion.FinalIK","Grounder","solver","RootMotion.FinalIK.Grounding"};
  BE_FieldDescriptorV1 layerField{"RootMotion.dll","RootMotion.FinalIK","Grounding","layers","UnityEngine.LayerMask"};
@@ -929,12 +1075,14 @@ Json PracticeTargets(){
 }
 Json Status() {
  Json targets=PracticeTargets();if(!controller.active&&targets.empty())targets=practiceSummary;
- return Json{{"runtime_ready",ready},{"active",controller.active},{"slot",controller.slot},{"character",actor.character},{"detail",detail},{"phase",phase},{"auto_demo",autoDemo},{"demo_step",demoStep},{"demo_seconds",DemoDuration()},{"weapon_mode",actor.weaponHeld?"equipped":(actor.prop?"fallback":"none")},{"sound_ready",soundReady},{"sound_enabled",config.sound_enabled},{"sound_detail",!config.sound_enabled?"音效已关闭":(config.sound_volume==0?"音量为零":soundDetail)},
+ return Json{{"runtime_ready",ready},{"active",controller.active},{"slot",controller.slot},{"character",actor.character},{"detail",detail},{"phase",phase},{"auto_demo",autoDemo},{"demo_step",demoStep},{"demo_seconds",DemoDuration()},{"weapon_mode",visualWeapon.Visible()?"laevatain":(actor.weaponHeld?"equipped":(actor.prop?"fallback":"none"))},{"sound_ready",soundReady},{"sound_enabled",config.sound_enabled},{"sound_detail",!config.sound_enabled?"音效已关闭":(config.sound_volume==0?"音量为零":soundDetail)},
   {"last_sound",lastSound},{"last_sound_label",soundLabels.contains(lastSound)?soundLabels.at(lastSound):""},{"sound_cues",soundCueCount},{"ground_detail",actor.groundDetail},{"ground_correction",actor.groundCorrection},
   {"practice",{{"enabled",config.local_practice},{"ready",practiceReady},{"detail",practiceDetail},{"targets",targets},
    {"hits",practice.hits},{"total",practice.total},{"last_damage",practice.lastDamage},{"last_target",practice.lastTarget},{"summary",!controller.active}}},
   {"grip_ready",actor.gripAvailable},{"grip_detail",actor.gripAvailable?"辅助握刀可用":"辅助握刀不可用，已保留基础重定向"},
-  {"blade_calibrated",actor.bladeCalibrated},{"weapon_pose_detail",actor.weaponPoseDetail},
+  {"blade_calibrated",visualWeapon.Visible()||actor.bladeCalibrated},{"weapon_pose_detail",actor.weaponPoseDetail},
+  {"visual_weapon_ready",visualWeapon.Ready()},{"visual_weapon_visible",visualWeapon.Visible()},{"visual_weapon_detail",actor.visualReason.empty()?visualWeapon.Status():actor.visualReason},{"laevatain_blade",config.laevatain_blade},
+  {"skeleton_path",actor.skeletonPath},{"supported_characters",Json::array({"chr_0016_laevat","chr_0003_endminf"})},
   {"palm_aligned_left",actor.palmAligned[0]},{"palm_aligned_right",actor.palmAligned[1]}};
 }
 void Configure(const char* raw) {
@@ -942,7 +1090,7 @@ void Configure(const char* raw) {
  auto j=Json::parse(raw);if(!j.is_object())throw std::runtime_error("Configuration must be object");Configuration c;
  c.enabled=j.value("enabled",true);c.root_motion=j.value("root_motion",true);c.show_prop=j.value("show_prop",true);
  c.sound_enabled=j.value("sound_enabled",true);
- c.local_practice=j.value("local_practice",false);
+ c.local_practice=j.value("local_practice",false);c.laevatain_blade=j.value("laevatain_blade",true);
  auto key=[&](const char* name,int defaultKey){auto k=j.value(name,defaultKey);if(k<1||k>255)throw std::runtime_error(name);return k;};
  c.toggle_key=key("toggle_key",VK_F8);c.spirit_key=key("spirit_key",VK_XBUTTON2);c.spirit_alt_key=key("spirit_alt_key",VK_CONTROL);
  auto number=[&](const char* name,float defaultValue,float min,float max){float n=j.value(name,defaultValue);if(!std::isfinite(n)||n<min||n>max)throw std::runtime_error(name);return n;};
@@ -956,7 +1104,7 @@ void Configure(const char* raw) {
  if(practiceResetRequest&&!controller.active){practice.Clear();practiceSummary=Json::array();practiceResetRequest=false;}
  if(c.practice_radius!=config.practice_radius||c.practice_height!=config.practice_height||c.practice_blade_length!=config.practice_blade_length){practice.Suspend();enemyRefresh=0;}
  if(!c.sound_enabled||c.sound_volume==0){soundPlayer.Stop();soundTimeline.Mute();}
- if(!c.enabled||c.show_prop!=config.show_prop)cleanupPending=actor.model!=nullptr;
+ if(!c.enabled||c.show_prop!=config.show_prop||c.laevatain_blade!=config.laevatain_blade)cleanupPending=actor.model!=nullptr;
  if(!c.enabled){suppressInput=false;soundPlayer.Stop();practiceHud.Update(false,"");}
  config=c;controller.transitionSeconds=c.blend_seconds;controller.bufferSeconds=c.buffer_seconds;
 }
@@ -1000,9 +1148,17 @@ void ReadAssets() {
  controller.clips.clear();for(auto& entry:catalog){auto file=entry.at("file").get<std::string>();auto relative=std::filesystem::path(file);
   if(relative.has_parent_path()||relative.is_absolute()||relative.extension()!=L".lsm")throw std::runtime_error("Invalid clip path");
   auto clip=ReadClip(assets/relative,21);clip.slot=entry.at("slot").get<int>();controller.clips.emplace(clip.slot,std::move(clip));}
- profile=read(packageRoot/L"profiles/female_admin.json");if(profile.at("character_id")!="chr_0003_endminf")throw std::runtime_error("Unexpected character profile");
+ characterProfiles.clear();
+ for(const auto& [file,id]:std::array<std::pair<const wchar_t*,const char*>,2>{{
+   {L"female_admin.json","chr_0003_endminf"},{L"laevatain.json","chr_0016_laevat"}}}){
+  auto selected=read(packageRoot/L"profiles"/file);
+  if(selected.at("character_id")!=id)throw std::runtime_error("Unexpected character profile");
+  const auto axis=selected.value("practice_blade_axis",std::vector<float>{0,0,1});
+  if(axis.size()!=3||!Finite(Vec3{axis[0],axis[1],axis[2]})||Retarget::Len({axis[0],axis[1],axis[2]})<1e-5f)throw std::runtime_error("Invalid practice blade axis");
+  characterProfiles.emplace(id,std::move(selected));
+ }
+ profile=characterProfiles.at("chr_0003_endminf");
  const auto axis=profile.value("practice_blade_axis",std::vector<float>{0,0,1});
- if(axis.size()!=3||!Finite(Vec3{axis[0],axis[1],axis[2]})||Retarget::Len({axis[0],axis[1],axis[2]})<1e-5f)throw std::runtime_error("Invalid practice blade axis");
  practiceBladeAxis=Retarget::Normalize({axis[0],axis[1],axis[2]});
  auto source=read(assets/L"source_rig.json");sourceRestReady=false;
  for(int i=0;i<21;++i){const auto& p=source.at("bones").at(semantic[i]).at("position");

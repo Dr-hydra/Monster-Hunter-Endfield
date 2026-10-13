@@ -58,3 +58,12 @@ config.local.*
 *.obj
 *.ilk
 *.lib
+
+.playwright-cli/
+.playwright/
+
+# Original source/control files and decoding payloads remain local
+/research/mhw-original/**
+!/research/mhw-original/README.md
+/research/endfield-swings/**
+!/research/endfield-swings/README.md

@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "character_id": "chr_0003_endminf",
+  "label": "女管理员",
+  "experimental": true,
+  "bones": {
+    "hips": "Bip001_Pelvis",
+    "spine": "Bip001_Spine",
+    "chest": "Bip001_Spine1",
+    "neck": "Bip001_Neck",
+    "head": "Bip001_Head",
+    "left_shoulder": "Bip001_L_Clavicle",
+    "left_upper_arm": "Bip001_L_UpperArm",
+    "left_lower_arm": "Bip001_L_Forearm",
+    "left_hand": "Bip001_L_Hand",
+    "right_shoulder": "Bip001_R_Clavicle",
+    "right_upper_arm": "Bip001_R_UpperArm",
+    "right_lower_arm": "Bip001_R_Forearm",
+    "right_hand": "Bip001_R_Hand",
+    "left_upper_leg": "Bip001_L_Thigh",
+    "left_lower_leg": "Bip001_L_Calf",
+    "left_foot": "Bip001_L_Foot",
+    "left_toes": "Bip001_L_Toe0",
+    "right_upper_leg": "Bip001_R_Thigh",
+    "right_lower_leg": "Bip001_R_Calf",
+    "right_foot": "Bip001_R_Foot",
+    "right_toes": "Bip001_R_Toe0"
+  },
+  "practice_blade_axis": [
+    0,
+    1,
+    0
+  ],
+  "blade_direction": [
+    0,
+    1,
+    0
+  ],
+  "weapon": {
+    "length_m": 1.25,
+    "source": "Original serialized chr_0003_endminf wep_R socket; preserve equipped model mount",
+    "sockets": [
+      {
+        "name": "wep_R",
+        "hand_position": [
+          -0.07108322,
+          0.022352904,
+          1.8954276e-07
+        ],
+        "hand_rotation_xyzw": [
+          0.7071068,
+          4.840302e-08,
+          1.4817244e-08,
+          0.7071067
+        ]
+      },
+      {
+        "name": "IK_Weapon_R_001",
+        "hand_position": [
+          -0.07108322,
+          0.022352904,
+          1.8954276e-07
+        ],
+        "hand_rotation_xyzw": [
+          0.7071068,
+          4.840302e-08,
+          1.4817244e-08,
+          0.7071067
+        ]
+      }
+    ]
+  },
+  "evidence": {
+    "source": "research/expansion-20261013/endfield-adaptation-evidence.json",
+    "runtime_verified": false,
+    "ik_socket_rule": "Independent IK weapon target follows the native wep_R hand calibration; no inferred blade direction overrides"
+  }
+}

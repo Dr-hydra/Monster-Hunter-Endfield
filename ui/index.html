@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>太刀动作演示</title>
+  <title>Monster Hunter Endfield · 太刀</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main>
     <header>
-      <div><p class="eyebrow">LONGSWORD / 04</p><h1>一刀，接下一刀。</h1><p class="intro">女管理员 · 怪物猎人风格动作演示</p></div>
+      <div><p class="eyebrow">MONSTER HUNTER ENDFIELD / 06</p><h1>一刀，接下一刀。</h1><p class="intro">莱万汀／女管理员 · 太刀动作演示</p></div>
       <span class="badge" id="connection">正在读取状态</span>
     </header>
     <section class="hero" aria-label="动作展示">
@@ -21,13 +21,13 @@
         <div class="actions"><button class="primary" id="demo">自动演示 · F9</button><button id="toggle">手动切换 · F8</button><button id="stop">结束</button></div>
         <p class="hint" id="demo-info">自动演示从普通斩、气刃、见切、居合一直到登龙；按攻击键即可接管。</p>
         <p class="hint">普通挥刀使用终末地原声；气刃、见切、居合、纳刀与登龙使用怪猎音效。声音统一播放，见切成功声仅作演示提示。</p>
-        <p class="hint">第一版适配女管理员；动作资源预览与游戏内表现分别验证。</p>
+        <p class="hint">重点适配莱万汀，并保留女管理员。太刀素材按原版逐段核对；登龙飞行、握刀安装和火焰仍需实机校准。</p>
       </div>
       <div class="preview">
         <canvas id="motion" aria-label="怪猎源骨骼动作预览"></canvas>
         <div class="preview-caption"><span id="preview-title">源骨骼预览</span><button class="text-button" id="pause" aria-label="暂停预览">暂停</button></div>
         <div class="preview-controls"><label class="sr-only" for="preview-clip">预览动作</label><select id="preview-clip" disabled><option>正在载入动作</option></select><label class="file-button" id="load-preview">载入预览文件<input id="preview-file" type="file" accept=".json,application/json"></label></div>
-        <p class="hint" id="preview-note">这里显示源骨骼，用于确认动作；女管理员握刀与重定向需在游戏中检查。</p>
+        <p class="hint" id="preview-note">这里显示源骨骼，用于确认动作；角色握刀与重定向需在游戏中检查。</p>
       </div>
     </section>
     <div class="columns">
@@ -47,6 +47,8 @@
           <label class="setting-row" for="buffer"><span>提前输入<small>保留下一招的输入</small></span><span class="number-control"><input id="buffer" type="number" min="0.08" max="1" step="0.01" value="0.3">秒</span></label>
           <label class="switch-row"><span>跟随动作位移<small>角色随源动作移动</small></span><input id="root-motion" type="checkbox" checked></label>
           <label class="switch-row"><span>保持武器显示<small>演示时握持装备长剑，结束后恢复</small></span><input id="show-prop" type="checkbox" checked></label>
+          <label class="switch-row"><span>莱万汀演示长刀<small>独立刀身；关闭后沿用装备</small></span><input id="laevatain-blade" type="checkbox"></label>
+          <p class="hint" id="visual-weapon-detail">长刀使用独立刀身和原生材质，安装与火焰待实机校准；其他角色继续使用装备武器。</p>
           <label class="setting-row" for="grip-strength"><span>双手握刀校正<small>只在源动作双手靠近时校正左手；设为 0 可关闭</small></span><span class="range-control"><input id="grip-strength" type="range" min="0" max="1" step="0.05" value="1"><output id="grip-strength-value">100%</output></span></label>
           <label class="switch-row"><span>本地怪物练习 · 实验<small>附近怪物作为目标，只扣除模拟血量</small></span><input id="local-practice" type="checkbox"></label>
           <label class="setting-row" for="practice-hp"><span>模拟血量<small>每个练习目标的独立血量</small></span><input id="practice-hp" type="number" min="1" max="1000000" value="1000"></label>
@@ -75,7 +77,7 @@
       <div class="sound-buttons"><button type="button" data-audio="audio-foresight" data-sound-label="见切">试听见切</button><button type="button" data-audio="audio-iai" data-sound-label="小居合">试听小居合</button><button type="button" data-audio="audio-helm" data-sound-label="登龙">试听登龙</button><span id="audio-preview-state" class="hint" role="status">网页试听为原文件音量；游戏内播放会自动平衡音量。</span></div>
       <audio id="audio-foresight" preload="none" src="../assets/audio/367971202.wav"></audio>
       <audio id="audio-iai" preload="none" src="../assets/audio/12607224.wav"></audio>
-      <audio id="audio-helm" preload="none" src="../assets/audio/35004545.wav"></audio>
+      <audio id="audio-helm" preload="none" src="../assets/audio/280637586.wav"></audio>
       <p class="hint"><button type="button" data-audio="audio-swing" data-sound-label="普通挥刀 · 终末地原声">试听普通挥刀</button> 普通招式与怪猎招式共用音效开关和音量。</p>
       <audio id="audio-swing" preload="none" src="../assets/audio/endfield_swing_1.wav"></audio>
     </section>
@@ -100,7 +102,7 @@
       <p class="example">试试：<strong>左键 → 右键 → 左键 → 气刃连段</strong>，或斩击后按 <strong>气刃键 + 空格</strong>，再接居合。</p>
     </section>
     <details class="panel debug"><summary>动作检查</summary><p class="hint">按动作编号播放，帮助检查动作映射。1000 为组合登龙；编号与姿势仍需实机确认。</p><form id="slot-form"><label for="slot">源动作编号</label><input id="slot" type="number" min="0" max="1000" step="1" value="1"><button type="submit">播放此动作</button></form><pre id="log" aria-live="polite">尚无消息</pre></details>
-    <footer><span>太刀动作演示 · 0.5.5-dev</span><span>首版校准：女管理员 · Windows x64</span></footer>
+    <footer><span>太刀动作演示 · 0.6.0-dev</span><span>优先适配：莱万汀 · Windows x64</span></footer>
   </main>
   <script src="preview-data.js"></script>
   <script src="app.js"></script>

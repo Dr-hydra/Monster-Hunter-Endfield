@@ -4,25 +4,30 @@
 
 ## 动作与骨架资源
 
-动作来自用户提供的 `RiseStyleLongSowrd No GUI Version-7113-1-6-1729133246.rar`，骨架参考来自用户提供的 `ZXC.MHW.10.25.33.rar`。`ValorLongSword 0.16.33 8848 1 2026-10-12T08-57Z NYHNOo2J9.zip` 用于研究对照。研究过程保留原始来源名称；本包仅包含由源骨架烘焙出的动作数据和离线预览，不附带原始模型、纹理、LMT 或 MOD3。
+0.6.0-dev 主要动作来自用户本机完整《怪物猎人：世界》，按 13 个 chunk 的数字覆盖定向提取；154 个原版条目可无父动作上下文完整求值。实验登龙连接原版阶段并补展示下降；4 个上下文待确认的旧条目明确标为 Legacy，来自用户提供的 `RiseStyleLongSowrd No GUI Version-7113-1-6-1729133246.rar`。骨架参考保留 `ZXC.MHW.10.25.33.rar`，Valor MOD 用于对照。本包不附带原 LMT、MOD3、FSM、MBD 或完整游戏模型。
 
 《怪物猎人》相关资源版权属于 CAPCOM 及相应权利人，改制动作和外观模组的权利归相应作者。本地持有压缩包不代表获得了对外重新分发授权；发布含烘焙动作的包前，应确认原资源与模组作者允许的使用和分发范围。
 
-《明日方舟：终末地》相关名称、角色与游戏资源属于其相应权利人。本模块不附带女管理员模型或游戏程序。
+《明日方舟：终末地》相关名称、角色与资源属于相应权利人。本模块不附带角色模型、莱万汀武器 mesh/material 或游戏程序；刀身运行时从用户客户端读取并创建纯视觉实例。
 
 ## 音效
 
-音效来自用户提供的 `太刀见切音效增强.zip` 内 `wp03_swo_epvsp.nbnk`，使用其中 11 条解码媒体，不附带原始 bank。用户说明该包可能对部分怪猎原声提高分贝；本项目没有将原 bank 的 Wwise 容器音量烘焙进 WAV，展示音量单独调整。招式标签参考用户提供的上木光子 / bilibili 光子Proton 于 2020/7/13 制作的太刀音效对照表，原作者提示可能有误。音效资源的权利归其相应权利人，不受本项目源码许可证覆盖。
+本版 22 条怪猎 PCM 音源重新从用户本机原版 `wp03_swo_epvsp.nbnk` 提取，不再以“太刀见切音效增强.zip”为运行音源。不附带原 bank，不烘焙其 Wwise 容器音量，展示音量单独平衡。招式标签参考用户提供的上木光子 / bilibili 光子Proton 于 2020/7/13 制作的对照表，原作者提示可能有误；触发时间为展示配置，原生音频时序尚未完整解出。音效不受源码许可证覆盖。
 
 音频处理参考 Better Endfield 的 `music/module.cpp` 与 `music/local_track.inc` 中的 PCM 调度、软件音量和退出清理方式；本模块短音效使用独立 WinMM 播放，无需安装 Better Endfield 音乐模块。
 
 普通挥刀另使用本机当前《明日方舟：终末地》客户端中的 3 条管理员普攻 SFX：`au_chr_0003_endmin_attack1/2/3` 各一个随机变体，对应 Media 929949674、198925091、484159784。按用户要求离线解码为 WAV，并使用同一 PCM 播放链路；不调用游戏原声事件。资源属于终末地相应权利人，不受本项目源码许可证覆盖。原始 PCK、BNK、WEM 和游戏配置不随包分发。
+
+三段根据当前有效 VFS 的 Wwise v150 可达 Sound/sourceID 重新核验。Bank 与媒体分置 Audit 命名空间的 banks/stream 两包；不将旧缓存与当前 manifest 认作一致。见 [普通挥刀来源](research/endfield-swings/README.md)。
 
 ## 研究工具
 
 - [MHW Anim Tools](https://github.com/wowo-dot/mhw-anim-tools)，作者 wowo，MIT License。用于解析和烘焙动作；工具本身不随运行包提供。
 - [MHW Model Editor](https://github.com/chikichikibangbang/MHW_Model_Editor)，用于参考 MOD3 骨架格式和导入流程；工具本身不随运行包提供，许可证以其仓库为准。
 - [vgmstream](https://github.com/vgmstream/vgmstream)，用于将音效包中的 WEM 离线解码为 16-bit PCM WAV；解码工具不随运行包提供。
+- [ooz](https://github.com/powzix/ooz)，本地定向解压工具；自编译 DLL 不链接或随模组发布，许可按其仓库条件。
+- [MHW-Fsm](https://github.com/Strackeror/MHW-Fsm)、Construct 和 [EVWP 模板](https://github.com/zStatykz/MHW_EVWP_Template)，离线核对动作控制和装配，不随运行包发布。
+- [Blender](https://www.blender.org/)，本机 4.5.14 LTS portable 用于烘焙与预览；程序不随模组提供。
 - [E Mod Loader](https://github.com/Dr-hydra/Endfield-Mod-Loader)，本模块遵循其 format 1 / Native ABI 1 SDK，宿主程序不随本包提供。
 - SDK 头文件和输入拦截研究来自 E Mod Loader / Better Endfield，遵循 AGPL-3.0-only；本项目源码使用相同许可证，完整文本见 `LICENSE`。
 - [nlohmann/json](https://github.com/nlohmann/json)，3.12.0，Copyright (c) 2013–2025 Niels Lohmann，MIT License。单头文件保留在 `third_party/include/nlohmann/json.hpp`，编译进原生模块；其 MIT 许可条件与下方全文一致。
