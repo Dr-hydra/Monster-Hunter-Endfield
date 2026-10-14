@@ -26,6 +26,10 @@ public:
    auto target=source;auto old=targets.find(target.id);target.hp=old==targets.end()?maximumHP:std::clamp(old->second.hp,0.f,maximumHP);next.emplace(target.id,std::move(target));}
   targets=std::move(next);
  }
+ bool Strike(uint32_t id,float damage){
+  if(!std::isfinite(damage)||damage<=0)return false;auto found=targets.find(id);if(found==targets.end()||found->second.hp<=0)return false;
+  auto& target=found->second;const auto amount=std::min(target.hp,damage);target.hp-=amount;lastDamage=amount;lastTarget=target.name;total+=amount;++hits;return true;
+ }
  void Update(uint64_t motion,int slot,float seconds,Vec3 grip,Vec3 tip,float damage){
   using namespace Retarget;
   if(!std::isfinite(seconds)||seconds<0||!Finite(grip)||!Finite(tip)||!std::isfinite(damage)||damage<0){Suspend();return;}

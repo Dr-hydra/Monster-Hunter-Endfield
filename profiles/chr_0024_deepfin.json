@@ -1,0 +1,4813 @@
+{
+  "schema": 2,
+  "schema_version": 2,
+  "character_id": "chr_0024_deepfin",
+  "display_name": "阿列什",
+  "label": "阿列什",
+  "mode": "longsword",
+  "supported_modes": [
+    "longsword",
+    "sword_shield",
+    "greatsword",
+    "lance",
+    "light_bowgun",
+    "bow"
+  ],
+  "status": "offline-profile-qualified",
+  "experimental": false,
+  "skeleton_root_path": "chr_0024_deepfin_postmodel/Root/Bip001",
+  "bones": {
+    "hips": "Bip001_Pelvis",
+    "spine": "Bip001_Spine",
+    "chest": "Bip001_Spine1",
+    "neck": "Bip001_Neck",
+    "head": "Bip001_Head",
+    "left_shoulder": "Bip001_L_Clavicle",
+    "left_upper_arm": "Bip001_L_UpperArm",
+    "left_lower_arm": "Bip001_L_Forearm",
+    "left_hand": "Bip001_L_Hand",
+    "right_shoulder": "Bip001_R_Clavicle",
+    "right_upper_arm": "Bip001_R_UpperArm",
+    "right_lower_arm": "Bip001_R_Forearm",
+    "right_hand": "Bip001_R_Hand",
+    "left_upper_leg": "Bip001_L_Thigh",
+    "left_lower_leg": "Bip001_L_Calf",
+    "left_foot": "Bip001_L_Foot",
+    "left_toes": "Bip001_L_Toe0",
+    "right_upper_leg": "Bip001_R_Thigh",
+    "right_lower_leg": "Bip001_R_Calf",
+    "right_foot": "Bip001_R_Foot",
+    "right_toes": "Bip001_R_Toe0"
+  },
+  "bone_paths": {
+    "hips": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis",
+    "spine": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine",
+    "chest": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1",
+    "neck": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_Neck",
+    "head": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_Neck/Bip001_Head",
+    "left_shoulder": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle",
+    "left_upper_arm": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm",
+    "left_lower_arm": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm",
+    "left_hand": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand",
+    "right_shoulder": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle",
+    "right_upper_arm": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm",
+    "right_lower_arm": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm",
+    "right_hand": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand",
+    "left_upper_leg": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh",
+    "left_lower_leg": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf",
+    "left_foot": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot",
+    "left_toes": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Toe0",
+    "right_upper_leg": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh",
+    "right_lower_leg": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf",
+    "right_foot": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot",
+    "right_toes": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Toe0"
+  },
+  "finger_bones": {
+    "Bip001_L_Finger0": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger0",
+    "Bip001_L_Finger01": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger0/Bip001_L_Finger01",
+    "Bip001_L_Finger02": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger0/Bip001_L_Finger01/Bip001_L_Finger02",
+    "Bip001_L_Finger1": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger1",
+    "Bip001_L_Finger11": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger1/Bip001_L_Finger11",
+    "Bip001_L_Finger12": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger1/Bip001_L_Finger11/Bip001_L_Finger12",
+    "Bip001_L_Finger2": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger2",
+    "Bip001_L_Finger21": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger2/Bip001_L_Finger21",
+    "Bip001_L_Finger22": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger2/Bip001_L_Finger21/Bip001_L_Finger22",
+    "Bip001_L_Finger3": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger3",
+    "Bip001_L_Finger31": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger3/Bip001_L_Finger31",
+    "Bip001_L_Finger32": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger3/Bip001_L_Finger31/Bip001_L_Finger32",
+    "Bip001_L_Finger4": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger4",
+    "Bip001_L_Finger41": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger4/Bip001_L_Finger41",
+    "Bip001_L_Finger42": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger4/Bip001_L_Finger41/Bip001_L_Finger42",
+    "Bip001_R_Finger0": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger0",
+    "Bip001_R_Finger01": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger0/Bip001_R_Finger01",
+    "Bip001_R_Finger02": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger0/Bip001_R_Finger01/Bip001_R_Finger02",
+    "Bip001_R_Finger1": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger1",
+    "Bip001_R_Finger11": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger1/Bip001_R_Finger11",
+    "Bip001_R_Finger12": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger1/Bip001_R_Finger11/Bip001_R_Finger12",
+    "Bip001_R_Finger2": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger2",
+    "Bip001_R_Finger21": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger2/Bip001_R_Finger21",
+    "Bip001_R_Finger22": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger2/Bip001_R_Finger21/Bip001_R_Finger22",
+    "Bip001_R_Finger3": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger3",
+    "Bip001_R_Finger31": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger3/Bip001_R_Finger31",
+    "Bip001_R_Finger32": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger3/Bip001_R_Finger31/Bip001_R_Finger32",
+    "Bip001_R_Finger4": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger4",
+    "Bip001_R_Finger41": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger4/Bip001_R_Finger41",
+    "Bip001_R_Finger42": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger4/Bip001_R_Finger41/Bip001_R_Finger42"
+  },
+  "practice_blade_axis": [
+    0,
+    1,
+    0
+  ],
+  "blade_direction": [
+    0,
+    1,
+    0
+  ],
+  "weapon": {
+    "length_m": 1.25,
+    "grip_position": [
+      -0.088278845,
+      0.040195916,
+      0.0010716489
+    ],
+    "grip_rotation_xyzw": [
+      0.72256684,
+      -0.0022814865,
+      0.0034099433,
+      0.6912889
+    ],
+    "sockets": [
+      {
+        "name": "wep_R",
+        "path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/wep_R",
+        "hand": "right",
+        "hand_position": [
+          -0.088278845,
+          0.040195916,
+          0.0010716489
+        ],
+        "hand_rotation_xyzw": [
+          0.72256684,
+          -0.0022814865,
+          0.0034099433,
+          0.6912889
+        ]
+      },
+      {
+        "name": "wep_L",
+        "path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/wep_L",
+        "hand": "left",
+        "hand_position": [
+          -0.09679271,
+          0.03279335,
+          -0.001126013
+        ],
+        "hand_rotation_xyzw": [
+          -0.7216878,
+          -0.0009281088,
+          0.00033259156,
+          0.692218
+        ]
+      },
+      {
+        "name": "IK_Weapon_R_001",
+        "path": "chr_0024_deepfin_postmodel/Root/IK_Root/IK_Weapon_R_001",
+        "hand": "right",
+        "hand_position": [
+          -0.0882850245979655,
+          0.040200941133279544,
+          0.0010720609262957134
+        ],
+        "hand_rotation_xyzw": [
+          0.7225672258407438,
+          -0.002280782086139498,
+          0.003410237890393523,
+          0.6912884871393548
+        ]
+      },
+      {
+        "name": "IK_Weapon_L_001",
+        "path": "chr_0024_deepfin_postmodel/Root/IK_Root/IK_Weapon_L_001",
+        "hand": "left",
+        "hand_position": [
+          -0.09680000498010444,
+          0.03279985049575185,
+          -0.0011263477234021227
+        ],
+        "hand_rotation_xyzw": [
+          0.7216876073890044,
+          0.0009279598102748319,
+          -0.00033201695862170743,
+          -0.6922181924772448
+        ]
+      }
+    ]
+  },
+  "mount_sockets": {
+    "wep_R": {
+      "name": "wep_R",
+      "path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/wep_R",
+      "position": [
+        -0.088278845,
+        0.040195916,
+        0.0010716489
+      ],
+      "rotation_xyzw": [
+        0.72256684,
+        -0.0022814865,
+        0.0034099433,
+        0.6912889
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "wep_L": {
+      "name": "wep_L",
+      "path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/wep_L",
+      "position": [
+        -0.09679271,
+        0.03279335,
+        -0.001126013
+      ],
+      "rotation_xyzw": [
+        -0.7216878,
+        -0.0009281088,
+        0.00033259156,
+        0.692218
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "wep_M": {
+      "name": "wep_M",
+      "path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/wep_M",
+      "position": [
+        -0.20822999,
+        -0.2955238,
+        -0.17057289
+      ],
+      "rotation_xyzw": [
+        0.6564926,
+        0.26271152,
+        -0.2627114,
+        0.6564928
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "IK_Weapon_R_001": {
+      "name": "IK_Weapon_R_001",
+      "path": "chr_0024_deepfin_postmodel/Root/IK_Root/IK_Weapon_R_001",
+      "position": [
+        -0.0882850245979655,
+        0.040200941133279544,
+        0.0010720609262957134
+      ],
+      "rotation_xyzw": [
+        0.7225672258407438,
+        -0.002280782086139498,
+        0.003410237890393523,
+        0.6912884871393548
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "hand": "right",
+      "source_transform_is_hand_child": false,
+      "evidence": "exact authored IK world frame expressed in actual same-character hand frame"
+    },
+    "IK_Weapon_L_001": {
+      "name": "IK_Weapon_L_001",
+      "path": "chr_0024_deepfin_postmodel/Root/IK_Root/IK_Weapon_L_001",
+      "position": [
+        -0.09680000498010444,
+        0.03279985049575185,
+        -0.0011263477234021227
+      ],
+      "rotation_xyzw": [
+        0.7216876073890044,
+        0.0009279598102748319,
+        -0.00033201695862170743,
+        -0.6922181924772448
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "hand": "left",
+      "source_transform_is_hand_child": false,
+      "evidence": "exact authored IK world frame expressed in actual same-character hand frame"
+    }
+  },
+  "body_proportions": {
+    "left_upper_arm": 0.2713530400000064,
+    "left_forearm": 0.2612660000000076,
+    "left_thigh": 0.4677111000000178,
+    "left_calf": 0.46621612000000734,
+    "right_upper_arm": 0.271353200000004,
+    "right_forearm": 0.26126610000000383,
+    "right_thigh": 0.46771097000000283,
+    "right_calf": 0.4662160000000074
+  },
+  "default_weapon_id": "wpn_sword_0003",
+  "weapon_type": 1,
+  "rig_family": "Gentleman",
+  "visual_weapons": {
+    "longsword": {
+      "schema": 2,
+      "resource_id": "wpn_misc_0016",
+      "asset_path": "assets/beyond/dynamicassets/gameplay/prefabs/weapons/wpn_misc_0016.prefab",
+      "asset_path_hash": "381157020907152362",
+      "renderer_path": "Mesh_Sword/lod0/S_wpn_misc_00016_02_lod0",
+      "mount_bone_path": "Root/wep_quan_jnt/wep_jian_jnt",
+      "mount_reference_path": "",
+      "mount_position": [
+        0,
+        0,
+        0
+      ],
+      "mount_rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "mount_mode": "resource-derived-MHW-mode-blade-adapter",
+      "mount_runtime_verified": false,
+      "mount_evidence": "Native blade skin from exact bindpose has root blade +Y / transverse +X / face normal +Z. Original normalized MHW bs_swo001 has the same geometry frame and grip origin. In MHW modes drive the clone root with transported actual source main attachment; preserve wrists and own blade/ring/VFX palettes. Original skill StaticWeaponData10 default GEN_wep_M_1_final is rest data, not a proven dynamic held mount.",
+      "blade_root_axis": [
+        1e-07,
+        1.0,
+        3e-07
+      ],
+      "edge_root_axis": [
+        1.0,
+        -1e-07,
+        -3e-07
+      ],
+      "blade_length_m": 2.068854,
+      "material_policy": "readonly-native-shared-materials",
+      "clone_policy": "pure-gameobjects-transforms-multiple-owned-skinned-renderers",
+      "vfx_status": "own 38-bone VFX/ring/native materials; independent material timeline; original skill installation not yet decoded",
+      "runtime_verified": false,
+      "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+      "id": "laevatain_blade",
+      "display_name": "莱万汀火焰长刀",
+      "mount_side": "right",
+      "renderer_paths": [
+        "Mesh_Sword/lod0/S_wpn_misc_00016_02_lod0",
+        "Mesh_Ring/lod0/S_wpn_misc_00016_01_lod0",
+        "Mesh_VFX/lod0/S_wpn_misc_00016_03_lod0"
+      ],
+      "controls": {
+        "type": "flame_blade",
+        "start_duration": 0.6,
+        "material_effects": [
+          {
+            "renderer_path": "Mesh_Sword/lod0/S_wpn_misc_00016_02_lod0",
+            "property": "_VFXColorIntensity",
+            "rest_value": 80,
+            "start_duration": 0.6
+          },
+          {
+            "renderer_path": "Mesh_Sword/lod0/S_wpn_misc_00016_02_lod0",
+            "property": "_VFXColorAlpha",
+            "rest_value": 6,
+            "start_duration": 0.6
+          }
+        ],
+        "source_start_asset": "p_laevat_skill_ult_wep_01_sword_start_asset",
+        "source_envelope_evidence": "native .asset duration=0.6; blade native material VFXColorIntensity80/VFXColorAlpha6; material property block on clone only"
+      },
+      "parts": [
+        {
+          "renderer": "blade",
+          "bones": 1
+        },
+        {
+          "renderer": "ring",
+          "bones": 1
+        },
+        {
+          "renderer": "chain_vfx",
+          "bones": 38
+        }
+      ],
+      "mount_driver": "mhw_source_attachment",
+      "source_model_adapter": {
+        "mode": "longsword",
+        "source_prop": "assets/modes/longsword/props/bs_swo001.json",
+        "source_attachment_function": 47,
+        "source_hand_function": 12,
+        "geometry_rotation_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "geometry_position": [
+          0,
+          0,
+          0
+        ],
+        "native_blade_axis": [
+          0,
+          1,
+          0
+        ],
+        "source_blade_axis": [
+          0,
+          1,
+          0
+        ],
+        "native_transverse_axis": [
+          1,
+          0,
+          0
+        ],
+        "source_transverse_axis": [
+          1,
+          0,
+          0
+        ],
+        "geometry_frame_verified": true,
+        "native_skill_held_mount_verified": false,
+        "evidence": "Actual indexed source/native skinned meshes; imported MHW root bind removed exactly once. Shared +Y blade/+X width/+Z face normal, grip origin0. MHW attachment is transported through aligned source hand rest, not copied target wep_R rest."
+      },
+      "native_skill_mount": {
+        "weapon_index": 10,
+        "default_character_point": 152,
+        "default_transform": "GEN_wep_M_1_final",
+        "held_mount_verified": false,
+        "source_config": "research/weapon-coverage/config-trees/asset-data_chr_0016_laevat.decoded.json",
+        "original_animation": "A_actor_laevat_battle_attack_ult_01",
+        "animation_tracks": 312,
+        "animation_frames": 311,
+        "original_animation_acl_verified": true
+      }
+    },
+    "bow": {
+      "schema": 2,
+      "id": "typhoea_bow",
+      "display_name": "提夫罗斯原生弓",
+      "resource_id": "wpn_misc_0051",
+      "asset_path": "assets/beyond/dynamicassets/gameplay/prefabs/weapons/wpn_misc_0051.prefab",
+      "asset_path_hash": "381659519294256993",
+      "renderer_path": "Mesh_all/lod0/S_wpn_misc_0051_01_lod0",
+      "renderer_paths": [
+        "Mesh_all/lod0/S_wpn_misc_0051_01_lod0",
+        "Mesh_all/lod0/S_wpn_misc_0051_02_lod0"
+      ],
+      "mount_bone_path": "Root/wpn_bow_01_jnt",
+      "mount_reference_path": "Root/wpn_bow_01_jnt",
+      "mount_position": [
+        0,
+        0,
+        0
+      ],
+      "mount_rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "mount_side": "left",
+      "mount_socket_name": "IK_Weapon_L_001",
+      "mount_source_verified": true,
+      "original_mount_character_point": 84,
+      "original_mount_weapon_index": 10,
+      "mount_mode": "authored-native-IK-left-weapon-frame",
+      "mount_runtime_verified": false,
+      "mount_evidence": "Exact decoded CharacterTemplateData StaticWeaponData index10 wpn_misc_0051 fightMountTarget.characterMountPoint84 -> native IK_Weapon_L_001. Prefab root authored identity; source IK frame expressed in the same-character hand and migrated with its actual proportions. Runtime and native bow animation curves remain separate validation.",
+      "blade_root_axis": [
+        0,
+        0,
+        1
+      ],
+      "edge_root_axis": [
+        1,
+        0,
+        0
+      ],
+      "blade_length_m": 1.5161311970023075,
+      "material_policy": "readonly-native-shared-materials-plus-owned-property-block",
+      "clone_policy": "pure-owned-gameobjects-transforms-two-skinned-renderers-full-own-bone-palettes",
+      "controls": {
+        "type": "bow",
+        "string_center_path": "Root/wpn_bow_01_jnt/slot_M_string_01_vfx",
+        "string_upper_path": "Root/wpn_bow_01_jnt/slot_up_string_01_vfx",
+        "string_lower_path": "Root/wpn_bow_01_jnt/slot_dn_string_01_vfx",
+        "string_rest_center_root": [
+          0.2512045,
+          -0.11921862414567581,
+          -0.007166598211966743
+        ],
+        "string_rest_upper_root": [
+          0.5397988,
+          0.6304825508543304,
+          -0.007166604840627286
+        ],
+        "string_rest_lower_root": [
+          -0.0048678033,
+          -0.7844351491456603,
+          -0.0071667679119516575
+        ],
+        "draw_finger_bone": "Bip001_R_Finger22",
+        "draw_point_policy": "target right middle-finger distal phalanx from actual skin palette; contact anchor matches runtime; source native draw contact unknown",
+        "draw_point_verified": false,
+        "release_policy": "restore authored own string center immediately; local arrow projectile separately",
+        "launch_point_path": "Root/FunnelPoint/LaunchPoint_1",
+        "bow_arm_policy": "preserve native own nine-bone bind hierarchy; do not invent drawn angular curves"
+      },
+      "vfx_status": "native string/flow material retained; index draw point is anatomical candidate; native limb charge curves unresolved",
+      "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+      "runtime_verified": false
+    }
+  },
+  "evidence": {
+    "source": "current local tables + reference-preserving native postmodel graph",
+    "source_graph": "G:\\Better Endfield\\research\\custom_model\\1.5.3\\shared\\postmodel-native-parser-history\\sweep-identities\\chr_0024_deepfin.json",
+    "manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+    "main_bones": 21,
+    "main_palette_bone_count": 233,
+    "main_renderer_count": 33,
+    "runtime_verified": false,
+    "primary_skin_palette_verified": true,
+    "secondary_rig_excluded": true,
+    "runtime_rest_policy": "derive from actual renderer bindposes, never apply cached serialized matrices as live rest"
+  },
+  "ground_foot_probes": [
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 2642,
+      "rest_model_point": [
+        -0.17098303139209747,
+        9.6956267952919e-05,
+        0.09360505640506744
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Toe0",
+          "bone_name": "Bip001_L_Toe0",
+          "weight": 0.6746776103973389,
+          "local_point": [
+            -0.005404137074947357,
+            -0.0322607196867466,
+            -0.058595210313797
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot",
+          "bone_name": "Bip001_L_Foot",
+          "weight": 0.32532235980033875,
+          "local_point": [
+            -0.1124715730547905,
+            0.11755547672510147,
+            -0.058455877006053925
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 2575,
+      "rest_model_point": [
+        -0.0585690438747406,
+        9.594205766916275e-05,
+        0.07119359821081161
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot",
+          "bone_name": "Bip001_L_Foot",
+          "weight": 0.6772106885910034,
+          "local_point": [
+            -0.11247245222330093,
+            0.09555747359991074,
+            0.054039761424064636
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Toe0",
+          "bone_name": "Bip001_L_Toe0",
+          "weight": 0.32278934121131897,
+          "local_point": [
+            0.016968585550785065,
+            -0.032436344772577286,
+            0.05382637307047844
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 2791,
+      "rest_model_point": [
+        -0.11334196478128433,
+        0.020678021013736725,
+        -0.10499591380357742
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot",
+          "bone_name": "Bip001_L_Foot",
+          "weight": 1.0,
+          "local_point": [
+            -0.09189039468765259,
+            -0.08083223551511765,
+            -8.504092693328857e-05
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 2579,
+      "rest_model_point": [
+        -0.05505304038524628,
+        9.692087769508362e-05,
+        0.09356214106082916
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Toe0",
+          "bone_name": "Bip001_L_Toe0",
+          "weight": 0.6999770998954773,
+          "local_point": [
+            -0.005401156842708588,
+            -0.03244082257151604,
+            0.05733465403318405
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot",
+          "bone_name": "Bip001_L_Foot",
+          "weight": 0.3000229001045227,
+          "local_point": [
+            -0.11247149109840393,
+            0.11793878674507141,
+            0.05747349560260773
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 2408,
+      "rest_model_point": [
+        -0.09689091145992279,
+        0.10474091023206711,
+        0.06703120470046997
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot",
+          "bone_name": "Bip001_L_Foot",
+          "weight": 0.8372777700424194,
+          "local_point": [
+            -0.007827559486031532,
+            0.09125424921512604,
+            0.01573331654071808
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Foot_ty_plus",
+          "bone_name": "Bip001_L_Foot_ty_plus",
+          "weight": 0.08572518825531006,
+          "local_point": [
+            -0.00782752688974142,
+            0.041255295276641846,
+            0.01573357731103897
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_LCalfTwist/Bip001_LCalfTwist1",
+          "bone_name": "Bip001_LCalfTwist1",
+          "weight": 0.062775619328022,
+          "local_point": [
+            -0.23460592329502106,
+            0.09158873558044434,
+            0.015665292739868164
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Toe0",
+          "bone_name": "Bip001_L_Toe0",
+          "weight": 0.014221408404409885,
+          "local_point": [
+            0.021144188940525055,
+            0.07226800173521042,
+            0.015668489038944244
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 2604,
+      "rest_model_point": [
+        -0.09621933102607727,
+        0.0387381948530674,
+        0.16812899708747864
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Toe0",
+          "bone_name": "Bip001_L_Toe0",
+          "weight": 1.0,
+          "local_point": [
+            -0.07995378971099854,
+            0.006264388095587492,
+            0.016202740371227264
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 3180,
+      "rest_model_point": [
+        -0.08376308530569077,
+        0.0414106547832489,
+        0.15465080738067627
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Toe0",
+          "bone_name": "Bip001_L_Toe0",
+          "weight": 1.0,
+          "local_point": [
+            -0.06647990643978119,
+            0.008917486295104027,
+            0.028667770326137543
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 3587,
+      "rest_model_point": [
+        -0.0971667692065239,
+        0.08852236717939377,
+        -0.07371355593204498
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot",
+          "bone_name": "Bip001_L_Foot",
+          "weight": 0.931792140007019,
+          "local_point": [
+            -0.02404605783522129,
+            -0.049490585923194885,
+            0.01597496122121811
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Foot_ty_minus",
+          "bone_name": "Bip001_L_Foot_ty_minus",
+          "weight": 0.05436789616942406,
+          "local_point": [
+            -0.024046197533607483,
+            -0.009489402174949646,
+            0.015975140035152435
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_LCalfTwist/Bip001_LCalfTwist1",
+          "bone_name": "Bip001_LCalfTwist1",
+          "weight": 0.013839933089911938,
+          "local_point": [
+            -0.2595319449901581,
+            -0.04787017032504082,
+            0.01711568981409073
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 2589,
+      "rest_model_point": [
+        -0.07142404466867447,
+        0.01014891266822815,
+        0.14878414571285248
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Toe0",
+          "bone_name": "Bip001_L_Toe0",
+          "weight": 1.0,
+          "local_point": [
+            -0.06061749905347824,
+            -0.022363385185599327,
+            0.04096025973558426
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 2784,
+      "rest_model_point": [
+        -0.06841299682855606,
+        0.0014549195766448975,
+        -0.08108682930469513
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot",
+          "bone_name": "Bip001_L_Foot",
+          "weight": 1.0,
+          "local_point": [
+            -0.11111344397068024,
+            -0.056758128106594086,
+            0.04475574940443039
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 3198,
+      "rest_model_point": [
+        -0.1357138603925705,
+        0.04784480482339859,
+        0.14772650599479675
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Toe0",
+          "bone_name": "Bip001_L_Toe0",
+          "weight": 1.0,
+          "local_point": [
+            -0.059537701308727264,
+            0.01543231401592493,
+            -0.023270562291145325
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 3583,
+      "rest_model_point": [
+        -0.13423274457454681,
+        0.08810659497976303,
+        -0.07250048220157623
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot",
+          "bone_name": "Bip001_L_Foot",
+          "weight": 0.9313496351242065,
+          "local_point": [
+            -0.024461863562464714,
+            -0.04841380566358566,
+            -0.021095246076583862
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Foot_ty_minus",
+          "bone_name": "Bip001_L_Foot_ty_minus",
+          "weight": 0.05375753343105316,
+          "local_point": [
+            -0.024462005123496056,
+            -0.008412614464759827,
+            -0.021095067262649536
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_LCalfTwist/Bip001_LCalfTwist1",
+          "bone_name": "Bip001_LCalfTwist1",
+          "weight": 0.014892805367708206,
+          "local_point": [
+            -0.26135799288749695,
+            -0.0468263104557991,
+            -0.019912779331207275
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 2632,
+      "rest_model_point": [
+        -0.1596420556306839,
+        0.005141982343047857,
+        0.13516612350940704
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Toe0",
+          "bone_name": "Bip001_L_Toe0",
+          "weight": 0.9849698543548584,
+          "local_point": [
+            -0.046969085931777954,
+            -0.027233297005295753,
+            -0.04726073145866394
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot",
+          "bone_name": "Bip001_L_Foot",
+          "weight": 0.015030136331915855,
+          "local_point": [
+            -0.10742656141519547,
+            0.15915794670581818,
+            -0.04726777225732803
+          ]
+        }
+      ]
+    },
+    {
+      "side": "left",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 2813,
+      "rest_model_point": [
+        -0.1601710170507431,
+        0.001452036201953888,
+        -0.08109891414642334
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot",
+          "bone_name": "Bip001_L_Foot",
+          "weight": 1.0,
+          "local_point": [
+            -0.1111164316534996,
+            -0.05710756778717041,
+            -0.04700160771608353
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4346,
+      "rest_model_point": [
+        0.055050961673259735,
+        9.680353105068207e-05,
+        0.09356216341257095
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Toe0",
+          "bone_name": "Bip001_R_Toe0",
+          "weight": 0.6999770998954773,
+          "local_point": [
+            -0.005401141941547394,
+            -0.03244113549590111,
+            -0.05733484402298927
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot",
+          "bone_name": "Bip001_R_Foot",
+          "weight": 0.3000229001045227,
+          "local_point": [
+            -0.1124718114733696,
+            0.11793874204158783,
+            -0.05747363716363907
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4342,
+      "rest_model_point": [
+        0.05856696516275406,
+        9.582098573446274e-05,
+        0.071193628013134
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot",
+          "bone_name": "Bip001_R_Foot",
+          "weight": 0.6772106885910034,
+          "local_point": [
+            -0.1124727725982666,
+            0.09555742144584656,
+            -0.05403989925980568
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Toe0",
+          "bone_name": "Bip001_R_Toe0",
+          "weight": 0.32278934121131897,
+          "local_point": [
+            0.01696860045194626,
+            -0.03243665397167206,
+            -0.053826551884412766
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4558,
+      "rest_model_point": [
+        0.11334002017974854,
+        0.020677775144577026,
+        -0.10499586164951324
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot",
+          "bone_name": "Bip001_R_Foot",
+          "weight": 1.0,
+          "local_point": [
+            -0.09189070761203766,
+            -0.08083222806453705,
+            8.494406938552856e-05
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4409,
+      "rest_model_point": [
+        0.17098094522953033,
+        9.65949147939682e-05,
+        0.0936051458120346
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Toe0",
+          "bone_name": "Bip001_R_Toe0",
+          "weight": 0.6746776103973389,
+          "local_point": [
+            -0.005404159426689148,
+            -0.03226102888584137,
+            0.05859497934579849
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot",
+          "bone_name": "Bip001_R_Foot",
+          "weight": 0.32532235980033875,
+          "local_point": [
+            -0.11247187107801437,
+            0.11755546927452087,
+            0.058455690741539
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4175,
+      "rest_model_point": [
+        0.09688907861709595,
+        0.1047407016158104,
+        0.06703124940395355
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot",
+          "bone_name": "Bip001_R_Foot",
+          "weight": 0.8372777700424194,
+          "local_point": [
+            -0.007827871479094028,
+            0.09125421941280365,
+            -0.01573348045349121
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Foot_ty_plus",
+          "bone_name": "Bip001_R_Foot_ty_plus",
+          "weight": 0.08572518825531006,
+          "local_point": [
+            -0.007827803492546082,
+            0.04125522822141647,
+            -0.015733107924461365
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_RCalfTwist/Bip001_RCalfTwist1",
+          "bone_name": "Bip001_RCalfTwist1",
+          "weight": 0.062775619328022,
+          "local_point": [
+            -0.23460625112056732,
+            0.09158878028392792,
+            -0.01566530019044876
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Toe0",
+          "bone_name": "Bip001_R_Toe0",
+          "weight": 0.014221408404409885,
+          "local_point": [
+            0.021144188940525055,
+            0.07226769626140594,
+            -0.015668682754039764
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4371,
+      "rest_model_point": [
+        0.09621728956699371,
+        0.03873799741268158,
+        0.16812902688980103
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Toe0",
+          "bone_name": "Bip001_R_Toe0",
+          "weight": 1.0,
+          "local_point": [
+            -0.07995377480983734,
+            0.006264082156121731,
+            -0.01620297133922577
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4966,
+      "rest_model_point": [
+        0.13571183383464813,
+        0.04784452170133591,
+        0.14772656559944153
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Toe0",
+          "bone_name": "Bip001_R_Toe0",
+          "weight": 1.0,
+          "local_point": [
+            -0.059537701308727264,
+            0.015432008542120457,
+            0.023270316421985626
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 5350,
+      "rest_model_point": [
+        0.13423094153404236,
+        0.08810631930828094,
+        -0.07250042259693146
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot",
+          "bone_name": "Bip001_R_Foot",
+          "weight": 0.9313496351242065,
+          "local_point": [
+            -0.02446216717362404,
+            -0.048413801938295364,
+            0.02109512686729431
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Foot_ty_minus",
+          "bone_name": "Bip001_R_Foot_ty_minus",
+          "weight": 0.05375753343105316,
+          "local_point": [
+            -0.024462293833494186,
+            -0.00841272622346878,
+            0.021095439791679382
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_RCalfTwist/Bip001_RCalfTwist1",
+          "bone_name": "Bip001_RCalfTwist1",
+          "weight": 0.014892805367708206,
+          "local_point": [
+            -0.26135826110839844,
+            -0.04682634770870209,
+            0.019912607967853546
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4399,
+      "rest_model_point": [
+        0.15963995456695557,
+        0.005141645669937134,
+        0.135166198015213
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Toe0",
+          "bone_name": "Bip001_R_Toe0",
+          "weight": 0.9849698543548584,
+          "local_point": [
+            -0.04696910083293915,
+            -0.027233606204390526,
+            0.04726048558950424
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot",
+          "bone_name": "Bip001_R_Foot",
+          "weight": 0.015030136331915855,
+          "local_point": [
+            -0.10742685943841934,
+            0.15915793180465698,
+            0.04726758599281311
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4580,
+      "rest_model_point": [
+        0.16016900539398193,
+        0.0014517009258270264,
+        -0.08109883964061737
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot",
+          "bone_name": "Bip001_R_Foot",
+          "weight": 1.0,
+          "local_point": [
+            -0.11111672967672348,
+            -0.05710754916071892,
+            0.04700148105621338
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4947,
+      "rest_model_point": [
+        0.0837610587477684,
+        0.041410479694604874,
+        0.15465083718299866
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Toe0",
+          "bone_name": "Bip001_R_Toe0",
+          "weight": 1.0,
+          "local_point": [
+            -0.06647989153862,
+            0.008917180821299553,
+            -0.028667986392974854
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 5354,
+      "rest_model_point": [
+        0.09716493636369705,
+        0.08852215111255646,
+        -0.0737135037779808
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot",
+          "bone_name": "Bip001_R_Foot",
+          "weight": 0.931792140007019,
+          "local_point": [
+            -0.02404637075960636,
+            -0.049490589648485184,
+            -0.015975087881088257
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Foot_ty_minus",
+          "bone_name": "Bip001_R_Foot_ty_minus",
+          "weight": 0.05436789616942406,
+          "local_point": [
+            -0.024046503007411957,
+            -0.009489506483078003,
+            -0.01597476750612259
+          ]
+        },
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_RCalfTwist/Bip001_RCalfTwist1",
+          "bone_name": "Bip001_RCalfTwist1",
+          "weight": 0.013839933089911938,
+          "local_point": [
+            -0.25953221321105957,
+            -0.04787016287446022,
+            -0.017115876078605652
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4356,
+      "rest_model_point": [
+        0.07142196595668793,
+        0.010148759931325912,
+        0.14878419041633606
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Toe0",
+          "bone_name": "Bip001_R_Toe0",
+          "weight": 1.0,
+          "local_point": [
+            -0.06061749905347824,
+            -0.0223636943846941,
+            -0.040960460901260376
+          ]
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "mesh_name": "S_actor_deepfin_cloth_01_lod0",
+      "vertex": 4551,
+      "rest_model_point": [
+        0.06841099262237549,
+        0.001454770565032959,
+        -0.08108679950237274
+      ],
+      "influences": [
+        {
+          "bone_path": "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot",
+          "bone_name": "Bip001_R_Foot",
+          "weight": 1.0,
+          "local_point": [
+            -0.1111137643456459,
+            -0.05675813928246498,
+            -0.04475583881139755
+          ]
+        }
+      ]
+    }
+  ],
+  "ground_foot_mesh_rest_min_y": 9.582098573446274e-05,
+  "rest_local_transforms": {
+    "Bip001_Pelvis": {
+      "position": [
+        3.9585437e-09,
+        -4.5474735e-13,
+        2.026558e-06
+      ],
+      "rotation_xyzw": [
+        0.5000001,
+        -0.49999988,
+        -0.5000001,
+        -0.5
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Thigh": {
+      "position": [
+        -6.061818e-14,
+        1.5194416e-07,
+        0.07580001
+      ],
+      "rotation_xyzw": [
+        -0.0023150598,
+        0.99978757,
+        -0.005424933,
+        0.019750437
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Calf": {
+      "position": [
+        -0.4677111,
+        5.9604645e-08,
+        1.1368326e-07
+      ],
+      "rotation_xyzw": [
+        1.8048377e-07,
+        -9.49949e-08,
+        0.03348987,
+        0.9994391
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Foot": {
+      "position": [
+        -0.46621612,
+        5.9604645e-08,
+        5.5577317e-08
+      ],
+      "rotation_xyzw": [
+        -0.0029237312,
+        0.019863462,
+        -0.03120525,
+        0.9993113
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Toe0": {
+      "position": [
+        -0.08011983,
+        0.11234648,
+        0.00010677427
+      ],
+      "rotation_xyzw": [
+        -0.0017275952,
+        -0.0006286075,
+        -0.70710623,
+        0.70710504
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Thigh": {
+      "position": [
+        2.5979219e-14,
+        -6.25372e-08,
+        -0.07580001
+      ],
+      "rotation_xyzw": [
+        -0.0023151783,
+        0.9997876,
+        0.0054255608,
+        -0.01974935
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Calf": {
+      "position": [
+        -0.46771097,
+        0,
+        5.4078612e-08
+      ],
+      "rotation_xyzw": [
+        1.7267666e-07,
+        2.7939677e-08,
+        0.03349044,
+        0.9994391
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Foot": {
+      "position": [
+        -0.466216,
+        0,
+        -8.497693e-08
+      ],
+      "rotation_xyzw": [
+        0.0029236313,
+        -0.019863145,
+        -0.031205287,
+        0.9993113
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Toe0": {
+      "position": [
+        -0.0801198,
+        0.112346664,
+        -0.00010679662
+      ],
+      "rotation_xyzw": [
+        0.0017275165,
+        0.0006287937,
+        -0.70710635,
+        0.70710486
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_Spine": {
+      "position": [
+        -0.100719936,
+        0.019333303,
+        4.656613e-08
+      ],
+      "rotation_xyzw": [
+        -1.0596489e-06,
+        -1.2003962e-07,
+        -5.7666335e-07,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_Spine1": {
+      "position": [
+        -0.10082996,
+        -8.02055e-05,
+        -1.7826096e-09
+      ],
+      "rotation_xyzw": [
+        2.9802308e-08,
+        2.2098313e-11,
+        -1.4901159e-08,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_Spine2": {
+      "position": [
+        -0.100679874,
+        -0.00014930964,
+        9.895302e-10
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        -2.2715156e-13,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Clavicle": {
+      "position": [
+        -0.18429004,
+        -0.02410248,
+        0.024683118
+      ],
+      "rotation_xyzw": [
+        0.6141654,
+        0.02895434,
+        -0.78811437,
+        -0.028954264
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_UpperArm": {
+      "position": [
+        -0.13607977,
+        7.8308044e-09,
+        -5.1618002e-08
+      ],
+      "rotation_xyzw": [
+        0.0146495225,
+        -0.30426526,
+        0.009417363,
+        0.95242816
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Forearm": {
+      "position": [
+        -0.27135304,
+        -5.55994e-09,
+        5.8146064e-08
+      ],
+      "rotation_xyzw": [
+        -5.5879346e-09,
+        2.9802319e-08,
+        0.054445665,
+        0.99851674
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Hand": {
+      "position": [
+        -0.261266,
+        2.3351545e-08,
+        -5.8793336e-08
+      ],
+      "rotation_xyzw": [
+        -0.71030945,
+        -0.002615011,
+        0.0030013619,
+        0.7038784
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger0": {
+      "position": [
+        -0.01922955,
+        0.016376719,
+        -0.0195987
+      ],
+      "rotation_xyzw": [
+        0.54820657,
+        -0.29342955,
+        0.043926958,
+        0.7819457
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger01": {
+      "position": [
+        -0.031098101,
+        7.629395e-08,
+        0
+      ],
+      "rotation_xyzw": [
+        -0.0023518575,
+        0.015917167,
+        0.027255988,
+        0.999499
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger02": {
+      "position": [
+        -0.035630148,
+        -1.525879e-07,
+        7.629395e-08
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger1": {
+      "position": [
+        -0.08963859,
+        -0.005027771,
+        -0.01954481
+      ],
+      "rotation_xyzw": [
+        0.0027541379,
+        0.024934018,
+        0.03445164,
+        0.9990915
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger11": {
+      "position": [
+        -0.038523667,
+        0,
+        0
+      ],
+      "rotation_xyzw": [
+        -8.226104e-06,
+        -0.00045242577,
+        -0.0069237873,
+        0.9999759
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger12": {
+      "position": [
+        -0.025311999,
+        0,
+        4.768372e-09
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger2": {
+      "position": [
+        -0.089979395,
+        -0.0077051534,
+        0.0021914481
+      ],
+      "rotation_xyzw": [
+        -0.008724374,
+        0.046712756,
+        0.06099633,
+        0.9970062
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger21": {
+      "position": [
+        -0.03738914,
+        0,
+        2.384186e-09
+      ],
+      "rotation_xyzw": [
+        4.0616316e-10,
+        2.980319e-08,
+        0.0019964017,
+        0.99999803
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger22": {
+      "position": [
+        -0.02874977,
+        1.525879e-07,
+        2.384186e-09
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger3": {
+      "position": [
+        -0.08190418,
+        -0.005325623,
+        0.02183995
+      ],
+      "rotation_xyzw": [
+        -0.036491495,
+        0.09841788,
+        0.061280377,
+        0.992586
+      ],
+      "scale": [
+        1,
+        1,
+        1.000001
+      ]
+    },
+    "Bip001_L_Finger31": {
+      "position": [
+        -0.03644615,
+        0,
+        -4.768372e-09
+      ],
+      "rotation_xyzw": [
+        0.0024864338,
+        -0.00049168343,
+        -0.0091646295,
+        0.9999548
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger32": {
+      "position": [
+        -0.02407696,
+        0,
+        4.768372e-09
+      ],
+      "rotation_xyzw": [
+        -0.0026553322,
+        -0.0018854787,
+        0.01920354,
+        0.9998103
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger4": {
+      "position": [
+        -0.071343265,
+        0.00154686,
+        0.03880924
+      ],
+      "rotation_xyzw": [
+        -0.09495325,
+        0.13649173,
+        0.054372657,
+        0.9845799
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger41": {
+      "position": [
+        -0.031005818,
+        0,
+        0
+      ],
+      "rotation_xyzw": [
+        -0.0023528687,
+        -0.0025672321,
+        -0.014960846,
+        0.99988204
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_L_Finger42": {
+      "position": [
+        -0.01762772,
+        0,
+        -9.536743e-09
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "wep_L": {
+      "position": [
+        -0.09679271,
+        0.03279335,
+        -0.001126013
+      ],
+      "rotation_xyzw": [
+        -0.7216878,
+        -0.0009281088,
+        0.00033259156,
+        0.692218
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_Neck": {
+      "position": [
+        -0.20768009,
+        -0.029369637,
+        -5.5134296e-07
+      ],
+      "rotation_xyzw": [
+        1.847203e-06,
+        3.5404864e-07,
+        -0.1126019,
+        0.99364024
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_Head": {
+      "position": [
+        -0.115370035,
+        -7.450581e-09,
+        1.1902429e-08
+      ],
+      "rotation_xyzw": [
+        -7.2896434e-08,
+        -1.0692971e-07,
+        0.11260216,
+        0.9936402
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Clavicle": {
+      "position": [
+        -0.18429004,
+        -0.024102345,
+        -0.024683194
+      ],
+      "rotation_xyzw": [
+        0.61416554,
+        0.028952468,
+        0.78811437,
+        0.028952412
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_UpperArm": {
+      "position": [
+        -0.13607992,
+        1.0167542e-09,
+        -2.328926e-08
+      ],
+      "rotation_xyzw": [
+        -0.014649829,
+        0.30426642,
+        0.009416728,
+        0.95242774
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Forearm": {
+      "position": [
+        -0.2713532,
+        -6.081567e-09,
+        -4.644047e-08
+      ],
+      "rotation_xyzw": [
+        -1.6763806e-08,
+        -2.9802322e-08,
+        0.05444564,
+        0.9985168
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Hand": {
+      "position": [
+        -0.2612661,
+        3.4239678e-09,
+        -4.4714124e-08
+      ],
+      "rotation_xyzw": [
+        0.71030897,
+        0.0026144132,
+        0.0030022229,
+        0.7038788
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger0": {
+      "position": [
+        -0.01922955,
+        0.01637665,
+        0.0195987
+      ],
+      "rotation_xyzw": [
+        -0.54820657,
+        0.2934295,
+        0.043927036,
+        0.7819457
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger01": {
+      "position": [
+        -0.03109821,
+        0,
+        7.629395e-08
+      ],
+      "rotation_xyzw": [
+        0.0023518351,
+        -0.015917167,
+        0.027256006,
+        0.999499
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger02": {
+      "position": [
+        -0.03563007,
+        -7.629395e-08,
+        0
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger1": {
+      "position": [
+        -0.08963852,
+        -0.005027771,
+        0.01954481
+      ],
+      "rotation_xyzw": [
+        -0.0027541504,
+        -0.024934018,
+        0.034451667,
+        0.9990915
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger11": {
+      "position": [
+        -0.038523667,
+        1.525879e-07,
+        0
+      ],
+      "rotation_xyzw": [
+        8.309787e-06,
+        0.00045240295,
+        -0.006923833,
+        0.9999759
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger12": {
+      "position": [
+        -0.02531208,
+        0,
+        0
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger2": {
+      "position": [
+        -0.08997936,
+        -0.0077051534,
+        -0.0021914481
+      ],
+      "rotation_xyzw": [
+        0.008724412,
+        -0.046712782,
+        0.06099632,
+        0.9970062
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger21": {
+      "position": [
+        -0.037389107,
+        7.629395e-08,
+        0
+      ],
+      "rotation_xyzw": [
+        -1.1552188e-07,
+        1.8861533e-08,
+        0.0019963274,
+        0.99999803
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger22": {
+      "position": [
+        -0.02874969,
+        0,
+        -7.1525568e-09
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger3": {
+      "position": [
+        -0.08190414,
+        -0.005325623,
+        -0.02183995
+      ],
+      "rotation_xyzw": [
+        0.03649146,
+        -0.098417796,
+        0.06128033,
+        0.9925861
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger31": {
+      "position": [
+        -0.03644615,
+        0,
+        0
+      ],
+      "rotation_xyzw": [
+        -0.0024864841,
+        0.0004916528,
+        -0.009164673,
+        0.9999548
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger32": {
+      "position": [
+        -0.024077,
+        0,
+        2.384186e-09
+      ],
+      "rotation_xyzw": [
+        0.002655467,
+        0.001885502,
+        0.019203477,
+        0.9998103
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger4": {
+      "position": [
+        -0.071343146,
+        0.001546783,
+        -0.038809247
+      ],
+      "rotation_xyzw": [
+        0.09495332,
+        -0.13649172,
+        0.054372646,
+        0.98457986
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger41": {
+      "position": [
+        -0.03100578,
+        -1.525879e-07,
+        1.9073491e-08
+      ],
+      "rotation_xyzw": [
+        0.0023527863,
+        0.002567263,
+        -0.014960846,
+        0.99988204
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "Bip001_R_Finger42": {
+      "position": [
+        -0.01762772,
+        7.629395e-08,
+        0
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "wep_R": {
+      "position": [
+        -0.088278845,
+        0.040195916,
+        0.0010716489
+      ],
+      "rotation_xyzw": [
+        0.72256684,
+        -0.0022814865,
+        0.0034099433,
+        0.6912889
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "wep_M": {
+      "position": [
+        -0.20822999,
+        -0.2955238,
+        -0.17057289
+      ],
+      "rotation_xyzw": [
+        0.6564926,
+        0.26271152,
+        -0.2627114,
+        0.6564928
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "IK_Weapon_L_001": {
+      "position": [
+        -0.538764,
+        0.9986635,
+        -0.003945091
+      ],
+      "rotation_xyzw": [
+        0.6082519,
+        0.3062541,
+        0.28517425,
+        0.67447287
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "IK_Weapon_R_001": {
+      "position": [
+        0.5276106,
+        1.0003209,
+        -0.004328054
+      ],
+      "rotation_xyzw": [
+        0.28856122,
+        0.6739729,
+        0.6087476,
+        0.30318198
+      ],
+      "scale": [
+        1.000001,
+        1,
+        1
+      ]
+    }
+  },
+  "rest_local_paths": {
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis": {
+      "position": [
+        3.9585437e-09,
+        -4.5474735e-13,
+        2.026558e-06
+      ],
+      "rotation_xyzw": [
+        0.5000001,
+        -0.49999988,
+        -0.5000001,
+        -0.5
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh": {
+      "position": [
+        -6.061818e-14,
+        1.5194416e-07,
+        0.07580001
+      ],
+      "rotation_xyzw": [
+        -0.0023150598,
+        0.99978757,
+        -0.005424933,
+        0.019750437
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf": {
+      "position": [
+        -0.4677111,
+        5.9604645e-08,
+        1.1368326e-07
+      ],
+      "rotation_xyzw": [
+        1.8048377e-07,
+        -9.49949e-08,
+        0.03348987,
+        0.9994391
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot": {
+      "position": [
+        -0.46621612,
+        5.9604645e-08,
+        5.5577317e-08
+      ],
+      "rotation_xyzw": [
+        -0.0029237312,
+        0.019863462,
+        -0.03120525,
+        0.9993113
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_L_Thigh/Bip001_L_Calf/Bip001_L_Foot/Bip001_L_Toe0": {
+      "position": [
+        -0.08011983,
+        0.11234648,
+        0.00010677427
+      ],
+      "rotation_xyzw": [
+        -0.0017275952,
+        -0.0006286075,
+        -0.70710623,
+        0.70710504
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh": {
+      "position": [
+        2.5979219e-14,
+        -6.25372e-08,
+        -0.07580001
+      ],
+      "rotation_xyzw": [
+        -0.0023151783,
+        0.9997876,
+        0.0054255608,
+        -0.01974935
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf": {
+      "position": [
+        -0.46771097,
+        0,
+        5.4078612e-08
+      ],
+      "rotation_xyzw": [
+        1.7267666e-07,
+        2.7939677e-08,
+        0.03349044,
+        0.9994391
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot": {
+      "position": [
+        -0.466216,
+        0,
+        -8.497693e-08
+      ],
+      "rotation_xyzw": [
+        0.0029236313,
+        -0.019863145,
+        -0.031205287,
+        0.9993113
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_R_Thigh/Bip001_R_Calf/Bip001_R_Foot/Bip001_R_Toe0": {
+      "position": [
+        -0.0801198,
+        0.112346664,
+        -0.00010679662
+      ],
+      "rotation_xyzw": [
+        0.0017275165,
+        0.0006287937,
+        -0.70710635,
+        0.70710486
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine": {
+      "position": [
+        -0.100719936,
+        0.019333303,
+        4.656613e-08
+      ],
+      "rotation_xyzw": [
+        -1.0596489e-06,
+        -1.2003962e-07,
+        -5.7666335e-07,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1": {
+      "position": [
+        -0.10082996,
+        -8.02055e-05,
+        -1.7826096e-09
+      ],
+      "rotation_xyzw": [
+        2.9802308e-08,
+        2.2098313e-11,
+        -1.4901159e-08,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2": {
+      "position": [
+        -0.100679874,
+        -0.00014930964,
+        9.895302e-10
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        -2.2715156e-13,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle": {
+      "position": [
+        -0.18429004,
+        -0.02410248,
+        0.024683118
+      ],
+      "rotation_xyzw": [
+        0.6141654,
+        0.02895434,
+        -0.78811437,
+        -0.028954264
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm": {
+      "position": [
+        -0.13607977,
+        7.8308044e-09,
+        -5.1618002e-08
+      ],
+      "rotation_xyzw": [
+        0.0146495225,
+        -0.30426526,
+        0.009417363,
+        0.95242816
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm": {
+      "position": [
+        -0.27135304,
+        -5.55994e-09,
+        5.8146064e-08
+      ],
+      "rotation_xyzw": [
+        -5.5879346e-09,
+        2.9802319e-08,
+        0.054445665,
+        0.99851674
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand": {
+      "position": [
+        -0.261266,
+        2.3351545e-08,
+        -5.8793336e-08
+      ],
+      "rotation_xyzw": [
+        -0.71030945,
+        -0.002615011,
+        0.0030013619,
+        0.7038784
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger0": {
+      "position": [
+        -0.01922955,
+        0.016376719,
+        -0.0195987
+      ],
+      "rotation_xyzw": [
+        0.54820657,
+        -0.29342955,
+        0.043926958,
+        0.7819457
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger0/Bip001_L_Finger01": {
+      "position": [
+        -0.031098101,
+        7.629395e-08,
+        0
+      ],
+      "rotation_xyzw": [
+        -0.0023518575,
+        0.015917167,
+        0.027255988,
+        0.999499
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger0/Bip001_L_Finger01/Bip001_L_Finger02": {
+      "position": [
+        -0.035630148,
+        -1.525879e-07,
+        7.629395e-08
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger1": {
+      "position": [
+        -0.08963859,
+        -0.005027771,
+        -0.01954481
+      ],
+      "rotation_xyzw": [
+        0.0027541379,
+        0.024934018,
+        0.03445164,
+        0.9990915
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger1/Bip001_L_Finger11": {
+      "position": [
+        -0.038523667,
+        0,
+        0
+      ],
+      "rotation_xyzw": [
+        -8.226104e-06,
+        -0.00045242577,
+        -0.0069237873,
+        0.9999759
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger1/Bip001_L_Finger11/Bip001_L_Finger12": {
+      "position": [
+        -0.025311999,
+        0,
+        4.768372e-09
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger2": {
+      "position": [
+        -0.089979395,
+        -0.0077051534,
+        0.0021914481
+      ],
+      "rotation_xyzw": [
+        -0.008724374,
+        0.046712756,
+        0.06099633,
+        0.9970062
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger2/Bip001_L_Finger21": {
+      "position": [
+        -0.03738914,
+        0,
+        2.384186e-09
+      ],
+      "rotation_xyzw": [
+        4.0616316e-10,
+        2.980319e-08,
+        0.0019964017,
+        0.99999803
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger2/Bip001_L_Finger21/Bip001_L_Finger22": {
+      "position": [
+        -0.02874977,
+        1.525879e-07,
+        2.384186e-09
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger3": {
+      "position": [
+        -0.08190418,
+        -0.005325623,
+        0.02183995
+      ],
+      "rotation_xyzw": [
+        -0.036491495,
+        0.09841788,
+        0.061280377,
+        0.992586
+      ],
+      "scale": [
+        1,
+        1,
+        1.000001
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger3/Bip001_L_Finger31": {
+      "position": [
+        -0.03644615,
+        0,
+        -4.768372e-09
+      ],
+      "rotation_xyzw": [
+        0.0024864338,
+        -0.00049168343,
+        -0.0091646295,
+        0.9999548
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger3/Bip001_L_Finger31/Bip001_L_Finger32": {
+      "position": [
+        -0.02407696,
+        0,
+        4.768372e-09
+      ],
+      "rotation_xyzw": [
+        -0.0026553322,
+        -0.0018854787,
+        0.01920354,
+        0.9998103
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger4": {
+      "position": [
+        -0.071343265,
+        0.00154686,
+        0.03880924
+      ],
+      "rotation_xyzw": [
+        -0.09495325,
+        0.13649173,
+        0.054372657,
+        0.9845799
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger4/Bip001_L_Finger41": {
+      "position": [
+        -0.031005818,
+        0,
+        0
+      ],
+      "rotation_xyzw": [
+        -0.0023528687,
+        -0.0025672321,
+        -0.014960846,
+        0.99988204
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/Bip001_L_Finger4/Bip001_L_Finger41/Bip001_L_Finger42": {
+      "position": [
+        -0.01762772,
+        0,
+        -9.536743e-09
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_L_Clavicle/Bip001_L_UpperArm/Bip001_L_Forearm/Bip001_L_Hand/wep_L": {
+      "position": [
+        -0.09679271,
+        0.03279335,
+        -0.001126013
+      ],
+      "rotation_xyzw": [
+        -0.7216878,
+        -0.0009281088,
+        0.00033259156,
+        0.692218
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_Neck": {
+      "position": [
+        -0.20768009,
+        -0.029369637,
+        -5.5134296e-07
+      ],
+      "rotation_xyzw": [
+        1.847203e-06,
+        3.5404864e-07,
+        -0.1126019,
+        0.99364024
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_Neck/Bip001_Head": {
+      "position": [
+        -0.115370035,
+        -7.450581e-09,
+        1.1902429e-08
+      ],
+      "rotation_xyzw": [
+        -7.2896434e-08,
+        -1.0692971e-07,
+        0.11260216,
+        0.9936402
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle": {
+      "position": [
+        -0.18429004,
+        -0.024102345,
+        -0.024683194
+      ],
+      "rotation_xyzw": [
+        0.61416554,
+        0.028952468,
+        0.78811437,
+        0.028952412
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm": {
+      "position": [
+        -0.13607992,
+        1.0167542e-09,
+        -2.328926e-08
+      ],
+      "rotation_xyzw": [
+        -0.014649829,
+        0.30426642,
+        0.009416728,
+        0.95242774
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm": {
+      "position": [
+        -0.2713532,
+        -6.081567e-09,
+        -4.644047e-08
+      ],
+      "rotation_xyzw": [
+        -1.6763806e-08,
+        -2.9802322e-08,
+        0.05444564,
+        0.9985168
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand": {
+      "position": [
+        -0.2612661,
+        3.4239678e-09,
+        -4.4714124e-08
+      ],
+      "rotation_xyzw": [
+        0.71030897,
+        0.0026144132,
+        0.0030022229,
+        0.7038788
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger0": {
+      "position": [
+        -0.01922955,
+        0.01637665,
+        0.0195987
+      ],
+      "rotation_xyzw": [
+        -0.54820657,
+        0.2934295,
+        0.043927036,
+        0.7819457
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger0/Bip001_R_Finger01": {
+      "position": [
+        -0.03109821,
+        0,
+        7.629395e-08
+      ],
+      "rotation_xyzw": [
+        0.0023518351,
+        -0.015917167,
+        0.027256006,
+        0.999499
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger0/Bip001_R_Finger01/Bip001_R_Finger02": {
+      "position": [
+        -0.03563007,
+        -7.629395e-08,
+        0
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger1": {
+      "position": [
+        -0.08963852,
+        -0.005027771,
+        0.01954481
+      ],
+      "rotation_xyzw": [
+        -0.0027541504,
+        -0.024934018,
+        0.034451667,
+        0.9990915
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger1/Bip001_R_Finger11": {
+      "position": [
+        -0.038523667,
+        1.525879e-07,
+        0
+      ],
+      "rotation_xyzw": [
+        8.309787e-06,
+        0.00045240295,
+        -0.006923833,
+        0.9999759
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger1/Bip001_R_Finger11/Bip001_R_Finger12": {
+      "position": [
+        -0.02531208,
+        0,
+        0
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger2": {
+      "position": [
+        -0.08997936,
+        -0.0077051534,
+        -0.0021914481
+      ],
+      "rotation_xyzw": [
+        0.008724412,
+        -0.046712782,
+        0.06099632,
+        0.9970062
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger2/Bip001_R_Finger21": {
+      "position": [
+        -0.037389107,
+        7.629395e-08,
+        0
+      ],
+      "rotation_xyzw": [
+        -1.1552188e-07,
+        1.8861533e-08,
+        0.0019963274,
+        0.99999803
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger2/Bip001_R_Finger21/Bip001_R_Finger22": {
+      "position": [
+        -0.02874969,
+        0,
+        -7.1525568e-09
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger3": {
+      "position": [
+        -0.08190414,
+        -0.005325623,
+        -0.02183995
+      ],
+      "rotation_xyzw": [
+        0.03649146,
+        -0.098417796,
+        0.06128033,
+        0.9925861
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger3/Bip001_R_Finger31": {
+      "position": [
+        -0.03644615,
+        0,
+        0
+      ],
+      "rotation_xyzw": [
+        -0.0024864841,
+        0.0004916528,
+        -0.009164673,
+        0.9999548
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger3/Bip001_R_Finger31/Bip001_R_Finger32": {
+      "position": [
+        -0.024077,
+        0,
+        2.384186e-09
+      ],
+      "rotation_xyzw": [
+        0.002655467,
+        0.001885502,
+        0.019203477,
+        0.9998103
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger4": {
+      "position": [
+        -0.071343146,
+        0.001546783,
+        -0.038809247
+      ],
+      "rotation_xyzw": [
+        0.09495332,
+        -0.13649172,
+        0.054372646,
+        0.98457986
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger4/Bip001_R_Finger41": {
+      "position": [
+        -0.03100578,
+        -1.525879e-07,
+        1.9073491e-08
+      ],
+      "rotation_xyzw": [
+        0.0023527863,
+        0.002567263,
+        -0.014960846,
+        0.99988204
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/Bip001_R_Finger4/Bip001_R_Finger41/Bip001_R_Finger42": {
+      "position": [
+        -0.01762772,
+        7.629395e-08,
+        0
+      ],
+      "rotation_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/Bip001_R_Clavicle/Bip001_R_UpperArm/Bip001_R_Forearm/Bip001_R_Hand/wep_R": {
+      "position": [
+        -0.088278845,
+        0.040195916,
+        0.0010716489
+      ],
+      "rotation_xyzw": [
+        0.72256684,
+        -0.0022814865,
+        0.0034099433,
+        0.6912889
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/Bip001/Bip001_Pelvis/Bip001_Spine/Bip001_Spine1/Bip001_Spine2/wep_M": {
+      "position": [
+        -0.20822999,
+        -0.2955238,
+        -0.17057289
+      ],
+      "rotation_xyzw": [
+        0.6564926,
+        0.26271152,
+        -0.2627114,
+        0.6564928
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/IK_Root/IK_Weapon_L_001": {
+      "position": [
+        -0.538764,
+        0.9986635,
+        -0.003945091
+      ],
+      "rotation_xyzw": [
+        0.6082519,
+        0.3062541,
+        0.28517425,
+        0.67447287
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "chr_0024_deepfin_postmodel/Root/IK_Root/IK_Weapon_R_001": {
+      "position": [
+        0.5276106,
+        1.0003209,
+        -0.004328054
+      ],
+      "rotation_xyzw": [
+        0.28856122,
+        0.6739729,
+        0.6087476,
+        0.30318198
+      ],
+      "scale": [
+        1.000001,
+        1,
+        1
+      ]
+    }
+  },
+  "ancestor_palette_main_bones": [],
+  "rest_model_matrices": {
+    "Bip001_Pelvis": [
+      -3.600001223215804e-07,
+      -0.9999999999998849,
+      3.170792002298452e-07,
+      0.0,
+      -2.7999997691628433e-07,
+      3.1707930073453006e-07,
+      0.9999999999999103,
+      0.0,
+      -0.9999999999998961,
+      3.6000003336931045e-07,
+      -2.80000091027865e-07,
+      0.0,
+      7.776637849676061e-08,
+      1.0448500261468956,
+      0.0025234127679171566,
+      1.0
+    ],
+    "Bip001_Spine": [
+      -1.0449586973215195e-06,
+      -0.9999999999996413,
+      3.1707902927660253e-07,
+      0.0,
+      2.5374403910632587e-06,
+      3.170763865638254e-07,
+      0.9999999999928844,
+      0.0,
+      -0.9999999999926266,
+      1.0449595017131714e-06,
+      2.537440059766276e-06,
+      0.0,
+      7.637281762953457e-08,
+      1.1455662322771543,
+      0.021856682233140093,
+      1.0
+    ],
+    "Bip001_Spine1": [
+      -1.0449587116215193e-06,
+      -0.9999999999996413,
+      3.1707902927664107e-07,
+      0.0,
+      2.537439891063259e-06,
+      3.170763865643082e-07,
+      0.9999999999928844,
+      0.0,
+      -0.9999999999926266,
+      1.044959516013013e-06,
+      2.5374395597662723e-06,
+      0.0,
+      1.764360187176168e-07,
+      1.2463917322517044,
+      0.021776483263501917,
+      1.0
+    ],
+    "Bip001_Neck": [
+      1.3652623088087708e-07,
+      -0.974641433336937,
+      -0.22377237636246003,
+      0.0,
+      -1.990885430046323e-06,
+      -0.22377237636228384,
+      0.9746414333349536,
+      0.0,
+      -0.9999999999980089,
+      3.124410422232387e-07,
+      -1.970950228232997e-06,
+      0.0,
+      8.070331638413011e-07,
+      1.5547599179085245,
+      -0.007742116935308734,
+      1.0
+    ],
+    "Bip001_Head": [
+      1.653278498264863e-07,
+      -1.0000001356490091,
+      -1.215154492454409e-06,
+      0.0,
+      -1.4468217418810081e-06,
+      -1.2420075005778893e-06,
+      1.0000002526056027,
+      0.0,
+      -1.0000000999994212,
+      -1.6532619484372854e-07,
+      -1.4468213326198387e-06,
+      0.0,
+      7.817181742461535e-07,
+      1.6672073518229893,
+      0.01807523003231421,
+      1.0
+    ],
+    "Bip001_L_Clavicle": [
+      0.9663886331976983,
+      0.24392484910360407,
+      0.08120233969244095,
+      0.0,
+      0.08393006030678551,
+      -0.000792283773808587,
+      -0.9964715716217815,
+      0.0,
+      -0.24299972446443632,
+      0.9697938541857059,
+      -0.021238309854862907,
+      0.0,
+      -0.024682784648673933,
+      1.531372796807753,
+      -0.002474922875422827,
+      1.0
+    ],
+    "Bip001_L_UpperArm": [
+      0.6462054457277511,
+      0.7614367761252331,
+      0.05130858446751121,
+      0.0,
+      0.056720505405113066,
+      0.01912633185042645,
+      -0.9982069650840256,
+      0.0,
+      -0.7610526949062337,
+      0.6479569440780081,
+      -0.030829563729210297,
+      0.0,
+      -0.1561889439583505,
+      1.498179358316125,
+      -0.013524938771674454,
+      1.0
+    ],
+    "Bip001_L_Forearm": [
+      0.6485413798009018,
+      0.759001709375416,
+      -0.057534690247394014,
+      0.0,
+      -0.013880307879656632,
+      -0.06378113577610366,
+      -0.9978673160875097,
+      0.0,
+      -0.7610526982751351,
+      0.6479569404586358,
+      -0.030829558634923954,
+      0.0,
+      -0.33153865505325786,
+      1.291561602534453,
+      -0.027447663759048616,
+      1.0
+    ],
+    "Bip001_L_Hand": [
+      0.6484152060711681,
+      0.7584677836629343,
+      -0.06545664597090779,
+      0.0,
+      0.761048811020806,
+      -0.6479613055610233,
+      0.030827757383022278,
+      0.0,
+      -0.019031512018853315,
+      -0.06980485338279759,
+      -0.9973791651928229,
+      0.0,
+      -0.5009805419539521,
+      1.0932598612430493,
+      -0.012415792203768705,
+      1.0
+    ],
+    "Bip001_R_Clavicle": [
+      -0.9663886739885138,
+      0.24392520314292102,
+      0.08120109111944247,
+      0.0,
+      -0.08392879334679283,
+      -0.0007922537209704299,
+      -0.9964718800347281,
+      0.0,
+      -0.24300015674435518,
+      -0.9697937903062368,
+      0.02123799701954199,
+      0.0,
+      0.02468346850306879,
+      1.5313728398896982,
+      -0.00247489439524996,
+      1.0
+    ],
+    "Bip001_R_UpperArm": [
+      -0.6462051131653558,
+      0.7614372622426707,
+      0.05130792266689807,
+      0.0,
+      -0.056719475671909,
+      0.0191263777376196,
+      -0.9982074499115523,
+      0.0,
+      -0.7610532071514673,
+      -0.6479565013516396,
+      0.03082877173668735,
+      0.0,
+      0.1561895856198783,
+      1.498179557038819,
+      -0.0135247346595894,
+      1.0
+    ],
+    "Bip001_R_Forearm": [
+      -0.648540677366846,
+      0.7590027747769444,
+      -0.057536252639388705,
+      0.0,
+      0.01388083668598181,
+      -0.06378273897834227,
+      -0.9978676927730871,
+      0.0,
+      -0.7610536885041229,
+      -0.6479560831130781,
+      0.030830094982356723,
+      0.0,
+      0.3315389755990852,
+      1.2915507803066122,
+      -0.027447393925236704,
+      1.0
+    ],
+    "Bip001_R_Hand": [
+      -0.6484147332275156,
+      0.7584681592431011,
+      -0.06545730567740597,
+      0.0,
+      -0.7610497469844674,
+      -0.6479613006973627,
+      0.030827209289894957,
+      0.0,
+      -0.019032334900385355,
+      0.06980502691074977,
+      0.9973795383802443,
+      0.0,
+      0.5009810647396091,
+      1.0932594698986178,
+      -0.01241523446803891,
+      1.0
+    ],
+    "Bip001_L_Thigh": [
+      0.03946731143674798,
+      0.9992091094573536,
+      -0.004844497830685551,
+      0.0,
+      0.010940426070463588,
+      0.004415863584378328,
+      0.9999303011581571,
+      0.0,
+      0.9991609131518397,
+      -0.03951756722295921,
+      -0.01075749281045383,
+      0.0,
+      -0.07579990215313391,
+      1.0448499697650036,
+      0.0025235417529475244,
+      1.0
+    ],
+    "Bip001_L_Calf": [
+      0.040111024506817645,
+      0.9972634150541736,
+      0.06210414169433472,
+      0.0,
+      0.008271764260030932,
+      -0.06248344799112963,
+      0.9980118224465495,
+      0.0,
+      0.9991612487475081,
+      -0.03951757230430107,
+      -0.010755403140176732,
+      0.0,
+      -0.0942591863141232,
+      0.577508621338156,
+      0.004789367520498727,
+      1.0
+    ],
+    "Bip001_L_Foot": [
+      1.1459061967209582e-06,
+      1.0000002999996158,
+      -3.170790803512963e-07,
+      0.0,
+      0.0036766430675976847,
+      3.128638004236773e-07,
+      0.9999932213807121,
+      0.0,
+      0.9999932213803377,
+      -1.1470638298895523e-06,
+      -0.0036766430672357533,
+      0.0,
+      -0.11295963351897277,
+      0.11256846689496318,
+      -0.024164572080438797,
+      1.0
+    ],
+    "Bip001_L_Toe0": [
+      -0.0003445618370626876,
+      1.0049367084742513e-07,
+      -1.0000002811958126,
+      0.0,
+      -0.0015532014962826512,
+      0.9999988859336911,
+      6.356672893379431e-07,
+      0.0,
+      0.9999987171299842,
+      0.0015532011594663268,
+      -0.0003445611005293946,
+      0.0,
+      -0.1124398730608335,
+      0.03244865529177961,
+      0.08818075609982054,
+      1.0
+    ],
+    "Bip001_R_Thigh": [
+      -0.03946533530346454,
+      0.9992092541727907,
+      -0.004844387383107136,
+      0.0,
+      -0.010940665809743942,
+      0.004415765341506623,
+      0.9999305020272691,
+      0.0,
+      0.9991610965984616,
+      0.03951558867025744,
+      0.010757742802135536,
+      0.0,
+      0.07580005113537756,
+      1.0448500912465328,
+      0.002523374660753484,
+      1.0
+    ],
+    "Bip001_R_Calf": [
+      -0.040109114904926024,
+      0.9972634599518106,
+      0.0621035313785089,
+      0.0,
+      -0.008271630550423285,
+      -0.062482810509299096,
+      0.9980117375524941,
+      0.0,
+      0.9991611465679264,
+      0.039515667348526,
+      0.010755125142136845,
+      0.0,
+      0.09425843546131554,
+      0.5775088232357934,
+      0.004789149625745993,
+      1.0
+    ],
+    "Bip001_R_Foot": [
+      1.189586094729117e-06,
+      1.0000002999995599,
+      -3.1707907024804856e-07,
+      0.0,
+      -0.0036767806055900015,
+      3.2145075123837326e-07,
+      0.9999933821104215,
+      0.0,
+      0.9999935121100472,
+      -1.1884121761567767e-06,
+      0.0036767813059997404,
+      0.0,
+      0.11295798683753226,
+      0.11256853708073447,
+      -0.024164513083080034,
+      1.0
+    ],
+    "Bip001_R_Toe0": [
+      0.0003447512642000268,
+      9.867512708657945e-08,
+      -1.0000002812281152,
+      0.0,
+      0.0015553017309501975,
+      0.9999988326664365,
+      6.348670698422791e-07,
+      0.0,
+      0.999999063895147,
+      -0.001555302293295171,
+      0.00034475065088633886,
+      0.0,
+      0.11243806472851091,
+      0.03244872628957266,
+      0.08818080743403783,
+      1.0
+    ]
+  },
+  "rest_model_evidence": {
+    "Bip001_Pelvis": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_fur_01_lod0",
+      "mesh_id": "cab-daecff96422c78832ed79428fb8cad2d:-502215102147225969",
+      "frame_registration_required": true
+    },
+    "Bip001_Spine": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "frame_registration_required": true
+    },
+    "Bip001_Spine1": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "frame_registration_required": true
+    },
+    "Bip001_Neck": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_body_01_lod0",
+      "mesh_id": "cab-e5ae85bb7891c7af45e5804326b983c7:-1001480416160231815",
+      "frame_registration_required": true
+    },
+    "Bip001_Head": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_body_01_lod0",
+      "mesh_id": "cab-e5ae85bb7891c7af45e5804326b983c7:-1001480416160231815",
+      "frame_registration_required": true
+    },
+    "Bip001_L_Clavicle": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_body_01_lod0",
+      "mesh_id": "cab-e5ae85bb7891c7af45e5804326b983c7:-1001480416160231815",
+      "frame_registration_required": true
+    },
+    "Bip001_L_UpperArm": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_body_01_lod0",
+      "mesh_id": "cab-e5ae85bb7891c7af45e5804326b983c7:-1001480416160231815",
+      "frame_registration_required": true
+    },
+    "Bip001_L_Forearm": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_body_01_lod0",
+      "mesh_id": "cab-e5ae85bb7891c7af45e5804326b983c7:-1001480416160231815",
+      "frame_registration_required": true
+    },
+    "Bip001_L_Hand": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_body_01_lod0",
+      "mesh_id": "cab-e5ae85bb7891c7af45e5804326b983c7:-1001480416160231815",
+      "frame_registration_required": true
+    },
+    "Bip001_R_Clavicle": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_body_01_lod0",
+      "mesh_id": "cab-e5ae85bb7891c7af45e5804326b983c7:-1001480416160231815",
+      "frame_registration_required": true
+    },
+    "Bip001_R_UpperArm": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_body_01_lod0",
+      "mesh_id": "cab-e5ae85bb7891c7af45e5804326b983c7:-1001480416160231815",
+      "frame_registration_required": true
+    },
+    "Bip001_R_Forearm": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "frame_registration_required": true
+    },
+    "Bip001_R_Hand": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_body_01_lod0",
+      "mesh_id": "cab-e5ae85bb7891c7af45e5804326b983c7:-1001480416160231815",
+      "frame_registration_required": true
+    },
+    "Bip001_L_Thigh": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "frame_registration_required": true
+    },
+    "Bip001_L_Calf": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "frame_registration_required": true
+    },
+    "Bip001_L_Foot": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "frame_registration_required": true
+    },
+    "Bip001_L_Toe0": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "frame_registration_required": true
+    },
+    "Bip001_R_Thigh": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "frame_registration_required": true
+    },
+    "Bip001_R_Calf": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "frame_registration_required": true
+    },
+    "Bip001_R_Foot": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "frame_registration_required": true
+    },
+    "Bip001_R_Toe0": {
+      "kind": "native-palette-bindpose",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "frame_registration_required": true
+    }
+  },
+  "mesh_to_model_bind_registration": [
+    1.0000000000006393,
+    -2.5283473364224594e-07,
+    6.45883377485256e-07,
+    0.0,
+    6.458843171055774e-07,
+    1.2420072439612397e-06,
+    -1.0000001526067361,
+    0.0,
+    2.528340285227206e-07,
+    1.0000000356490648,
+    1.2151546428774173e-06,
+    0.0,
+    5.65537051911097e-08,
+    1.2048118612328906e-05,
+    -1.6964346071643086e-06,
+    1.0
+  ],
+  "bind_registration_by_renderer": {
+    "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_body_01_lod0": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224594e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458843171055774e-07,
+        1.2420072439612397e-06,
+        -1.0000001526067361,
+        0.0,
+        2.528340285227206e-07,
+        1.0000000356490648,
+        1.2151546428774173e-06,
+        0.0,
+        5.65537051911097e-08,
+        1.2048118612328906e-05,
+        -1.6964346071643086e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-e5ae85bb7891c7af45e5804326b983c7:-1001480416160231815",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_body_01_lod0",
+      "max_main_position_error_m": 0.00013048309329696735
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_hairshadow_01_lod0": {
+      "matrix": [
+        0.9999998999994777,
+        -9.266852179512786e-07,
+        1.0010660676254132e-06,
+        0.0,
+        1.0010662830589639e-06,
+        3.403488623933507e-07,
+        -0.9999998999997616,
+        0.0,
+        9.266848474090656e-07,
+        0.9999998999996004,
+        3.403497916010021e-07,
+        0.0,
+        -1.0628057418682604e-06,
+        9.242004892717759e-06,
+        -9.60734687749376e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Head",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:9125840553925461792",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_hairshadow_01_lod0",
+      "max_main_position_error_m": 2.22152998685518e-16
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_fur_01_lod0": {
+      "matrix": [
+        0.9999999999996602,
+        -1.0493851472291377e-06,
+        2.3628914161754505e-07,
+        0.0,
+        2.3628880891628893e-07,
+        -3.1707928499850814e-07,
+        -0.9999999999999226,
+        0.0,
+        1.049385222321515e-06,
+        0.9999999999996366,
+        -3.170790294064144e-07,
+        0.0,
+        -1.019800835760898e-06,
+        1.825347142547784e-06,
+        2.954673468049014e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Pelvis",
+      "mesh_id": "cab-daecff96422c78832ed79428fb8cad2d:-502215102147225969",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_fur_01_lod0",
+      "max_main_position_error_m": 2.2204502844110143e-16
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_face_01_lod0": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224594e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458843171055774e-07,
+        1.2420072439612397e-06,
+        -1.0000001526067361,
+        0.0,
+        2.528340285227206e-07,
+        1.0000000356490648,
+        1.2151546428774173e-06,
+        0.0,
+        5.655375519110967e-08,
+        1.2048118612328906e-05,
+        -1.6964346071634412e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-5ea46fba0c17363709db2479e9dfcf32:-7904706156638991472",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_face_01_lod0",
+      "max_main_position_error_m": 3.1024349825842907e-06
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_hair_01_lod0": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224594e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458843171055774e-07,
+        1.2420072439612397e-06,
+        -1.0000001526067361,
+        0.0,
+        2.528340285227206e-07,
+        1.0000000356490648,
+        1.2151546428774173e-06,
+        0.0,
+        5.65537051911097e-08,
+        1.2048118612328906e-05,
+        -1.6964346071643086e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-31d031b5ba3153eb045021ea5ba99174:4792739115457055737",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_hair_01_lod0",
+      "max_main_position_error_m": 3.1024349826219778e-06
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_brow_01_lod0": {
+      "matrix": [
+        0.9999998999994777,
+        -9.266852179512786e-07,
+        1.0010660676254132e-06,
+        0.0,
+        1.0010662830589639e-06,
+        3.403488623933507e-07,
+        -0.9999998999997616,
+        0.0,
+        9.266848474090656e-07,
+        0.9999998999996004,
+        3.403497916010021e-07,
+        0.0,
+        -1.0628057418682604e-06,
+        9.242004892717759e-06,
+        -9.60734687749376e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Head",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:4952257789465511712",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_brow_01_lod0",
+      "max_main_position_error_m": 2.22152998685518e-16
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0": {
+      "matrix": [
+        0.9999999999996602,
+        -1.0493851472291377e-06,
+        2.3628914161754505e-07,
+        0.0,
+        2.3628880891628893e-07,
+        -3.1707928499850814e-07,
+        -0.9999999999999226,
+        0.0,
+        1.049385222321515e-06,
+        0.9999999999996366,
+        -3.170790294064144e-07,
+        0.0,
+        -1.019800835760898e-06,
+        1.825347142547784e-06,
+        2.954673468049014e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Pelvis",
+      "mesh_id": "cab-ea9066e05e52ac5067d3a78c1798647c:-4122683182132474247",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod0/S_actor_deepfin_cloth_01_lod0",
+      "max_main_position_error_m": 0.00013703394263493387
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_body_01_lod3": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224604e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458841247226456e-07,
+        1.2174068679729863e-06,
+        -1.0000000625023149,
+        0.0,
+        2.528340495472585e-07,
+        0.9999999260518112,
+        1.1860788356087456e-06,
+        0.0,
+        5.6553705191109486e-08,
+        1.2048118612550951e-05,
+        -1.6964346070541536e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:2773535148132189984",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_body_01_lod3",
+      "max_main_position_error_m": 0.00013063255098179707
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_body_01_lod2": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224594e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458843171055774e-07,
+        1.2420072439612397e-06,
+        -1.0000001526067361,
+        0.0,
+        2.528340285227206e-07,
+        1.0000000356490648,
+        1.2151546428774173e-06,
+        0.0,
+        5.65537051911097e-08,
+        1.2048118612328906e-05,
+        -1.6964346071643086e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:8605760509525804832",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_body_01_lod2",
+      "max_main_position_error_m": 0.00013048309329696735
+    },
+    "chr_0024_deepfin_postmodel/Shadow_Proxy/SP_Desktop/S_actor_deepfin_body_01_shadowProxyDesktop": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224604e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458840945824738e-07,
+        1.0981975867880482e-06,
+        -1.0000000625024494,
+        0.0,
+        2.528341265426447e-07,
+        0.9999999260519493,
+        1.0668695381033795e-06,
+        0.0,
+        5.6553705191109486e-08,
+        1.2048118612772996e-05,
+        -1.6964346070541536e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:-1063393639523170528",
+      "renderer_path": "chr_0024_deepfin_postmodel/Shadow_Proxy/SP_Desktop/S_actor_deepfin_body_01_shadowProxyDesktop",
+      "max_main_position_error_m": 0.0001306325509816545
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_body_01_lod1": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224604e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458841247226456e-07,
+        1.2174068679729863e-06,
+        -1.0000000625023149,
+        0.0,
+        2.528340495472585e-07,
+        0.9999999260518112,
+        1.1860788356087456e-06,
+        0.0,
+        5.6553705191109486e-08,
+        1.2048118612550951e-05,
+        -1.6964346070541536e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:-1063393639523170528",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_body_01_lod1",
+      "max_main_position_error_m": 0.00013063255098179707
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_brow_01_lod3": {
+      "matrix": [
+        0.9999998999994777,
+        -9.266852179512786e-07,
+        1.0010660676254132e-06,
+        0.0,
+        1.0010662329077503e-06,
+        3.4034886547245006e-07,
+        -0.9999998999997687,
+        0.0,
+        9.26684882888249e-07,
+        0.9999998999996075,
+        3.403497827470399e-07,
+        0.0,
+        -1.0628057418682604e-06,
+        9.242004892939804e-06,
+        -9.607346877459066e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Head",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:857233927982597920",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_brow_01_lod3",
+      "max_main_position_error_m": 2.22152998685518e-16
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_cloth_01_lod1": {
+      "matrix": [
+        0.9999999999996602,
+        -1.0493851472291375e-06,
+        2.3628914161754505e-07,
+        0.0,
+        2.3628882309739955e-07,
+        -3.170792849985151e-07,
+        -0.9999999999999297,
+        0.0,
+        1.0493852275323032e-06,
+        0.9999999999996436,
+        -3.170790472019547e-07,
+        0.0,
+        -1.0198008357608983e-06,
+        1.825347142547784e-06,
+        2.954673468049014e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Pelvis",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:8813536528419112736",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_cloth_01_lod1",
+      "max_main_position_error_m": 0.00013709341586045056
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_hair_01_lod2": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224594e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458843171055774e-07,
+        1.2420072439612397e-06,
+        -1.0000001526067361,
+        0.0,
+        2.528340285227206e-07,
+        1.0000000356490648,
+        1.2151546428774173e-06,
+        0.0,
+        5.65537051911097e-08,
+        1.2048118612328906e-05,
+        -1.6964346071643086e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:-7850249907495647456",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_hair_01_lod2",
+      "max_main_position_error_m": 3.1024349826219778e-06
+    },
+    "chr_0024_deepfin_postmodel/Shadow_Proxy/SP_Desktop/S_actor_deepfin_hair_01_shadowProxyDesktop": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224604e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458840945824738e-07,
+        1.0981975867880482e-06,
+        -1.0000000625024494,
+        0.0,
+        2.528341265426447e-07,
+        0.9999999260519493,
+        1.0668695381033795e-06,
+        0.0,
+        5.6553705191109486e-08,
+        1.2048118612772996e-05,
+        -1.6964346070541536e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:-3268790375383906528",
+      "renderer_path": "chr_0024_deepfin_postmodel/Shadow_Proxy/SP_Desktop/S_actor_deepfin_hair_01_shadowProxyDesktop",
+      "max_main_position_error_m": 2.9134993824702517e-06
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_fur_01_lod3": {
+      "matrix": [
+        0.9999999999996602,
+        -1.0493851472291375e-06,
+        2.3628914161754505e-07,
+        0.0,
+        2.3628882309739955e-07,
+        -3.170792849985151e-07,
+        -0.9999999999999297,
+        0.0,
+        1.0493852275323032e-06,
+        0.9999999999996436,
+        -3.170790472019547e-07,
+        0.0,
+        -1.0198008357608983e-06,
+        1.825347142547784e-06,
+        2.954673468049014e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Pelvis",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:-8095951420052355296",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_fur_01_lod3",
+      "max_main_position_error_m": 2.220446049250317e-16
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_hair_01_lod1": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224604e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458841247226456e-07,
+        1.2174068679729863e-06,
+        -1.0000000625023149,
+        0.0,
+        2.528340495472585e-07,
+        0.9999999260518112,
+        1.1860788356087456e-06,
+        0.0,
+        5.6553705191109486e-08,
+        1.2048118612550951e-05,
+        -1.6964346070541536e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:-3268790375383906528",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_hair_01_lod1",
+      "max_main_position_error_m": 2.913499382057681e-06
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_fur_01_lod2": {
+      "matrix": [
+        0.9999999999996602,
+        -1.0493851472291377e-06,
+        2.3628914161754505e-07,
+        0.0,
+        2.3628880891628893e-07,
+        -3.1707928499850814e-07,
+        -0.9999999999999226,
+        0.0,
+        1.049385222321515e-06,
+        0.9999999999996366,
+        -3.170790294064144e-07,
+        0.0,
+        -1.019800835760898e-06,
+        1.825347142547784e-06,
+        2.954673468049014e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Pelvis",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:8749057815643014944",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_fur_01_lod2",
+      "max_main_position_error_m": 2.2204502844110143e-16
+    },
+    "chr_0024_deepfin_postmodel/Shadow_Proxy/SP_Desktop/S_actor_deepfin_fur_01_shadowProxyDesktop": {
+      "matrix": [
+        0.9999999999996602,
+        -1.0493851472291377e-06,
+        2.3628914161754505e-07,
+        0.0,
+        2.3628869800092996e-07,
+        -4.362885749984699e-07,
+        -0.9999999999998849,
+        0.0,
+        1.0493852557001185e-06,
+        0.9999999999995989,
+        -4.362883372019437e-07,
+        0.0,
+        -1.019800835760898e-06,
+        1.825347142547784e-06,
+        2.954673468049014e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Pelvis",
+      "mesh_id": "cab-47e1806797a788dd0e7a7320f0e072f0:2568472325914230137",
+      "renderer_path": "chr_0024_deepfin_postmodel/Shadow_Proxy/SP_Desktop/S_actor_deepfin_fur_01_shadowProxyDesktop",
+      "max_main_position_error_m": 2.220446049250317e-16
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_hairshadow_01_lod1": {
+      "matrix": [
+        0.9999998999994777,
+        -9.266852179512786e-07,
+        1.0010660676254132e-06,
+        0.0,
+        1.0010662329077503e-06,
+        3.4034886547245006e-07,
+        -0.9999998999997687,
+        0.0,
+        9.26684882888249e-07,
+        0.9999998999996075,
+        3.403497827470399e-07,
+        0.0,
+        -1.0628057418682604e-06,
+        9.242004892939804e-06,
+        -9.607346877459066e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Head",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:6545650257529128736",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_hairshadow_01_lod1",
+      "max_main_position_error_m": 2.22152998685518e-16
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_cloth_01_lod3": {
+      "matrix": [
+        0.9999999999996602,
+        -1.0493851472291375e-06,
+        2.3628914161754505e-07,
+        0.0,
+        2.3628882309739955e-07,
+        -3.170792849985151e-07,
+        -0.9999999999999297,
+        0.0,
+        1.0493852275323032e-06,
+        0.9999999999996436,
+        -3.170790472019547e-07,
+        0.0,
+        -1.0198008357608983e-06,
+        1.825347142547784e-06,
+        2.954673468049014e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Pelvis",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:9220066938807043872",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_cloth_01_lod3",
+      "max_main_position_error_m": 0.00013709341586045056
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_fur_01_lod1": {
+      "matrix": [
+        0.9999999999996602,
+        -1.0493851472291375e-06,
+        2.3628914161754505e-07,
+        0.0,
+        2.3628882309739955e-07,
+        -3.170792849985151e-07,
+        -0.9999999999999297,
+        0.0,
+        1.0493852275323032e-06,
+        0.9999999999996436,
+        -3.170790472019547e-07,
+        0.0,
+        -1.0198008357608983e-06,
+        1.825347142547784e-06,
+        2.954673468049014e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Pelvis",
+      "mesh_id": "cab-47e1806797a788dd0e7a7320f0e072f0:2568472325914230137",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_fur_01_lod1",
+      "max_main_position_error_m": 2.220446049250317e-16
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_face_01_lod3": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224604e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458841247226456e-07,
+        1.2174068679729863e-06,
+        -1.0000000625023149,
+        0.0,
+        2.528340495472585e-07,
+        0.9999999260518112,
+        1.1860788356087456e-06,
+        0.0,
+        5.6553705191109486e-08,
+        1.2048118612550951e-05,
+        -1.6964346070541536e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:-2436029076529756384",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_face_01_lod3",
+      "max_main_position_error_m": 2.913499382057681e-06
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_face_01_lod2": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224594e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458843171055774e-07,
+        1.2420072439612397e-06,
+        -1.0000001526067361,
+        0.0,
+        2.528340285227206e-07,
+        1.0000000356490648,
+        1.2151546428774173e-06,
+        0.0,
+        5.655375519110967e-08,
+        1.2048118612328906e-05,
+        -1.6964346071634412e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:3739853503903876896",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_face_01_lod2",
+      "max_main_position_error_m": 3.1024349825842907e-06
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_face_01_lod1": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224604e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458841247226456e-07,
+        1.2174068679729863e-06,
+        -1.0000000625023149,
+        0.0,
+        2.528340495472585e-07,
+        0.9999999260518112,
+        1.1860788356087456e-06,
+        0.0,
+        5.6553755191109456e-08,
+        1.2048118612550951e-05,
+        -1.6964346070532862e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:-5961426400556169440",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_face_01_lod1",
+      "max_main_position_error_m": 2.9134993820175503e-06
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_brow_01_lod2": {
+      "matrix": [
+        0.9999998999994777,
+        -9.266852179512786e-07,
+        1.0010660676254132e-06,
+        0.0,
+        1.0010662830589639e-06,
+        3.403488623933507e-07,
+        -0.9999998999997616,
+        0.0,
+        9.266848474090656e-07,
+        0.9999998999996004,
+        3.403497916010021e-07,
+        0.0,
+        -1.062803319708257e-06,
+        1.1842004892681501e-05,
+        -9.607338028426449e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Head",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:6800390105185830688",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_brow_01_lod2",
+      "max_main_position_error_m": 2.220717083252851e-16
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_iris_01_lod3": {
+      "matrix": [
+        0.9999998999994777,
+        -9.266852179512786e-07,
+        1.0010660676254132e-06,
+        0.0,
+        1.0010662329077503e-06,
+        3.4034886547245006e-07,
+        -0.9999998999997687,
+        0.0,
+        9.26684882888249e-07,
+        0.9999998999996075,
+        3.403497827470399e-07,
+        0.0,
+        -1.0628057418682604e-06,
+        9.242004892939804e-06,
+        -9.607346877459066e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Head",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:1234940439433496352",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_iris_01_lod3",
+      "max_main_position_error_m": 2.22152998685518e-16
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_iris_01_lod2": {
+      "matrix": [
+        0.9999998999994777,
+        -9.266852179512786e-07,
+        1.0010660676254132e-06,
+        0.0,
+        1.0010662830589639e-06,
+        3.403488623933507e-07,
+        -0.9999998999997616,
+        0.0,
+        9.266848474090656e-07,
+        0.9999998999996004,
+        3.403497916010021e-07,
+        0.0,
+        -1.0628057418682604e-06,
+        9.242004892717759e-06,
+        -9.60734687749376e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Head",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:469587574956148512",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_iris_01_lod2",
+      "max_main_position_error_m": 2.22152998685518e-16
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_hair_01_lod3": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224604e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458841247226456e-07,
+        1.2174068679729863e-06,
+        -1.0000000625023149,
+        0.0,
+        2.528340495472585e-07,
+        0.9999999260518112,
+        1.1860788356087456e-06,
+        0.0,
+        5.6553705191109486e-08,
+        1.2048118612550951e-05,
+        -1.6964346070541536e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:-8967657762008479968",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod3/S_actor_deepfin_hair_01_lod3",
+      "max_main_position_error_m": 2.913499382057681e-06
+    },
+    "chr_0024_deepfin_postmodel/Shadow_Proxy/SP_Desktop/S_actor_deepfin_face_01_shadowProxyDesktop": {
+      "matrix": [
+        1.0000000000006393,
+        -2.5283473364224604e-07,
+        6.45883377485256e-07,
+        0.0,
+        6.458840945824738e-07,
+        1.0981975867880482e-06,
+        -1.0000000625024494,
+        0.0,
+        2.528341265426447e-07,
+        0.9999999260519493,
+        1.0668695381033795e-06,
+        0.0,
+        5.6553755191109456e-08,
+        1.2048118612772996e-05,
+        -1.6964346070532862e-06,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Neck",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:-5961426400556169440",
+      "renderer_path": "chr_0024_deepfin_postmodel/Shadow_Proxy/SP_Desktop/S_actor_deepfin_face_01_shadowProxyDesktop",
+      "max_main_position_error_m": 2.913499382430121e-06
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_cloth_01_lod2": {
+      "matrix": [
+        0.9999999999996602,
+        -1.0493851472291377e-06,
+        2.3628914161754505e-07,
+        0.0,
+        2.3628880891628893e-07,
+        -3.1707928499850814e-07,
+        -0.9999999999999226,
+        0.0,
+        1.049385222321515e-06,
+        0.9999999999996366,
+        -3.170790294064144e-07,
+        0.0,
+        -1.019800835760898e-06,
+        1.825347142547784e-06,
+        2.954673468049014e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Pelvis",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:-6196428907759483104",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod2/S_actor_deepfin_cloth_01_lod2",
+      "max_main_position_error_m": 0.00013703394263493387
+    },
+    "chr_0024_deepfin_postmodel/Shadow_Proxy/SP_Desktop/S_actor_deepfin_cloth_01_shadowProxyDesktop": {
+      "matrix": [
+        0.9999999999996602,
+        -1.0493851472291377e-06,
+        2.3628914161754505e-07,
+        0.0,
+        2.3628869800092996e-07,
+        -4.362885749984699e-07,
+        -0.9999999999998849,
+        0.0,
+        1.0493852557001185e-06,
+        0.9999999999995989,
+        -4.362883372019437e-07,
+        0.0,
+        -1.019800835760898e-06,
+        1.825347142547784e-06,
+        2.954673468049014e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Pelvis",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:8813536528419112736",
+      "renderer_path": "chr_0024_deepfin_postmodel/Shadow_Proxy/SP_Desktop/S_actor_deepfin_cloth_01_shadowProxyDesktop",
+      "max_main_position_error_m": 0.00013709341586030032
+    },
+    "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_brow_01_lod1": {
+      "matrix": [
+        0.9999998999994777,
+        -9.266852179512786e-07,
+        1.0010660676254132e-06,
+        0.0,
+        1.0010662329077503e-06,
+        3.4034886547245006e-07,
+        -0.9999998999997687,
+        0.0,
+        9.26684882888249e-07,
+        0.9999998999996075,
+        3.403497827470399e-07,
+        0.0,
+        -1.0628057418682604e-06,
+        9.242004892939804e-06,
+        -9.607346877459066e-07,
+        1.0
+      ],
+      "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
+      "anchor_bone": "Bip001_Head",
+      "mesh_id": "cab-1afc929e8da275732be0cbe9f602fc53:7765437807096743712",
+      "renderer_path": "chr_0024_deepfin_postmodel/Mesh_all/lod1/S_actor_deepfin_brow_01_lod1",
+      "max_main_position_error_m": 2.22152998685518e-16
+    }
+  },
+  "bind_registration_max_position_error_m": 0.00013685488028614975,
+  "bind_registration_policy": "offline raw native bindpose frame -> authored model frame; runtime apply only if actual bindposes still use that raw frame, never twice",
+  "rest_matrix_policy": "prefer live actual renderer bindposes; missing parent from palette child plus authored static local chain; offline matrices are client-version-qualified fallback",
+  "secondary_skin_roots": []
+}

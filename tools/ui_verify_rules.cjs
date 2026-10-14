@@ -1,0 +1,27 @@
+'use strict';
+const assert=require('node:assert/strict');
+const W=require('../ui/workshop.js');
+assert.equal(W.modes.length,6);assert.equal(W.characters.length,33);assert.equal(W.modes.find(m=>m.id==='lance').category,'长柄');
+assert.equal(W.configuration({spirit_key:17,speed:1.25}).keys.spirit,17);
+assert.equal(W.configuration({laevatain_blade:false}).visual_weapon,'equipped');
+assert.equal(W.configuration({schema_version:1,laevatain_blade:false}).visual_weapon,'equipped');
+assert.equal(W.configuration({}).keyboard_preset,'mouse5');assert.equal(W.configuration({}).keys.spirit,6);
+assert.equal(W.configuration({mode:'bow',keyboard_preset:'mouse3'}).keys.secondary,4);assert.equal(W.configuration({mode:'bow',keyboard_preset:'mouse3'}).keys.reload,82);
+assert.equal(W.configuration({keys:{spirit:17,secondary:2}}).keyboard_preset,'custom');assert.equal(W.configuration({keys:{spirit:17,secondary:2}}).keys.spirit,17);
+assert.equal(W.configuration({mode:'bow',mode_keys:{bow:{secondary:5,spirit:17}}}).keys.secondary,5);
+assert.equal(W.relevantKeys('bow').includes('spirit'),false);assert.equal(W.relevantKeys('bow').includes('reload'),true);
+assert.equal(W.identifyPreset('lance',W.presetKeys('lance','mouse3')),'mouse3');assert.throws(()=>W.configuration({keyboard_preset:'unknown'}));
+assert.equal(W.configuration({demo_sequence:'signature',demo_loop:false,projectile_speed:120}).demo_loop,false);
+assert.throws(()=>W.configuration({demo_sequence:'unknown'}));assert.throws(()=>W.configuration({demo_loop:1}));assert.throws(()=>W.configuration({projectile_speed:121}));
+assert.equal(W.configuration({hud_margin:128}).hud_margin,128);assert.throws(()=>W.configuration({volumes:{unknown:1}}));
+assert.throws(()=>W.configuration({mode:'bow',visual_weapon:'laevatain_blade'}));assert.throws(()=>W.preset({config:{mode:'lance',visual_weapon:'typhoea_bow'}}));assert.equal(W.configuration({mode:'longsword',visual_weapon:'laevatain_blade'}).visual_weapon,'laevatain_blade');assert.equal(W.configuration({mode:'bow',visual_weapon:'typhoea_bow'}).visual_weapon,'typhoea_bow');assert.equal(W.visualWeaponAllowed('greatsword','laevatain_blade'),false);assert.equal(W.visualWeaponAllowed('bow','source'),true);
+assert.throws(()=>W.configuration({schema_version:3}));assert.throws(()=>W.configuration({speed:0}));assert.throws(()=>W.configuration({hud_scale:3}));assert.throws(()=>W.configuration(JSON.parse('{"__proto__":{"enabled":false}}')));
+assert.throws(()=>W.preset({config:{keys:{attack:27}}}));assert.equal(W.keyConflicts(W.configuration({mode:'light_bowgun'})).length,0);
+assert.equal(W.keyConflicts(W.configuration({keys:{secondary:1}})).length,1);
+assert.throws(()=>W.preset({version:10,config:{}}));assert.equal(W.preset({config:{speed:.75}}).config.schema_version,2);
+assert.equal(W.equivalent({keys:{a:1,b:2},mode:'bow'},{mode:'bow',keys:{b:2,a:1}}),true);assert.equal(W.equivalent({keys:{a:1}},{keys:{a:2}}),false);
+// Mono 16-bit source at 24 kHz, compared with independent expected integer samples.
+const wav=Buffer.alloc(44+8);wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVE',8);wav.write('fmt ',12);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(24000,24);wav.writeUInt32LE(48000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(8,40);[1000,-1000,2000,-2000].forEach((v,i)=>wav.writeInt16LE(v,44+i*2));
+const pcm=W.pcmWav(wav.buffer.slice(wav.byteOffset,wav.byteOffset+wav.byteLength));assert.equal(pcm.frames,8);assert.equal(pcm.sampleRate,48000);assert.equal(pcm.channels,2);assert.deepEqual(Array.from(pcm.samples),[3000,3000,0,0,-3000,-3000,1500,1500,6000,6000,0,0,-6000,-6000,-6000,-6000]);
+assert.throws(()=>W.pcmWav(new ArrayBuffer(40)));const truncated=Buffer.from(wav);truncated.writeUInt32LE(999999,40);assert.throws(()=>W.pcmWav(truncated.buffer.slice(truncated.byteOffset,truncated.byteOffset+truncated.byteLength)));
+console.log('UI six-mode catalog, 33-character fallback, migration, key conflicts, import validation and PCM parity fixtures passed');

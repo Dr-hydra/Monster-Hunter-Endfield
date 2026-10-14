@@ -1,0 +1,609 @@
+{
+  "schema": 2,
+  "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+  "characters": [
+    {
+      "character_id": "chr_0002_endminm",
+      "label": "男管理员",
+      "profile": "chr_0002_endminm.json",
+      "default_mode": "longsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0003_endminf",
+      "label": "女管理员",
+      "profile": "female_admin.json",
+      "default_mode": "longsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0004_pelica",
+      "label": "佩丽卡",
+      "profile": "chr_0004_pelica.json",
+      "default_mode": "bow",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0005_chen",
+      "label": "陈千语",
+      "profile": "chr_0005_chen.json",
+      "default_mode": "longsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0006_wolfgd",
+      "label": "狼卫",
+      "profile": "chr_0006_wolfgd.json",
+      "default_mode": "light_bowgun",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0007_ikut",
+      "label": "弧光",
+      "profile": "chr_0007_ikut.json",
+      "default_mode": "longsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0009_azrila",
+      "label": "余烬",
+      "profile": "chr_0009_azrila.json",
+      "default_mode": "greatsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0011_seraph",
+      "label": "赛希",
+      "profile": "chr_0011_seraph.json",
+      "default_mode": "bow",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0012_avywen",
+      "label": "艾维文娜",
+      "profile": "chr_0012_avywen.json",
+      "default_mode": "lance",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0013_aglina",
+      "label": "洁尔佩塔",
+      "profile": "chr_0013_aglina.json",
+      "default_mode": "bow",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0014_aurora",
+      "label": "昼雪",
+      "profile": "chr_0014_aurora.json",
+      "default_mode": "greatsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0015_lifeng",
+      "label": "黎风",
+      "profile": "chr_0015_lifeng.json",
+      "default_mode": "lance",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0016_laevat",
+      "label": "莱万汀",
+      "profile": "laevatain.json",
+      "default_mode": "longsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0017_yvonne",
+      "label": "伊冯",
+      "profile": "chr_0017_yvonne.json",
+      "default_mode": "light_bowgun",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0018_dapan",
+      "label": "大潘",
+      "profile": "chr_0018_dapan.json",
+      "default_mode": "greatsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0019_karin",
+      "label": "秋栗",
+      "profile": "chr_0019_karin.json",
+      "default_mode": "longsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0020_meurs",
+      "label": "卡契尔",
+      "profile": "chr_0020_meurs.json",
+      "default_mode": "greatsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0021_whiten",
+      "label": "埃特拉",
+      "profile": "chr_0021_whiten.json",
+      "default_mode": "lance",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0022_bounda",
+      "label": "萤石",
+      "profile": "chr_0022_bounda.json",
+      "default_mode": "light_bowgun",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0023_antal",
+      "label": "安塔尔",
+      "profile": "chr_0023_antal.json",
+      "default_mode": "bow",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0024_deepfin",
+      "label": "阿列什",
+      "profile": "chr_0024_deepfin.json",
+      "default_mode": "longsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0025_ardelia",
+      "label": "艾尔黛拉",
+      "profile": "chr_0025_ardelia.json",
+      "default_mode": "bow",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0026_lastrite",
+      "label": "别礼",
+      "profile": "chr_0026_lastrite.json",
+      "default_mode": "greatsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0027_tangtang",
+      "label": "汤汤",
+      "profile": "chr_0027_tangtang.json",
+      "default_mode": "light_bowgun",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0028_wulfa",
+      "label": "洛茜",
+      "profile": "chr_0028_wulfa.json",
+      "default_mode": "longsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0029_pograni",
+      "label": "骏卫",
+      "profile": "chr_0029_pograni.json",
+      "default_mode": "longsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0030_zhuangfy",
+      "label": "庄方宜",
+      "profile": "chr_0030_zhuangfy.json",
+      "default_mode": "bow",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0031_mifu",
+      "label": "弭弗",
+      "profile": "chr_0031_mifu.json",
+      "default_mode": "greatsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0032_lizhiyan",
+      "label": "诀",
+      "profile": "chr_0032_lizhiyan.json",
+      "default_mode": "bow",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0033_camille",
+      "label": "卡缪",
+      "profile": "chr_0033_camille.json",
+      "default_mode": "lance",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0034_typhoea",
+      "label": "提弗洛斯",
+      "profile": "typhoea.json",
+      "default_mode": "bow",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0035_liino",
+      "label": "梨诺",
+      "profile": "chr_0035_liino.json",
+      "default_mode": "lance",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    },
+    {
+      "character_id": "chr_0038_purrche",
+      "label": "噗切娜",
+      "profile": "chr_0038_purrche.json",
+      "default_mode": "longsword",
+      "supported_modes": [
+        "longsword",
+        "sword_shield",
+        "greatsword",
+        "lance",
+        "light_bowgun",
+        "bow"
+      ],
+      "status": "offline-profile-qualified",
+      "runtime_verified": false,
+      "source_mesh_available": true,
+      "finger_bones": 30
+    }
+  ],
+  "modes": [
+    "longsword",
+    "sword_shield",
+    "greatsword",
+    "lance",
+    "light_bowgun",
+    "bow"
+  ],
+  "runtime_verified": false
+}

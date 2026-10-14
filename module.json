@@ -3,7 +3,7 @@
   "id": "endfield.longsword.showcase",
   "name": "Monster Hunter Endfield",
   "author": "Better Endfield contributors",
-  "version": "0.6.0-dev",
+  "version": "1.0.0-offline-rc1",
   "abi": 1,
   "libraries": {
     "windows-x64": "native/windows-x64/endfield.longsword.showcase.dll"
@@ -20,7 +20,7 @@
     "sound_enabled": true,
     "sound_volume": 0.65,
     "spirit_key": 6,
-    "spirit_alt_key": 17,
+    "spirit_alt_key": 6,
     "grip_strength": 1.0,
     "local_practice": false,
     "practice_hp": 1000,
@@ -28,7 +28,32 @@
     "practice_radius": 0.65,
     "practice_height": 0.9,
     "practice_blade_length": 1.25,
-    "laevatain_blade": true
+    "laevatain_blade": true,
+    "schema_version": 2,
+    "mode": "longsword",
+    "visual_weapon": "auto",
+    "theme": "auto",
+    "hud_layout": "teaching",
+    "effects_quality": "full",
+    "practice_target": "dummy",
+    "projectile_speed": 30,
+    "keys": {
+      "attack": 1,
+      "secondary": 2,
+      "spirit": 6,
+      "dodge": 32,
+      "sheathe": 69,
+      "aim": 2,
+      "reload": 5
+    },
+    "volumes": {
+      "weapon": 1,
+      "impact": 1,
+      "charge": 1,
+      "fire": 1,
+      "voice": 0
+    },
+    "keyboard_preset": "mouse5"
   },
   "dependencies": []
 }

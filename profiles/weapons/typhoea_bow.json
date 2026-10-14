@@ -1,0 +1,77 @@
+{
+  "schema": 2,
+  "id": "typhoea_bow",
+  "display_name": "提夫罗斯原生弓",
+  "resource_id": "wpn_misc_0051",
+  "asset_path": "assets/beyond/dynamicassets/gameplay/prefabs/weapons/wpn_misc_0051.prefab",
+  "asset_path_hash": "381659519294256993",
+  "renderer_path": "Mesh_all/lod0/S_wpn_misc_0051_01_lod0",
+  "renderer_paths": [
+    "Mesh_all/lod0/S_wpn_misc_0051_01_lod0",
+    "Mesh_all/lod0/S_wpn_misc_0051_02_lod0"
+  ],
+  "mount_bone_path": "Root/wpn_bow_01_jnt",
+  "mount_reference_path": "Root/wpn_bow_01_jnt",
+  "mount_position": [
+    0,
+    0,
+    0
+  ],
+  "mount_rotation_xyzw": [
+    0,
+    0,
+    0,
+    1
+  ],
+  "mount_side": "left",
+  "mount_socket_name": "IK_Weapon_L_001",
+  "mount_source_verified": true,
+  "original_mount_character_point": 84,
+  "original_mount_weapon_index": 10,
+  "mount_mode": "authored-native-IK-left-weapon-frame",
+  "mount_runtime_verified": false,
+  "mount_evidence": "Exact decoded CharacterTemplateData StaticWeaponData index10 wpn_misc_0051 fightMountTarget.characterMountPoint84 -> native IK_Weapon_L_001. Prefab root authored identity; source IK frame expressed in the same-character hand and migrated with its actual proportions. Runtime and native bow animation curves remain separate validation.",
+  "blade_root_axis": [
+    0,
+    0,
+    1
+  ],
+  "edge_root_axis": [
+    1,
+    0,
+    0
+  ],
+  "blade_length_m": 1.5161311970023075,
+  "material_policy": "readonly-native-shared-materials-plus-owned-property-block",
+  "clone_policy": "pure-owned-gameobjects-transforms-two-skinned-renderers-full-own-bone-palettes",
+  "controls": {
+    "type": "bow",
+    "string_center_path": "Root/wpn_bow_01_jnt/slot_M_string_01_vfx",
+    "string_upper_path": "Root/wpn_bow_01_jnt/slot_up_string_01_vfx",
+    "string_lower_path": "Root/wpn_bow_01_jnt/slot_dn_string_01_vfx",
+    "string_rest_center_root": [
+      0.2512045,
+      -0.11921862414567581,
+      -0.007166598211966743
+    ],
+    "string_rest_upper_root": [
+      0.5397988,
+      0.6304825508543304,
+      -0.007166604840627286
+    ],
+    "string_rest_lower_root": [
+      -0.0048678033,
+      -0.7844351491456603,
+      -0.0071667679119516575
+    ],
+    "draw_finger_bone": "Bip001_R_Finger22",
+    "draw_point_policy": "target right middle-finger distal phalanx from actual skin palette; contact anchor matches runtime; source native draw contact unknown",
+    "draw_point_verified": false,
+    "release_policy": "restore authored own string center immediately; local arrow projectile separately",
+    "launch_point_path": "Root/FunnelPoint/LaunchPoint_1",
+    "bow_arm_policy": "preserve native own nine-bone bind hierarchy; do not invent drawn angular curves"
+  },
+  "vfx_status": "native string/flow material retained; index draw point is anatomical candidate; native limb charge curves unresolved",
+  "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+  "runtime_verified": false
+}

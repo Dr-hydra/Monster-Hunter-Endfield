@@ -75,6 +75,10 @@ int main(int argc,char** argv){try{
  const auto before=config.speed;CHECK(ConfigurationChanged("{\"speed\":0}")==BE_Result_InvalidArgument&&config.speed==before);CHECK(ConfigurationChanged("{\"speed\":1.25,\"sound_enabled\":false,\"local_practice\":true}")==BE_Result_Ok&&config.speed==1.25f);
  CHECK(Initialize(nullptr,"{}")==BE_Result_InvalidArgument);CHECK(Message("test","{\"action\":\"status\"}")==BE_Result_NotReady);
  initialized=true;ready=false;bridge.reply=Reply;CHECK(Message("test","{\"action\":\"status\"}")==BE_Result_Ok);CHECK(Message("test","{\"action\":\"demo\"}")==BE_Result_NotReady);CHECK(Message("test","malformed")==BE_Result_InvalidArgument);
+ // Saving volume or loop policy must preserve the active demonstration.
+ loadedMode="longsword";autoDemo=true;demoStep=3;demoClock=.2f;demoElapsed=7;demoDelay=.8f;
+ Configure("{\"sound_volume\":0.4,\"demo_loop\":false}");CHECK(autoDemo&&demoStep==3&&Near(demoClock,.2f)&&Near(demoElapsed,7)&&!config.demo_loop);
+ Configure("{\"demo_sequence\":\"signature\"}");CHECK(demoStep==0&&Near(demoElapsed,0)&&demoSequence.size()>0);autoDemo=false;
  suppressInput=true;CHECK(Message("test","{\"action\":\"stop\"}")==BE_Result_Ok&&!suppressInput);initialized=false;bridge={};api=nullptr;
  CHECK(BetterEndfield_GetThirdPartyModuleV1()->version==1);std::cout<<"runtime: ownership cleanup, validation, host messages, HUD lifecycle passed (simulated host)\n";return 0;
  }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}}

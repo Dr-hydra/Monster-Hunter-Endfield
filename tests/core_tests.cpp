@@ -18,7 +18,10 @@ LS::Clip MakeClip(int slot,float duration=2.f) {
         c.frames.push_back(p);}
     return c;
 }
-LS::Controller MakeController(){LS::Controller c;for(int id:{1,3,101,102,103,104,105,106,107,110,111,112,150,160,306,307,308})c.clips.emplace(id,MakeClip(id));return c;}
+LS::Controller MakeController(){LS::Controller c;for(int id:{1,3,101,102,103,104,105,106,107,110,111,112,150,160,306,307,308})c.clips.emplace(id,MakeClip(id));
+ c.moves={{LS::Command::Slash,{101,102,103}},{LS::Command::Thrust,{110,111}},{LS::Command::Spirit,{104,105,106,107}},
+ {LS::Command::Fade,{112}},{LS::Command::Foresight,{150}},{LS::Command::Sheathe,{306}},{LS::Command::Iai,{307}},
+ {LS::Command::IaiSpirit,{308}},{LS::Command::Helm,{160}},{LS::Command::Dodge,{3}},{LS::Command::NormalSheathe,{3}}};return c;}
 void MathTest(){
     using namespace LS;
     Quat q{0,0,std::sin(std::numbers::pi_v<float>/4),std::cos(std::numbers::pi_v<float>/4)};
@@ -49,8 +52,10 @@ void ControllerTest(){
     c.tick(.6f);CHECK(c.slot==1);
     // Second button within 80 ms produces only the chord, without a wrong attack first.
     c.inputBits(SlashBit,SlashBit);c.tick(.04f);CHECK(c.slot==1);c.inputBits(ThrustBit,SlashBit|ThrustBit);CHECK(c.slot==112);c.tick(.04f);CHECK(c.slot==112);
-    c.stop();CHECK(c.start());c.inputBits(SpiritBit,SpiritBit);c.tick(.025f);c.inputBits(ThrustBit,ThrustBit|SpiritBit);CHECK(c.slot==150);
-    c.stop();CHECK(c.start());c.inputBits(DodgeBit,SpiritBit|DodgeBit);CHECK(c.slot==306);c.tick(5);CHECK(c.sheathed()&&Near(c.seconds,80.f/60));
+    c.stop();CHECK(c.start());c.inputBits(SpiritBit|ThrustBit,SpiritBit|ThrustBit);CHECK(c.slot==1&&!c.available(Command::Foresight));
+    c.input(Command::Slash);c.tick(1.11f);c.inputBits(SpiritBit,SpiritBit);c.tick(.025f);c.inputBits(ThrustBit,ThrustBit|SpiritBit);CHECK(c.slot==150);
+    c.stop();CHECK(c.start());c.inputBits(DodgeBit,SpiritBit|DodgeBit);CHECK(c.slot==1&&!c.available(Command::Sheathe));
+    c.input(Command::Slash);c.tick(1.11f);c.inputBits(DodgeBit,SpiritBit|DodgeBit);CHECK(c.slot==306);c.tick(5);CHECK(c.sheathed()&&Near(c.seconds,80.f/60));
     c.input(Command::Slash);CHECK(c.slot==307);c.tick(2.1f);CHECK(c.slot==1);
     c.input(Command::Sheathe);c.tick(1.34f);c.input(Command::Spirit);CHECK(c.slot==308);
     // Blending starts continuously and ends at the sampled target pose.
@@ -60,6 +65,8 @@ void ControllerTest(){
         for(auto q:c.output.rotations)CHECK(Finite(q)&&Near(Dot(q,q),1,.0001f));CHECK(Finite(c.output.hip));}
     c.input(Command::Stop);CHECK(!c.active);c.input(Command::Slash);CHECK(!c.active);CHECK(c.start());c.tick(.3f);CHECK(c.slot==1);
     CHECK(Throws([&]{c.tick(-1);}));CHECK(Throws([&]{c.tick(std::numeric_limits<float>::infinity());}));CHECK(Throws([&]{c.tick(std::numeric_limits<float>::max());}));
+    CHECK(c.start());c.input(Command::NormalSheathe);c.tick(3);CHECK(c.normalSheathed()&&c.resting()&&c.slot==3);c.tick(5);CHECK(c.slot==3&&Near(c.seconds,2));
+    c.input(Command::Slash);CHECK(!c.normalSheathed()&&c.slot==101);
     CHECK(!c.start(999));c.setMove(Command::Helm,{301});CHECK(c.start());c.input(Command::Helm);CHECK(c.slot==1);c.tick(.5f);CHECK(c.slot==1);
 }
 std::vector<unsigned char> ValidBytes(){
@@ -87,9 +94,31 @@ void ReaderTest(){
     write(original);CHECK(Throws([&]{LS::ReadClip(path,0);}));CHECK(Throws([&]{LS::ReadClip(path,22);}));
     std::filesystem::remove(path);std::filesystem::remove(folder);
 }
+void ModeControlsTest(){
+    using namespace LS;auto c=MakeController();c.longswordRules=false;
+    c.moves={{Command::Slash,{101,102}},{Command::Guard,{104}},{Command::Charge,{105}},{Command::Fire,{106}},{Command::Release,{107}}};
+    c.inputBindings={{SlashBit,Command::Slash},{ThrustBit,Command::Guard},{SpiritBit,Command::Charge}};
+    c.chordBindings={{SlashBit|ThrustBit,Command::Fire}};
+    c.holdPolicies[Command::Guard]={30,false,{}};
+    c.holdPolicies[Command::Charge]={45,false,{{0,106},{1,107}}};
+    CHECK(c.start());c.inputBits(SlashBit|ThrustBit,SlashBit|ThrustBit);CHECK(c.slot==106);
+    c.tick(3);CHECK(c.slot==c.idleSlot);c.held(Command::Guard,true);c.tick(2);CHECK(c.slot==104&&Near(c.seconds,.5f));
+    CHECK(c.heldSeconds()>1);c.held(Command::Guard,false);CHECK(c.slot==c.idleSlot);
+    c.held(Command::Charge,true);c.tick(.8f);CHECK(c.slot==105&&Near(c.seconds,.75f));c.held(Command::Charge,false);CHECK(c.slot==106);
+    c.tick(3);c.held(Command::Charge,true);c.tick(1.4f);c.held(Command::Charge,false);CHECK(c.slot==107);
+    c.stop();CHECK(!c.holding(Command::Charge)&&Near(c.heldSeconds(),0));
+    CHECK(c.start());c.hardwareInput(ThrustBit,ThrustBit);c.tick(.1f);CHECK(c.holding(Command::Guard));
+    c.hardwareInput(SlashBit,SlashBit|ThrustBit);CHECK(c.slot==106&&!c.holding(Command::Guard));
+    c.hardwareInput(0,0);c.tick(3);
+    c.chordBindings[SlashBit|SpiritBit]=Command::Charge;
+    c.hardwareInput(SlashBit|SpiritBit,SlashBit|SpiritBit);c.tick(1.2f);CHECK(c.holding(Command::Charge));
+    c.hardwareInput(0,0);CHECK(c.slot==107&&!c.holding(Command::Charge));
+    c.stop();CHECK(c.start());c.hardwareInput(0,SpiritBit);CHECK(c.slot==c.idleSlot); // no stale held-key start
+    CHECK(CommandFromName("reload")==Command::Reload);CHECK(CommandName(Command::Counter)=="counter");CHECK(Throws([]{CommandFromName("missing");}));
+}
 }
 int main(int argc,char** argv){
-    try{MathTest();ControllerTest();ReaderTest();
+    try{MathTest();ControllerTest();ReaderTest();ModeControlsTest();
         if(argc>1){size_t count=0;for(const auto& entry:std::filesystem::directory_iterator(argv[1]))if(entry.path().extension()==".lsm"){
             auto clip=LS::ReadClip(entry.path());auto pose=clip.sample(clip.duration()*.4321f);
             CHECK(pose.rotations.size()==21&&LS::Finite(pose.hip));for(auto q:pose.rotations)CHECK(LS::Finite(q)&&Near(LS::Dot(q,q),1,.0001f));++count;}

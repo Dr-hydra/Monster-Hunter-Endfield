@@ -52,26 +52,61 @@ inline void BalanceShowcaseSound(PcmClip& clip){
 // cannot replace an earlier one (PlaySound's single-channel behaviour).
 // No Wwise event, game audio method, native damage or networking API is called.
 class AudioPlayer{
- struct Voice{HWAVEOUT device=nullptr;WAVEHDR header{};std::vector<int16_t> samples;bool prepared=false;};
+ struct Voice{HWAVEOUT device=nullptr;WAVEHDR header{},intro{};std::vector<int16_t> samples;bool prepared=false,introPrepared=false;size_t loopOffset=0;
+  std::string group;bool loop=false;int priority=0;};
  std::mutex gate_;std::vector<std::unique_ptr<Voice>> voices_;UINT deviceId_;
- static void Dispose(Voice& voice){if(!voice.device)return;waveOutReset(voice.device);if(voice.prepared)waveOutUnprepareHeader(voice.device,&voice.header,sizeof(voice.header));waveOutClose(voice.device);voice.device=nullptr;voice.prepared=false;}
+ static void Dispose(Voice& voice){if(!voice.device)return;waveOutReset(voice.device);if(voice.prepared)waveOutUnprepareHeader(voice.device,&voice.header,sizeof(voice.header));if(voice.introPrepared)waveOutUnprepareHeader(voice.device,&voice.intro,sizeof(voice.intro));waveOutClose(voice.device);voice.device=nullptr;voice.prepared=voice.introPrepared=false;}
  void PollLocked(){for(auto it=voices_.begin();it!=voices_.end();){if((*it)->header.dwFlags&WHDR_DONE){Dispose(**it);it=voices_.erase(it);}else ++it;}}
+ bool StartLocked(std::vector<int16_t> samples,std::string group,bool loop,int priority,size_t introSamples=0){
+  if(voices_.size()>=16){auto victim=std::min_element(voices_.begin(),voices_.end(),[](const auto& a,const auto& b){return a->priority<b->priority;});
+   if(victim==voices_.end()||(*victim)->priority>=priority)return false;Dispose(**victim);voices_.erase(victim);}
+  auto voice=std::make_unique<Voice>();voice->samples=std::move(samples);voice->group=std::move(group);voice->loop=loop;voice->priority=priority;
+  voice->loopOffset=introSamples;
+  WAVEFORMATEX format{};format.wFormatTag=WAVE_FORMAT_PCM;format.nChannels=2;format.nSamplesPerSec=48000;format.wBitsPerSample=16;format.nBlockAlign=4;format.nAvgBytesPerSec=192000;
+  if(waveOutOpen(&voice->device,deviceId_,&format,0,0,CALLBACK_NULL)!=MMSYSERR_NOERROR)return false;
+  if(introSamples){voice->intro.lpData=reinterpret_cast<LPSTR>(voice->samples.data());voice->intro.dwBufferLength=DWORD(introSamples*sizeof(int16_t));
+   if(waveOutPrepareHeader(voice->device,&voice->intro,sizeof(voice->intro))!=MMSYSERR_NOERROR){Dispose(*voice);return false;}voice->introPrepared=true;
+   if(waveOutWrite(voice->device,&voice->intro,sizeof(voice->intro))!=MMSYSERR_NOERROR){Dispose(*voice);return false;}}
+  voice->header.lpData=reinterpret_cast<LPSTR>(voice->samples.data()+introSamples);voice->header.dwBufferLength=DWORD((voice->samples.size()-introSamples)*sizeof(int16_t));
+  if(loop){voice->header.dwFlags=WHDR_BEGINLOOP|WHDR_ENDLOOP;voice->header.dwLoops=0xffffffff;}
+  if(waveOutPrepareHeader(voice->device,&voice->header,sizeof(voice->header))!=MMSYSERR_NOERROR){Dispose(*voice);return false;}voice->prepared=true;
+  if(waveOutWrite(voice->device,&voice->header,sizeof(voice->header))!=MMSYSERR_NOERROR){Dispose(*voice);return false;}
+  voices_.push_back(std::move(voice));return true;
+ }
 public:
  explicit AudioPlayer(UINT device=WAVE_MAPPER):deviceId_(device){}
  ~AudioPlayer(){Stop();}
  AudioPlayer(const AudioPlayer&)=delete;AudioPlayer& operator=(const AudioPlayer&)=delete;
- bool Play(const PcmClip& clip,float gain){
+ bool Play(const PcmClip& clip,float gain,const std::string& group="weapon",bool loop=false,int priority=0,float fadeIn=0,float pan=0){
   if(clip.samples.empty()||clip.channels!=2||clip.sampleRate!=48000||clip.samples.size()%2||!std::isfinite(gain)||gain<0||gain>2||clip.samples.size()>48000*2*30)return false;
   if(gain==0)return true;
-  std::lock_guard lock(gate_);PollLocked();if(voices_.size()>=16)return false;
-  auto voice=std::make_unique<Voice>();voice->samples.reserve(clip.samples.size());
-  for(const auto sample:clip.samples)voice->samples.push_back(static_cast<int16_t>(std::clamp(std::lround(float(sample)*gain),-32768L,32767L)));
-  WAVEFORMATEX format{};format.wFormatTag=WAVE_FORMAT_PCM;format.nChannels=2;format.nSamplesPerSec=48000;format.wBitsPerSample=16;format.nBlockAlign=4;format.nAvgBytesPerSec=192000;
-  if(waveOutOpen(&voice->device,deviceId_,&format,0,0,CALLBACK_NULL)!=MMSYSERR_NOERROR)return false;
-  voice->header.lpData=reinterpret_cast<LPSTR>(voice->samples.data());voice->header.dwBufferLength=DWORD(voice->samples.size()*sizeof(int16_t));
-  if(waveOutPrepareHeader(voice->device,&voice->header,sizeof(voice->header))!=MMSYSERR_NOERROR){Dispose(*voice);return false;}voice->prepared=true;
-  if(waveOutWrite(voice->device,&voice->header,sizeof(voice->header))!=MMSYSERR_NOERROR){Dispose(*voice);return false;}
-  voices_.push_back(std::move(voice));return true;
+  if(!std::isfinite(fadeIn)||fadeIn<0||fadeIn>2||!std::isfinite(pan)||pan< -1||pan>1||group.size()>128||priority<0||priority>100)return false;
+  std::lock_guard lock(gate_);PollLocked();
+  // A start/loop replaces only its own persistent group; ordinary hits overlap.
+  if(loop)for(auto it=voices_.begin();it!=voices_.end();)if((*it)->loop&&(*it)->group==group){Dispose(**it);it=voices_.erase(it);}else ++it;
+  std::vector<int16_t> samples;const auto fadeFrames=size_t(fadeIn*48000);size_t introSamples=0;
+  if(loop&&fadeFrames){introSamples=fadeFrames*2;samples.reserve(introSamples+clip.samples.size());
+   for(size_t i=0;i<introSamples;++i){const auto balance=i%2==0?1-std::max(0.f,pan):1+std::min(0.f,pan);samples.push_back(static_cast<int16_t>(std::clamp(std::lround(float(clip.samples[i%clip.samples.size()])*gain*balance*float(i/2)/float(fadeFrames)),-32768L,32767L)));}}
+  for(size_t i=0;i<clip.samples.size();++i){float envelope=fadeFrames?std::min(1.f,float(i/2)/float(fadeFrames)):1;
+   if(loop)envelope=1;
+   const auto balance=i%2==0?1-std::max(0.f,pan):1+std::min(0.f,pan);
+   samples.push_back(static_cast<int16_t>(std::clamp(std::lround(float(clip.samples[i])*gain*envelope*balance),-32768L,32767L)));}
+  return StartLocked(std::move(samples),group,loop,priority,introSamples);
+ }
+ void StopGroup(const std::string& group,float fadeSeconds=0){
+  if(!std::isfinite(fadeSeconds))fadeSeconds=0;fadeSeconds=std::clamp(fadeSeconds,0.f,2.f);
+  std::lock_guard lock(gate_);std::vector<std::pair<std::vector<int16_t>,int>> tails;
+  for(auto it=voices_.begin();it!=voices_.end();){auto& voice=**it;if(voice.group!=group){++it;continue;}
+   if(fadeSeconds>0&&!voice.samples.empty()){
+    MMTIME position{};position.wType=TIME_SAMPLES;const auto status=waveOutGetPosition(voice.device,&position,sizeof(position));
+    size_t frame=0;if(status==MMSYSERR_NOERROR){if(position.wType==TIME_SAMPLES)frame=position.u.sample;else if(position.wType==TIME_BYTES)frame=position.u.cb/4;}
+    const auto frameCount=(voice.samples.size()-voice.loopOffset)/2;if(voice.loop)frame=(frame>=voice.loopOffset/2?frame-voice.loopOffset/2:0)%frameCount;else frame=std::min(frame,frameCount);
+    const auto count=std::min(size_t(fadeSeconds*48000),voice.loop?size_t(fadeSeconds*48000):frameCount-frame);
+    std::vector<int16_t> tail(count*2);
+    for(size_t f=0;f<count;++f)for(size_t c=0;c<2;++c)tail[f*2+c]=static_cast<int16_t>(float(voice.samples[voice.loopOffset+((frame+f)%frameCount)*2+c])*(1.f-float(f)/float(std::max(size_t(1),count))));
+    if(!tail.empty())tails.emplace_back(std::move(tail),voice.priority);
+   }Dispose(voice);it=voices_.erase(it);
+  }for(auto&[samples,priority]:tails)StartLocked(std::move(samples),group+".fade",false,priority);
  }
  void Poll(){std::lock_guard lock(gate_);PollLocked();}
  void Stop(){std::lock_guard lock(gate_);for(auto& voice:voices_)Dispose(*voice);voices_.clear();}

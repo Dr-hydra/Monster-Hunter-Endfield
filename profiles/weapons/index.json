@@ -1,0 +1,770 @@
+{
+  "schema": 1,
+  "weapons": [
+    {
+      "id": "laevatain_blade",
+      "profile": "laevatain_full.json",
+      "modes": [
+        "longsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "typhoea_bow",
+      "profile": "typhoea_bow.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "left",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0003",
+      "profile": "equipment/wpn_claym_0003.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0004",
+      "profile": "equipment/wpn_claym_0004.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0006",
+      "profile": "equipment/wpn_claym_0006.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0007",
+      "profile": "equipment/wpn_claym_0007.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0008",
+      "profile": "equipment/wpn_claym_0008.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0009",
+      "profile": "equipment/wpn_claym_0009.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0010",
+      "profile": "equipment/wpn_claym_0010.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0011",
+      "profile": "equipment/wpn_claym_0011.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0012",
+      "profile": "equipment/wpn_claym_0012.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0013",
+      "profile": "equipment/wpn_claym_0013.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0014",
+      "profile": "equipment/wpn_claym_0014.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0015",
+      "profile": "equipment/wpn_claym_0015.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0016",
+      "profile": "equipment/wpn_claym_0016.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0017",
+      "profile": "equipment/wpn_claym_0017.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0001",
+      "profile": "equipment/wpn_funnel_0001.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0002",
+      "profile": "equipment/wpn_funnel_0002.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0003",
+      "profile": "equipment/wpn_funnel_0003.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0004",
+      "profile": "equipment/wpn_funnel_0004.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0005",
+      "profile": "equipment/wpn_funnel_0005.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0006",
+      "profile": "equipment/wpn_funnel_0006.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0007",
+      "profile": "equipment/wpn_funnel_0007.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0008",
+      "profile": "equipment/wpn_funnel_0008.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0009",
+      "profile": "equipment/wpn_funnel_0009.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0010",
+      "profile": "equipment/wpn_funnel_0010.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0011",
+      "profile": "equipment/wpn_funnel_0011.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0012",
+      "profile": "equipment/wpn_funnel_0012.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0013",
+      "profile": "equipment/wpn_funnel_0013.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0014",
+      "profile": "equipment/wpn_funnel_0014.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0015",
+      "profile": "equipment/wpn_funnel_0015.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0016",
+      "profile": "equipment/wpn_funnel_0016.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0017",
+      "profile": "equipment/wpn_funnel_0017.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0018",
+      "profile": "equipment/wpn_funnel_0018.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0019",
+      "profile": "equipment/wpn_funnel_0019.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_funnel_0020",
+      "profile": "equipment/wpn_funnel_0020.json",
+      "modes": [
+        "bow"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0003",
+      "profile": "equipment/wpn_lance_0003.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0004",
+      "profile": "equipment/wpn_lance_0004.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0006",
+      "profile": "equipment/wpn_lance_0006.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0007",
+      "profile": "equipment/wpn_lance_0007.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0008",
+      "profile": "equipment/wpn_lance_0008.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0009",
+      "profile": "equipment/wpn_lance_0009.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0010",
+      "profile": "equipment/wpn_lance_0010.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0011",
+      "profile": "equipment/wpn_lance_0011.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0012",
+      "profile": "equipment/wpn_lance_0012.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0013",
+      "profile": "equipment/wpn_lance_0013.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0014",
+      "profile": "equipment/wpn_lance_0014.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0015",
+      "profile": "equipment/wpn_lance_0015.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_lance_0016",
+      "profile": "equipment/wpn_lance_0016.json",
+      "modes": [
+        "lance"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0001",
+      "profile": "equipment/wpn_pistol_0001.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0002",
+      "profile": "equipment/wpn_pistol_0002.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0003",
+      "profile": "equipment/wpn_pistol_0003.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0004",
+      "profile": "equipment/wpn_pistol_0004.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0005",
+      "profile": "equipment/wpn_pistol_0005.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0006",
+      "profile": "equipment/wpn_pistol_0006.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0007",
+      "profile": "equipment/wpn_pistol_0007.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0008",
+      "profile": "equipment/wpn_pistol_0008.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0009",
+      "profile": "equipment/wpn_pistol_0009.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0010",
+      "profile": "equipment/wpn_pistol_0010.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0011",
+      "profile": "equipment/wpn_pistol_0011.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_pistol_0012",
+      "profile": "equipment/wpn_pistol_0012.json",
+      "modes": [
+        "light_bowgun"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0003",
+      "profile": "equipment/wpn_sword_0003.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0005",
+      "profile": "equipment/wpn_sword_0005.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0006",
+      "profile": "equipment/wpn_sword_0006.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0007",
+      "profile": "equipment/wpn_sword_0007.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0008",
+      "profile": "equipment/wpn_sword_0008.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0009",
+      "profile": "equipment/wpn_sword_0009.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0010",
+      "profile": "equipment/wpn_sword_0010.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0011",
+      "profile": "equipment/wpn_sword_0011.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0012",
+      "profile": "equipment/wpn_sword_0012.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0013",
+      "profile": "equipment/wpn_sword_0013.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0014",
+      "profile": "equipment/wpn_sword_0014.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0015",
+      "profile": "equipment/wpn_sword_0015.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0016",
+      "profile": "equipment/wpn_sword_0016.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0017",
+      "profile": "equipment/wpn_sword_0017.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0018",
+      "profile": "equipment/wpn_sword_0018.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0019",
+      "profile": "equipment/wpn_sword_0019.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0020",
+      "profile": "equipment/wpn_sword_0020.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0021",
+      "profile": "equipment/wpn_sword_0021.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0022",
+      "profile": "equipment/wpn_sword_0022.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0023",
+      "profile": "equipment/wpn_sword_0023.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0026",
+      "profile": "equipment/wpn_sword_0026.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    }
+  ],
+  "default_by_mode": {
+    "longsword": "laevatain_blade",
+    "bow": "typhoea_bow"
+  },
+  "source_props": "assets/modes/<mode>/props/index.json",
+  "runtime_verified": false
+}

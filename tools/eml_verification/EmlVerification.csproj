@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EMLProjectRoot Condition="'$(EMLProjectRoot)' == ''">G:/Endfield Mod Loader</EMLProjectRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(EMLProjectRoot)/src/EModLoader.Core/EModLoader.Core.csproj" />
+  </ItemGroup>
+</Project>

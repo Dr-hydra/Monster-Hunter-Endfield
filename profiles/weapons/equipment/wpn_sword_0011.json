@@ -1,0 +1,48 @@
+{
+  "schema": 2,
+  "id": "wpn_sword_0011",
+  "display_name": "wpn_sword_0011",
+  "resource_id": "wpn_sword_0011",
+  "asset_path": "assets/beyond/dynamicassets/gameplay/prefabs/weapons/wpn_sword_0011.prefab",
+  "asset_path_hash": "458257666434665880",
+  "renderer_path": "Mesh_all/lod0/S_wpn_sword_0011_01_lod0",
+  "renderer_paths": [
+    "Mesh_all/lod0/S_wpn_sword_0011_01_lod0"
+  ],
+  "renderer_kinds": {
+    "Mesh_all/lod0/S_wpn_sword_0011_01_lod0": "static"
+  },
+  "mount_bone_path": "Mesh_all",
+  "mount_reference_path": "",
+  "mount_position": [
+    0,
+    0,
+    0
+  ],
+  "mount_rotation_xyzw": [
+    0,
+    0,
+    0,
+    1
+  ],
+  "mount_side": "right",
+  "mount_mode": "preserve-native-prefab-root-at-authored-character-socket",
+  "mount_runtime_verified": false,
+  "mount_evidence": "Native prefab mesh and original local transforms retained. Equipment source socket is read per character; shape compatibility and semantic grip not yet manually qualified.",
+  "blade_root_axis": [
+    0.0001984023823948227,
+    0.9999999797601317,
+    3.34100595392172e-05
+  ],
+  "edge_root_axis": [
+    1,
+    0,
+    0
+  ],
+  "blade_length_m": 1.2711303178200513,
+  "axis_status": "principal geometry axis measured; endpoint semantic assignment not certified",
+  "material_policy": "readonly-native-shared-materials",
+  "controls": {},
+  "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+  "runtime_verified": false
+}

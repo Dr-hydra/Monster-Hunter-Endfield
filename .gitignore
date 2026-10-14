@@ -5,6 +5,8 @@
 /dist/
 /local/**
 !/local/README.md
+/tools/eml_verification/bin/
+/tools/eml_verification/obj/
 __pycache__/
 *.py[cod]
 .vs/
@@ -22,7 +24,8 @@ config.local.*
 # Local game assets and baked derivatives
 /assets/**
 !/assets/README.md
-/ui/preview-data.js
+# ui/preview-data.js is a source-only compatibility stub; the packager embeds
+# local game data into the ZIP copy without changing this file.
 /research/mhw-longsword/
 /research/**/*-inputs/
 /research/**/*-tree/
@@ -67,3 +70,21 @@ config.local.*
 !/research/mhw-original/README.md
 /research/endfield-swings/**
 !/research/endfield-swings/README.md
+
+# Derived source meshes, frame sequences and audio remain local
+/research/multiweapon/**
+!/research/multiweapon/README.md
+/research/typhoea/**
+!/research/typhoea/README.md
+/research/endfield-special-audio/**
+!/research/endfield-special-audio/README.md
+/research/character-coverage/**
+!/research/character-coverage/*.md
+/research/weapon-coverage/**
+!/research/weapon-coverage/*.md
+/research/keyboard-defaults/**
+!/research/keyboard-defaults/*.md
+*.lsf
+*.lsk
+*.rgba
+*.pcm

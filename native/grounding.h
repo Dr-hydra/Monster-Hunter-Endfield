@@ -15,6 +15,16 @@ struct GroundTrack{
   return i+1<clearance.size()?clearance[i]+(clearance[i+1]-clearance[i])*float(at-i):clearance[i];
  }
 };
+struct SupportGroundSide{
+ GroundTrack clearance,active;
+ std::vector<int> kind;
+ int Kind(float seconds)const{
+  if(kind.empty())return 1;
+  const auto frame=size_t(std::clamp(seconds*clearance.fps,0.f,float(kind.size()-1)));
+  return kind[frame];
+ }
+};
+using SupportGroundTracks=std::map<int,std::array<SupportGroundSide,2>>;
 template<size_t N> float FloorCorrection(const std::array<Vec3,N>& feet,const std::array<float,N>& floors,float soleOffset,float clearance){
  if(!std::isfinite(soleOffset)||!std::isfinite(clearance)||clearance<0)throw std::runtime_error("Invalid ground calibration");
  float correction=-std::numeric_limits<float>::infinity();

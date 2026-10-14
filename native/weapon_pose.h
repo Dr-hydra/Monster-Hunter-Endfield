@@ -13,8 +13,10 @@ inline AxisEvidence InferAxis(Vec3 a,Vec3 b,Vec3 grip,float width){
  if(std::abs(da-db)<length*.08f)return {}; // a central grip has ambiguous sign
  return {Normalize(Sub(da>db?a:b,grip)),std::max(da,db)};
 }
-struct SourceFrame{Quat rotation{};Vec3 supportOffset{};float supportWeight=0;};
-inline SourceFrame Blend(const SourceFrame& a,const SourceFrame& b,float t){t=std::clamp(t,0.f,1.f);return {Slerp(a.rotation,b.rotation,t),Lerp(a.supportOffset,b.supportOffset,t),a.supportWeight+(b.supportWeight-a.supportWeight)*t};}
+struct Attachment{Vec3 position{};Quat rotation{};bool valid=false;};
+struct SourceFrame{Quat rotation{};Vec3 supportOffset{};float supportWeight=0;Attachment main,offhand;};
+inline Attachment Blend(const Attachment&a,const Attachment&b,float t){if(!a.valid||!b.valid)return b;return {Lerp(a.position,b.position,t),Slerp(a.rotation,b.rotation,t),true};}
+inline SourceFrame Blend(const SourceFrame& a,const SourceFrame& b,float t){t=std::clamp(t,0.f,1.f);return {Slerp(a.rotation,b.rotation,t),Lerp(a.supportOffset,b.supportOffset,t),a.supportWeight+(b.supportWeight-a.supportWeight)*t,Blend(a.main,b.main,t),Blend(a.offhand,b.offhand,t)};}
 struct SourceTrack{
  float fps=60;std::vector<SourceFrame> frames;
  SourceFrame Sample(float seconds)const{

@@ -50,4 +50,58 @@ inline ArmSolution SolveArm(Vec3 shoulder,Vec3 goal,Vec3 currentElbow,float uppe
  const float height=std::sqrt(std::max(0.f,upper*upper-projection*projection));
  return {Add(shoulder,Add(Scale(direction,projection),Scale(pole,height))),Add(shoulder,Scale(direction,distance)),std::abs(requested-distance)>1e-6f};
 }
+struct TwoHandGoal{Vec3 dominant{},support{};bool reachable=false,shifted=false;};
+// A source grip offset fixes the distance and direction between both wrists.
+// The dominant wrist must therefore lie inside both anatomical reach balls:
+// one around its shoulder, the other around supportShoulder-sourceOffset.
+// Project to their convex intersection with the least dominant-wrist movement.
+// This never rescales a bone, changes the authored offset, or rotates a wrist.
+inline TwoHandGoal ProjectTwoHandGoal(Vec3 dominantShoulder,Vec3 supportShoulder,
+ Vec3 currentDominant,Vec3 sourceOffset,float dominantReach,float supportReach){
+ if(!Finite(dominantShoulder)||!Finite(supportShoulder)||!Finite(currentDominant)||!Finite(sourceOffset)||
+    !std::isfinite(dominantReach)||!std::isfinite(supportReach)||dominantReach<=0||supportReach<=0)
+  throw std::runtime_error("Invalid two-hand reach input");
+ const Vec3 a=dominantShoulder,b=Sub(supportShoulder,sourceOffset);const float d=Len(Sub(b,a));
+ const auto contains=[](Vec3 p,Vec3 c,float r){return Len(Sub(p,c))<=r+1e-6f;};
+ const auto result=[&](Vec3 p){return TwoHandGoal{p,Add(p,sourceOffset),true,Len(Sub(p,currentDominant))>1e-6f};};
+ if(contains(currentDominant,a,dominantReach)&&contains(currentDominant,b,supportReach))return result(currentDominant);
+ if(d>dominantReach+supportReach+1e-6f)return {};
+ const auto onto=[](Vec3 p,Vec3 c,float r){const auto delta=Sub(p,c);const float n=Len(delta);return n<=r?p:Add(c,Scale(delta,r/n));};
+ const auto pa=onto(currentDominant,a,dominantReach),pb=onto(currentDominant,b,supportReach);
+ const bool validA=contains(pa,b,supportReach),validB=contains(pb,a,dominantReach);
+ if(validA&&validB)return result(Len(Sub(pa,currentDominant))<Len(Sub(pb,currentDominant))?pa:pb);
+ if(validA)return result(pa);if(validB)return result(pb);
+ // If neither single-ball projection is feasible, both constraints bind.
+ if(d<1e-7f)return result(onto(currentDominant,a,std::min(dominantReach,supportReach)));
+ if(d+std::min(dominantReach,supportReach)<std::max(dominantReach,supportReach)-1e-6f)return {};
+ const auto normal=Scale(Sub(b,a),1/d);
+ const float along=(dominantReach*dominantReach-supportReach*supportReach+d*d)/(2*d);
+ const auto center=Add(a,Scale(normal,along));
+ const float radius=std::sqrt(std::max(0.f,dominantReach*dominantReach-along*along));
+ auto radial=Sub(currentDominant,center);radial=Sub(radial,Scale(normal,Dot(radial,normal)));
+ if(Len(radial)<1e-7f)radial=Cross(normal,std::abs(normal.y)<.7f?Vec3{0,1,0}:Vec3{1,0,0});
+ return result(Add(center,Scale(Normalize(radial),radius)));
+}
+struct TwoHandArmSolution{ArmSolution dominant{},support{};bool reachable=false;};
+inline TwoHandArmSolution SolveTwoHandGrip(Vec3 dominantShoulder,Vec3 dominantElbow,Vec3 dominantHand,
+ Vec3 supportShoulder,Vec3 supportElbow,Vec3 supportHand,Vec3 sourceOffset,float strength,
+ Vec3 dominantPole,Vec3 supportPole){
+ if(!Finite(dominantElbow)||!Finite(dominantHand)||!Finite(supportElbow)||!Finite(supportHand)||!std::isfinite(strength))
+  throw std::runtime_error("Invalid two-hand arm input");
+ const float du=Len(Sub(dominantElbow,dominantShoulder)),dl=Len(Sub(dominantHand,dominantElbow));
+ const float su=Len(Sub(supportElbow,supportShoulder)),sl=Len(Sub(supportHand,supportElbow));
+ if(std::min({du,dl,su,sl})<1e-6f)throw std::runtime_error("Degenerate two-hand arm chain");
+ const auto margin=[](float u,float l){return std::min(1e-4f,std::min(u,l)*.001f);};
+ const auto goal=ProjectTwoHandGoal(dominantShoulder,supportShoulder,dominantHand,sourceOffset,
+                                  du+dl-margin(du,dl),su+sl-margin(su,sl));
+ if(!goal.reachable)return {};
+ const float weight=std::clamp(strength,0.f,1.f);
+ const auto desiredD=Lerp(dominantHand,goal.dominant,weight),desiredS=Lerp(supportHand,goal.support,weight);
+ auto d=SolveArm(dominantShoulder,desiredD,dominantElbow,du,dl,dominantPole);
+ auto s=SolveArm(supportShoulder,desiredS,supportElbow,su,sl,supportPole);
+ // Strongly unequal segment lengths also have an inner unreachable sphere.
+ // Reject such cases instead of claiming contact from an outer-ball solution.
+ const bool reached=Len(Sub(d.hand,desiredD))<.001f&&Len(Sub(s.hand,desiredS))<.001f;
+ return {d,s,reached};
+}
 } // namespace LS::Retarget

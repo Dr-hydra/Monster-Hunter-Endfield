@@ -1,0 +1,52 @@
+{
+  "schema": 2,
+  "id": "wpn_funnel_0008",
+  "display_name": "wpn_funnel_0008",
+  "resource_id": "wpn_funnel_0008",
+  "asset_path": "assets/beyond/dynamicassets/gameplay/prefabs/weapons/wpn_funnel_0010.prefab",
+  "asset_path_hash": "1048275086857405184",
+  "renderer_path": "Mesh_all/lod0/S_wpn_funnel_0008_01_lod0",
+  "renderer_paths": [
+    "Mesh_all/lod0/S_wpn_funnel_0008_01_lod0",
+    "Mesh_all/lod0/S_wpn_funnel_0008_03_lod0",
+    "Mesh_all/lod0/S_wpn_funnel_0008_02_lod0"
+  ],
+  "renderer_kinds": {
+    "Mesh_all/lod0/S_wpn_funnel_0008_01_lod0": "skinned",
+    "Mesh_all/lod0/S_wpn_funnel_0008_03_lod0": "skinned",
+    "Mesh_all/lod0/S_wpn_funnel_0008_02_lod0": "skinned"
+  },
+  "mount_bone_path": "Root/Bone_Body/Bone_Cannon_02",
+  "mount_reference_path": "",
+  "mount_position": [
+    0,
+    0,
+    0
+  ],
+  "mount_rotation_xyzw": [
+    0,
+    0,
+    0,
+    1
+  ],
+  "mount_side": "right",
+  "mount_mode": "preserve-native-prefab-root-at-authored-character-socket",
+  "mount_runtime_verified": false,
+  "mount_evidence": "Native prefab mesh and original local transforms retained. Equipment source socket is read per character; shape compatibility and semantic grip not yet manually qualified.",
+  "blade_root_axis": [
+    -0.9999978339039813,
+    0.0020813885490568165,
+    3.0088278976943897e-06
+  ],
+  "edge_root_axis": [
+    1,
+    0,
+    0
+  ],
+  "blade_length_m": 0.2013987037501247,
+  "axis_status": "principal geometry axis measured; endpoint semantic assignment not certified",
+  "material_policy": "readonly-native-shared-materials",
+  "controls": {},
+  "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+  "runtime_verified": false
+}

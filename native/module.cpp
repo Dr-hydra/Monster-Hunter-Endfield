@@ -7,8 +7,14 @@
 #include "retarget.h"
 #include "weapon_pose.h"
 #include "grip.h"
+#include "packed_tracks.h"
+#include "contact_mask.h"
+#include "fingers.h"
 #include "grounding.h"
 #include "practice.h"
+#include "projectiles.h"
+#include "mode_state.h"
+#include "source_skin.h"
 #include "practice_hud.h"
 #include "audio.h"
 #include "audio_timeline.h"
@@ -43,7 +49,16 @@ std::string detail="等待游戏运行时", phase="waiting";
 Controller controller;
 AudioPlayer soundPlayer;
 AudioTimeline soundTimeline;
+AudioTimeline themeTimeline;
+Json themeDefinitions=Json::object();std::string activeTheme;uint64_t themeSerial=0,themeBowMotion=0;float themeClock=0;bool themeBowCharging=false;
 VisualWeapon::ManagedVisualWeapon visualWeapon;
+VisualWeapon::ManagedSourceWeapon sourceWeapon,offhandWeapon;
+VisualWeapon::ManagedSourceWeapon practiceDummy;
+std::vector<Json> modeProps;
+GeometryContactModels geometryContactMasks;
+SupportGroundTracks supportGroundTracks;
+Json projectileProp;
+std::map<std::string,Json> visualWeaponRegistry;
 std::map<std::string,PcmClip> soundClips;
 bool soundReady=false;
 std::string soundDetail="等待音效资源";
@@ -51,16 +66,53 @@ std::string lastSound;
 std::map<std::string,std::string> soundLabels;
 uint64_t soundCueCount=0;
 int configuredIdleSlot=1;
+std::string loadedMode="longsword",pendingMode;
+std::filesystem::path activeAssetRoot;
+std::filesystem::path activeAudioRoot;
+std::map<std::string,Json> modeDefinitions;
+std::map<int,std::string> motionLabels;
+Json productCatalog=Json::object();
+uint64_t configRevision=0,appliedConfigRevision=0;
+bool paused=false,hudEditing=false,resumeSoundLoops=false;
+bool hudLayoutChanged=false;
+bool demoReturnStarted=false;
+LocalProjectiles localProjectiles;
+uint64_t projectileMotion=std::numeric_limits<uint64_t>::max();
+std::map<int,std::vector<float>> projectileEvents;size_t projectileEventCursor=0;
+float localResource=0;int localAmmo=6;
+ModeState localMode;
+struct ProjectileVisual {uint64_t id=0;std::unique_ptr<VisualWeapon::ManagedSourceWeapon> mesh;};
+std::array<ProjectileVisual,16> projectileVisuals;
+uint64_t demoConditionMotion=0;
+struct SkinGeometry {std::vector<Vec3> vertices;std::vector<SourceSkin::Indices> indices;std::vector<SourceSkin::Weights> weights;size_t bones=0;};
+std::map<std::string,SkinGeometry> skinGeometry;
+struct SkinMotion{std::string prop;SourceSkin::Track track;};
+std::map<int,SkinMotion> skinMotions;
 struct Configuration {
  bool enabled=true, root_motion=true, show_prop=true, sound_enabled=true, local_practice=false, laevatain_blade=true;
- int toggle_key=VK_F8, spirit_key=VK_XBUTTON2, spirit_alt_key=VK_CONTROL;
+ int toggle_key=VK_F8, spirit_key=VK_XBUTTON2, spirit_alt_key=VK_XBUTTON2;
  float speed=1,blend_seconds=.12f,buffer_seconds=.3f,sound_volume=.65f,practice_hp=1000,practice_damage=100,grip_strength=1;
  float practice_radius=.65f,practice_height=.9f,practice_blade_length=1.25f;
+ std::string mode="longsword",visual_weapon="auto",theme="auto",hud_layout="teaching",effects_quality="full",practice_target="dummy",demo_sequence="full";
+ bool demo_loop=true;
+ std::string keyboard_preset="mouse5";
+ float projectile_speed=30;
+ bool hud_enabled=true,hud_show_derivations=true,hud_show_target=true,hud_show_crosshair=true;
+ float hud_scale=1,hud_anchor_x=.02f,hud_anchor_y=.05f,hud_margin=16;
+ std::map<std::string,int> keys{{"attack",VK_LBUTTON},{"secondary",VK_RBUTTON},{"spirit",VK_XBUTTON2},
+  {"dodge",VK_SPACE},{"sheathe",'E'},{"aim",VK_RBUTTON},{"reload",VK_XBUTTON1}};
+ std::map<std::string,std::map<std::string,int>> mode_keys;
+ std::map<std::string,float> volumes{{"weapon",1.f},{"impact",1.f},{"charge",1.f},{"fire",1.f},{"voice",0.f}};
 } config;
 bool toggleRequest=false, stopRequest=false, demoRequest=false, autoDemo=false;
 size_t demoStep=0;float demoClock=0,demoDelay=.6f;
+size_t demoChargeLevel=0;bool demoHeld=false;Command demoHeldCommand=Command::Aim;
+float demoElapsed=0;bool demoFinalTail=false;
 std::vector<Command> commands;
+extern std::vector<Command> demoSequence;
 int previewRequest=-1;
+void ReadMode(const std::string& id);
+bool UnderSkeleton(void* transform,void* root);
 struct Method { BE_MethodDescriptorV1 d; BE_ResolvedMethodV1 r{}; bool required=true; };
 #define M(a,n,c,m,p,r,k) {{a,n,c,m,p,r,k}}
 enum Index {MainCharacter,ModelComponent,ModelGo,Template,Valid,AliveEntity,Transform,Name,Alive,
@@ -202,21 +254,34 @@ struct Mat {
 Mat Multiply(const Mat& a,const Mat& b){Mat out;for(int r=0;r<4;++r)for(int c=0;c<4;++c)for(int k=0;k<4;++k)out.at(r,c)+=a.at(r,k)*b.at(k,c);return out;}
 struct Binding {void* transform=nullptr; void* parent=nullptr;Quat restWorld{};Vec3 restLocal{},previousPosition{},lastPosition{};
  Quat previousRotation{},lastRotation{};bool written=false,positionWritten=false;int depth=0;};
-struct Socket {Binding binding{};Vec3 handPosition{};Quat handRotation{};};
+struct Socket {Binding binding{};Vec3 handPosition{};Quat handRotation{};int handIndex=12;};
+struct SecondarySkinRoot{Binding binding;void* anchor=nullptr;Mat anchorRelative;};
+struct FingerBinding{Binding binding;size_t source=0;Quat from{};};
+struct FootInfluence{void* transform=nullptr;Vec3 local{};float weight=0;};
+using FootProbe=std::vector<FootInfluence>;
 struct RendererVisibility {void* renderer=nullptr;uint32_t pin=0;bool previous=true,written=false;};
 struct Actor {
  void* entity=nullptr;void* model=nullptr;void* root=nullptr;
  std::string character;
  std::string skeletonPath;
+ std::string restRegistration="未校准";
  std::vector<uint32_t> pins;
  std::vector<Binding> bones;
+ std::vector<FingerBinding> fingers;uint64_t fingerMotion=std::numeric_limits<uint64_t>::max();
+ std::vector<FootProbe> footProbes;
+ std::array<std::vector<FootProbe>,2> handProbes;
+ std::array<Quat,2> nativeHandRest{};
  std::vector<int> order;
  void* prop=nullptr;void* propMaterial=nullptr;float scale=1,entrySeconds=0;
- Quat sourceBasis{};bool gripAvailable=true;
+ Quat sourceBasis{},sourceStageBasis{};bool gripAvailable=true;
  void* weapon=nullptr;int weaponHandle=-1;bool weaponHeld=false;
  std::vector<Socket> sockets;Binding weaponModel{};
+ std::vector<SecondarySkinRoot> secondaryRoots;
  void* equippedGo=nullptr;void* hiddenEquipment=nullptr;void* mountSocket=nullptr;
  bool mountCaptured=false;std::string visualReason;
+ std::string visualMountName="wep_R";bool sourcePresentation=false,offhandRequested=false,visualSourceAdapter=false;
+ void* drawFinger=nullptr;
+ uint64_t sourceSkinMotion=0;
  std::vector<RendererVisibility> hiddenRenderers;
  Vec3 bladeRootAxis{},bladeHandAxis{},edgeRootAxis{},modelInSocketPosition{};Quat modelInSocketRotation{};
  WeaponPose::SourceBlend weaponBlend{};WeaponPose::SourceFrame sourceWeaponFrame{};
@@ -238,14 +303,20 @@ struct Actor {
 Json profile;
 std::map<std::string,Json> characterProfiles;
 std::array<Vec3,21> sourceRestPositions{};
+std::array<Quat,21> sourceRestRotations{};
+float sourceSoleHeight=1.0568615f;
 bool sourceRestReady=false;
 std::array<Quat,2> sourcePalmFrames{};
 bool sourcePalmsReady=false;
 std::map<int,GripTrack> gripTracks;
 std::map<int,WeaponPose::SourceTrack> sourceWeaponTracks;
 std::map<int,GroundTrack> groundTracks;
+std::map<int,FingerTrack> fingerTracks;Json sourceFingerBones=Json::array();
 void* ReadObjectField(void* object,const char* name);
 bool Pin(void* p);
+std::string ModelObjectPath(void* transform){std::vector<std::string> parts;auto at=transform;
+ for(int depth=0;at&&depth<96;++depth){parts.push_back(ObjectName(at));if(at==actor.root)break;at=Call(Parent,at);}
+ std::reverse(parts.begin(),parts.end());std::string result;for(const auto& part:parts){if(!result.empty())result+='/';result+=part;}return result;}
 void BindGroundQueries(){
  if(!grounderClass.type_object||!grounderSolver.field_info||!groundLayers.field_info)return;
  bool include=true;auto type=grounderClass.type_object;void* args[]{type,&include};
@@ -307,7 +378,9 @@ void RestoreOwned() {
   b.written=b.positionWritten=false;
  };
  restore(actor.weaponModel);for(auto& socket:actor.sockets)restore(socket.binding);
+ for(auto& root:actor.secondaryRoots)restore(root.binding);
  for(auto& b:actor.bones)restore(b);
+ for(auto& finger:actor.fingers)restore(finger.binding);
 }
 void RestoreEquipmentVisibility(){
  for(auto& visibility:actor.hiddenRenderers){
@@ -319,18 +392,23 @@ void RestoreEquipmentVisibility(){
  actor.hiddenRenderers.clear();actor.hiddenEquipment=nullptr;
 }
 void UpdateEquipmentVisibility(){
- const bool requested=config.show_prop&&config.laevatain_blade&&visualWeapon.Ready();
- if(!requested){visualWeapon.SetVisible(false);RestoreEquipmentVisibility();return;}
- if(!actor.weaponHeld||!IsAlive(actor.equippedGo)){
-  visualWeapon.SetVisible(false);RestoreEquipmentVisibility();
-  actor.visualReason="原武器尚未由演示接管，保留原装备";return;
+ const bool sourceReady=sourceWeapon.Ready()&&(!actor.offhandRequested||offhandWeapon.Ready());
+ const bool requested=config.show_prop&&config.visual_weapon!="equipped"&&(visualWeapon.Ready()||sourceReady);
+ const auto hide=[&](){visualWeapon.SetVisible(false);sourceWeapon.SetVisible(false);offhandWeapon.SetVisible(false);};
+ if(!requested){hide();RestoreEquipmentVisibility();return;}
+ if(controller.normalSheathed()){hide();return;}
+ if(!IsAlive(actor.equippedGo)){
+  RestoreEquipmentVisibility();
+  const bool shown=visualWeapon.Ready()?visualWeapon.SetVisible(true):sourceWeapon.SetVisible(true);
+  if(actor.offhandRequested&&offhandWeapon.Ready())offhandWeapon.SetVisible(shown);
+  actor.visualReason=shown?"独立展示武器已显示；原装备当前未生成":"独立展示武器未能显示";return;
  }
  if(!baseRendererClass.type_object||!methods[RendererEnabled].r.method_info||!methods[RendererSetEnabled].r.method_info){
-  visualWeapon.SetVisible(false);RestoreEquipmentVisibility();
+  hide();RestoreEquipmentVisibility();
   actor.visualReason="原装备显隐接口不可用，保留原装备";return;
  }
  if(actor.hiddenEquipment!=actor.equippedGo){
-  visualWeapon.SetVisible(false);RestoreEquipmentVisibility();actor.hiddenEquipment=actor.equippedGo;
+  hide();RestoreEquipmentVisibility();actor.hiddenEquipment=actor.equippedGo;
   bool include=true;void* args[]{baseRendererClass.type_object,&include};auto renderers=Call(GetComponents,actor.equippedGo,args);
   if(Count(renderers)==0||Count(renderers)>128){actor.hiddenEquipment=nullptr;actor.visualReason="原装备显示对象未确认";return;}
   for(int i=0;i<Count(renderers);++i){auto renderer=Item(renderers,i);bool enabled=false;
@@ -343,16 +421,18 @@ void UpdateEquipmentVisibility(){
  }
  for(auto& visibility:actor.hiddenRenderers){bool enabled=false;
   if(!IsAlive(visibility.renderer)||!Value(RendererEnabled,visibility.renderer,enabled)){
-   visualWeapon.SetVisible(false);RestoreEquipmentVisibility();actor.visualReason="原装备对象已变化";return;}
+   hide();RestoreEquipmentVisibility();actor.visualReason="原装备对象已变化";return;}
   if(enabled){
    if(!visibility.written)visibility.previous=enabled;
    if(!SetValue(RendererSetEnabled,visibility.renderer,false)){
-    visualWeapon.SetVisible(false);RestoreEquipmentVisibility();actor.visualReason="原装备未能隐藏，保留原装备";return;}
+    hide();RestoreEquipmentVisibility();actor.visualReason="原装备未能隐藏，保留原装备";return;}
    visibility.written=true;
   }
  }
- if(!visualWeapon.SetVisible(true)){RestoreEquipmentVisibility();actor.visualReason="演示长刀未能显示";return;}
- actor.visualReason="独立刀身已显示；安装与火焰仍待实机校准";
+ bool shown=false;if(visualWeapon.Ready())shown=visualWeapon.SetVisible(true);
+ else if(sourceReady){shown=sourceWeapon.SetVisible(true);if(actor.offhandRequested)shown=offhandWeapon.SetVisible(true)&&shown;}
+ if(!shown){hide();RestoreEquipmentVisibility();actor.visualReason="独立展示武器未能显示，已恢复装备";return;}
+ actor.visualReason=visualWeapon.Ready()?"独立原生武器已显示；动态表现未实机验收":"源武器参考模型已显示；原安装/材质认证状态见资源证据";
 }
 
 void ReleaseWeapon() {
@@ -382,10 +462,12 @@ void BindWeaponSockets(const std::unordered_map<std::string,void*>& named) {
  if(!weapon.contains("sockets"))return;
  for(const auto& row:weapon["sockets"]){auto found=named.find(row.at("name").get<std::string>());if(found==named.end())continue;
   Socket socket;socket.binding.transform=found->second;socket.binding.parent=Call(Parent,found->second);
+  const auto socketName=row.at("name").get<std::string>();const auto side=row.value("hand",socketName=="wep_L"?std::string("left"):(socketName=="wep_M"?std::string("parent"):std::string("right")));
+  socket.handIndex=side=="left"?8:(side=="parent"?-1:12);
   const auto p=row.at("hand_position").get<std::vector<float>>(),q=row.at("hand_rotation_xyzw").get<std::vector<float>>();
   if(p.size()!=3||q.size()!=4)throw std::runtime_error("Invalid socket calibration");
   socket.handPosition={p[0],p[1],p[2]};socket.handRotation=Normalize({q[0],q[1],q[2],q[3]});
-  if(!Finite(socket.handPosition)||!Finite(socket.handRotation)||Retarget::Len(socket.handPosition)>.25f)throw std::runtime_error("Invalid socket pose");
+   if(!Finite(socket.handPosition)||!Finite(socket.handRotation)||Retarget::Len(socket.handPosition)>2.f)throw std::runtime_error("Invalid socket pose");
   if(socket.binding.parent&&Pin(socket.binding.transform)&&Pin(socket.binding.parent))actor.sockets.push_back(socket);
  }
  actor.weaponPoseDetail=actor.sockets.empty()?"未找到原生握刀节点":"原生握刀节点已绑定，等待剑身识别";
@@ -467,30 +549,36 @@ bool UpdateSourceGrip(Quat modelRotation) {
  using namespace Retarget;
  actor.sourceWeaponActive=false;
  auto track=sourceWeaponTracks.find(controller.slot);if(track==sourceWeaponTracks.end())return true;
- actor.sourceWeaponFrame=actor.weaponBlend.Sample(controller.motionSerial,controller.seconds,controller.transitionSeconds,track->second.Sample(controller.seconds));
- // This frame transports source hand separation ONLY. A source socket does
- // not establish the absent MHW weapon mounting matrix or blade direction.
- // Keep the anatomical hand retarget and native equipment mount untouched.
+ actor.sourceWeaponFrame=actor.weaponBlend.Sample(controller.motionSerial,controller.motionAge(),controller.transitionSeconds,track->second.Sample(controller.seconds));
+ // Wrist separation and source weapon attachment are distinct data. Keep
+ // the original wrist rotations; target grip constraints never invent axes.
  actor.gripFrameWorld=Mul(Mul(modelRotation,actor.sourceBasis),actor.sourceWeaponFrame.rotation);
  actor.sourceWeaponActive=true;return true;
 }
 void ApplyWeaponSockets() {
- if(!actor.weaponHeld||actor.sockets.empty())return;
- Mat hand;if(!Value(WorldMatrix,actor.bones[12].transform,hand))return;auto handRotation=hand.rotation();
- for(auto& socket:actor.sockets){const auto p=hand.point(socket.handPosition);const auto q=Mul(handRotation,socket.handRotation);
+ if(actor.sockets.empty())return;
+ for(auto& socket:actor.sockets){Mat hand;
+  if(!Value(WorldMatrix,socket.handIndex<0?socket.binding.parent:actor.bones[socket.handIndex].transform,hand))continue;
+  const auto p=hand.point(socket.handPosition);const auto q=Mul(hand.rotation(),socket.handRotation);
   WriteWeaponBinding(socket.binding,p,q);}
- if(actor.mountCaptured&&IsAlive(actor.weaponModel.transform)){
-  const auto& socket=actor.sockets.front();auto q=Mul(handRotation,socket.handRotation);
+ if(actor.weaponHeld&&actor.mountCaptured&&IsAlive(actor.weaponModel.transform)){
+  const auto& socket=actor.sockets.front();Mat hand;if(!Value(WorldMatrix,socket.handIndex<0?socket.binding.parent:actor.bones[socket.handIndex].transform,hand))return;auto q=Mul(hand.rotation(),socket.handRotation);
   const auto p=Retarget::Add(hand.point(socket.handPosition),Rotate(q,actor.modelInSocketPosition));
   WriteWeaponBinding(actor.weaponModel,p,Mul(q,actor.modelInSocketRotation));
  }
 }
 void Cleanup() {
- soundPlayer.Stop();soundTimeline.Reset();
+ paused=false;hudEditing=false;resumeSoundLoops=false;
+ demoReturnStarted=false;
+ demoHeld=false;demoChargeLevel=0;
+ demoElapsed=0;demoFinalTail=false;
+ localProjectiles.Clear();projectileMotion=std::numeric_limits<uint64_t>::max();
+ for(auto& visual:projectileVisuals){if(visual.mesh)visual.mesh->Reset();visual.mesh.reset();visual.id=0;}
+ soundPlayer.Stop();soundTimeline.Reset();themeTimeline.Reset();activeTheme.clear();themeClock=0;themeBowMotion=0;themeBowCharging=false;
  if(!practice.targets.empty())practiceSummary=PracticeTargets();
  practice.Suspend();practice.targets.clear();enemyRefresh=0;practiceDetail=config.local_practice?"演示结束，已保留本轮统计":"本地练习未开启";
  practiceHud.Update(false,"");
- suppressInput=false;autoDemo=false;demoStep=0;controller.stop();RestoreStageMotion();RestoreOwned();RestoreEquipmentVisibility();visualWeapon.Reset();ReleaseWeapon();
+ suppressInput=false;autoDemo=false;demoStep=0;controller.stop();RestoreStageMotion();RestoreOwned();RestoreEquipmentVisibility();visualWeapon.Reset();sourceWeapon.Reset();offhandWeapon.Reset();practiceDummy.Reset();ReleaseWeapon();
  ReleaseCameraBinding();
  if(IsAlive(actor.prop)){void* args[]{actor.prop};Call(ObjectDestroy,nullptr,args);}
  if(IsAlive(actor.propMaterial)){void* args[]{actor.propMaterial};Call(ObjectDestroy,nullptr,args);}
@@ -517,11 +605,18 @@ MainSkeleton FindMainSkeleton(void* root,void* renderers){
   if(!transform||depth>64||++visited>4096)return;
   if(ObjectName(transform)=="Bip001"){
    MainSkeleton skeleton{transform,path,{}};Collect(transform,skeleton.bones);
-   unsigned coverage=0;bool skinned=true;
+   unsigned coverage=0,directCoverage=0;bool skinned=true;
+   const auto ancestorNames=profile.value("ancestor_palette_main_bones",std::vector<std::string>{});
    for(int i=0;i<21;++i){std::string name=fallback[i];
     if(profile.contains("bones")&&profile["bones"].contains(semantic[i]))name=profile["bones"][semantic[i]].get<std::string>();
     auto bone=skeleton.bones.find(name);
-    if(bone!=skeleton.bones.end()){++coverage;skinned=skinned&&palette.contains(bone->second);}else skinned=false;}
+    if(bone!=skeleton.bones.end()){++coverage;
+     if(palette.contains(bone->second))++directCoverage;
+     else if(std::find(ancestorNames.begin(),ancestorNames.end(),name)!=ancestorNames.end()){
+      bool descendant=false;for(auto p:palette)if(UnderSkeleton(p,bone->second)){descendant=true;break;}skinned=skinned&&descendant;
+     }else skinned=false;
+    }else skinned=false;}
+   skinned=skinned&&directCoverage>=18;
    candidates.push_back({path,depth,coverage,skinned});found.push_back(std::move(skeleton));
   }
   int count=0;if(!Value(ChildCount,transform,count)||count<0||count>1024)return;
@@ -574,7 +669,7 @@ bool Bind() {
  if(!entity||!Value(Valid,entity,valid)||!valid||!Value(AliveEntity,entity,alive)||!alive){detail="当前角色尚未就绪";return false;}
  auto data=Call(Template,entity);auto id=data?api->field_get_value_object(api->context,templateId.field_info,data):nullptr;
  auto character=Text(id);auto selectedProfile=characterProfiles.find(character);
- if(selectedProfile==characterProfiles.end()){detail="当前支持莱万汀和女管理员，请切换主控角色";return false;}
+ if(selectedProfile==characterProfiles.end()){detail="当前角色资料尚未加载，请检查版本与角色资源";return false;}
  profile=selectedProfile->second;
  const auto practiceAxis=profile.value("practice_blade_axis",std::vector<float>{0,0,1});
  practiceBladeAxis=Retarget::Normalize({practiceAxis[0],practiceAxis[1],practiceAxis[2]});
@@ -592,14 +687,69 @@ bool Bind() {
  for(const auto& [name,bone]:skeleton.bones)if(name.starts_with("Bip001"))named[name]=bone;
  std::unordered_map<void*,Mat> rest;
  Mat modelWorld;if(!Value(WorldMatrix,actor.root,modelWorld))throw std::runtime_error("Model matrix unavailable");auto modelInverse=modelWorld.inverse();
+ unsigned registeredRenderers=0,unchangedRenderers=0;
  for(int r=0;r<Count(renderers);++r){auto renderer=Item(renderers,r);auto mesh=Call(Mesh,renderer);auto transforms=Call(Bones,renderer);auto poses=mesh?Call(Bindposes,mesh):nullptr;
-  int count=Count(transforms);if(count<30||count!=Count(poses))continue;
+  int count=Count(transforms);if(count<1||count!=Count(poses))continue;
   Mat renderWorld;if(!Value(WorldMatrix,Call(Transform,renderer),renderWorld))continue;
   auto rendererInModel=Multiply(modelInverse,renderWorld);
-  for(int j=0;j<count;++j){auto trans=Item(transforms,j);auto pose=Item(poses,j);auto raw=pose?api->object_unbox(api->context,pose):nullptr;if(!trans||!raw||!UnderSkeleton(trans,skeleton.transform))continue;
-   Mat bind;std::memcpy(&bind,raw,sizeof(bind));rest.emplace(trans,Multiply(rendererInModel,bind.inverse()));}
+  std::vector<std::pair<void*,Mat>> rows;for(int j=0;j<count;++j){auto trans=Item(transforms,j);auto pose=Item(poses,j);auto raw=pose?api->object_unbox(api->context,pose):nullptr;if(!trans||!raw||!UnderSkeleton(trans,skeleton.transform))continue;
+   Mat bind;std::memcpy(&bind,raw,sizeof(bind));rows.emplace_back(trans,Multiply(rendererInModel,bind.inverse()));}
+  bool useRegistration=false;Mat registration;
+  if(profile.contains("bind_registration_by_renderer")&&profile.contains("rest_model_matrices")){
+   const auto path=ModelObjectPath(Call(Transform,renderer));const Json* rule=nullptr;
+   const auto suffix=[](const std::string& p){const auto slash=p.find('/');return slash==std::string::npos?p:p.substr(slash+1);};
+   for(auto it=profile["bind_registration_by_renderer"].begin();it!=profile["bind_registration_by_renderer"].end();++it)
+    if(it.key()==path||suffix(it.key())==suffix(path)){if(rule)throw std::runtime_error("Ambiguous bind registration path");rule=&it.value();}
+   if(rule){const auto matrix=rule->at("matrix").get<std::vector<float>>();if(matrix.size()!=16)throw std::runtime_error("Invalid bind registration");
+    for(size_t i=0;i<16;++i){if(!std::isfinite(matrix[i]))throw std::runtime_error("Nonfinite bind registration");registration.v[i]=matrix[i];}
+    double plainError=0,registeredError=0;size_t measured=0;
+    for(const auto&[transform,rawRest]:rows){const auto name=ObjectName(transform);if(!profile["rest_model_matrices"].contains(name))continue;
+     const auto expected=profile["rest_model_matrices"][name].get<std::vector<float>>();if(expected.size()!=16)throw std::runtime_error("Invalid expected model bind frame");
+     const Vec3 point{expected[12],expected[13],expected[14]};if(!Finite(point))throw std::runtime_error("Invalid expected bind position");
+     plainError+=Retarget::Len(Retarget::Sub(rawRest.point(),point));registeredError+=Retarget::Len(Retarget::Sub(Multiply(registration,rawRest).point(),point));++measured;
+    }
+    // This chooses between two resource-defined frames, rather than inventing
+    // an angle. If the API already reports registered matrices, leave them.
+    useRegistration=measured>0&&registeredError+1e-5<plainError*.25;
+   }
+  }
+  if(useRegistration)++registeredRenderers;else ++unchangedRenderers;
+  for(const auto&[transform,matrix]:rows)rest.emplace(transform,useRegistration?Multiply(registration,matrix):matrix);
+ }
+ actor.restRegistration="资源坐标注册 "+std::to_string(registeredRenderers)+" 个渲染器，保持 API 坐标 "+std::to_string(unchangedRenderers)+" 个";
+ if(profile.contains("secondary_skin_roots")){
+  const auto pathTail=[](const std::string& path){const auto slash=path.find('/');return slash==std::string::npos?path:path.substr(slash+1);};
+  for(const auto& row:profile["secondary_skin_roots"]){const auto rootPath=pathTail(row.at("root_path").get<std::string>()),anchorPath=pathTail(row.at("anchor_path").get<std::string>());void* root=nullptr;void* anchor=nullptr;
+   // Resolve only actual palette nodes and their ancestors, with exact resource
+   // paths. A soldier or a weapon with duplicate bone names cannot be selected.
+   for(const auto& [bone,bind]:rest){auto node=bone;for(int depth=0;node&&depth<64;++depth){const auto path=ModelObjectPath(node);
+    if(path==rootPath||path.ends_with("/"+rootPath))root=node;if(path==anchorPath||path.ends_with("/"+anchorPath))anchor=node;if(node==actor.root)break;node=Call(Parent,node);
+   }}
+   if(!root||!anchor||!UnderSkeleton(anchor,skeleton.transform)||UnderSkeleton(root,skeleton.transform)||root==actor.root)continue;
+   SecondarySkinRoot driven;driven.binding.transform=root;driven.binding.parent=Call(Parent,root);driven.anchor=anchor;
+   const auto values=row.at("anchor_relative_matrix").get<std::vector<float>>();if(values.size()!=16)throw std::runtime_error("Invalid secondary skin rest relation");
+   for(size_t i=0;i<16;++i){if(!std::isfinite(values[i]))throw std::runtime_error("Invalid secondary skin matrix");driven.anchorRelative.v[i]=values[i];}driven.anchorRelative.inverse();
+   if(!driven.binding.parent||!Pin(root)||!Pin(driven.binding.parent)||!Pin(anchor))throw std::runtime_error("Secondary skin root pin failed");actor.secondaryRoots.push_back(driven);
+  }
  }
  actor.bones.resize(21);
+ // Some authored main bones are ancestors of the skin palette (e.g. Seraph
+ // pelvis). Recover their bind frame from a real skinned child and the asset's
+ // serialized local TRS, never the currently animated local transform.
+ if(profile.contains("rest_local_transforms"))for(unsigned pass=0;pass<21;++pass){bool changed=false;
+  for(const auto&[name,transform]:named){if(rest.contains(transform))continue;auto parent=Call(Parent,transform);
+   (void)parent;
+   for(const auto&[childName,childTransform]:named){if(!rest.contains(childTransform)||Call(Parent,childTransform)!=transform)continue;
+    if(!profile["rest_local_transforms"].contains(childName))continue;const auto& row=profile["rest_local_transforms"][childName];
+    const auto p=row.at("position").get<std::vector<float>>(),q=row.at("rotation_xyzw").get<std::vector<float>>(),s=row.at("scale").get<std::vector<float>>();
+    if(p.size()!=3||q.size()!=4||s.size()!=3||!Finite(Vec3{p[0],p[1],p[2]})||!Finite(Vec3{s[0],s[1],s[2]}))throw std::runtime_error("Invalid authored rest transform");
+    const auto rotation=Normalize({q[0],q[1],q[2],q[3]});Mat local;local.at(3,3)=1;
+    for(int column=0;column<3;++column){Vec3 axis{};if(column==0)axis.x=s[column];else if(column==1)axis.y=s[column];else axis.z=s[column];const auto v=Rotate(rotation,axis);
+     local.at(0,column)=v.x;local.at(1,column)=v.y;local.at(2,column)=v.z;}
+    local.at(0,3)=p[0];local.at(1,3)=p[1];local.at(2,3)=p[2];rest.emplace(transform,Multiply(rest.at(childTransform),local.inverse()));changed=true;break;
+   }
+  }if(!changed)break;
+ }
  for(int i=0;i<21;++i){std::string name=fallback[i];if(profile.contains("bones")&&profile["bones"].contains(semantic[i]))name=profile["bones"][semantic[i]].get<std::string>();
   auto found=named.find(name);if(found==named.end()||!rest.contains(found->second))throw std::runtime_error("Missing skinned bind bone: "+name);
   auto& binding=actor.bones[i];binding.transform=found->second;binding.parent=Call(Parent,binding.transform);binding.restWorld=rest.at(binding.transform).rotation();
@@ -614,9 +764,12 @@ bool Bind() {
   const auto pos=[&](int i){return rest.at(actor.bones[i].transform).point();};
   actor.sourceBasis=SourceToTargetBodyBasis(Sub(sourceRestPositions[10],sourceRestPositions[6]),
    Sub(sourceRestPositions[2],sourceRestPositions[0]),Sub(pos(10),pos(6)),Sub(pos(2),pos(0)));
+  const auto sourceRight=Sub(sourceRestPositions[10],sourceRestPositions[6]),targetRight=Sub(pos(10),pos(6));
+  actor.sourceStageBasis=SourceToTargetBodyBasis({sourceRight.x,0,sourceRight.z},{0,1,0},{targetRight.x,0,targetRight.z},{0,1,0});
   // Source T-pose and target A-pose must agree before applying the world deltas.
   // Keep the target bone roll, and carry forearm correction to each hand/socket.
   const auto original=actor.bones;
+  actor.nativeHandRest={original[8].restWorld,original[12].restWorld};
   for(const auto [bone,child]:std::array<std::pair<int,int>,6>{{{5,6},{6,7},{7,8},{9,10},{10,11},{11,12}}})
    actor.bones[bone].restWorld=AlignedBoneRest(original[bone].restWorld,Sub(pos(child),pos(bone)),
     Sub(sourceRestPositions[child],sourceRestPositions[bone]),actor.sourceBasis);
@@ -642,21 +795,69 @@ bool Bind() {
  float foot=std::min({rest.at(actor.bones[15].transform).point().y,rest.at(actor.bones[16].transform).point().y,
   rest.at(actor.bones[19].transform).point().y,rest.at(actor.bones[20].transform).point().y});
  actor.soleOffset=std::clamp(foot,-.10f,.15f);
+ if(profile.contains("ground_foot_probes"))for(const auto& probe:profile["ground_foot_probes"]){Vec3 p{};float weights=0;bool valid=true;
+  for(const auto& influence:probe.at("influences")){const auto it=named.find(influence.at("bone_name").get<std::string>());const auto point=influence.at("local_point").get<std::vector<float>>();const float w=influence.at("weight").get<float>();
+   if(it==named.end()||!rest.contains(it->second)||point.size()!=3||!std::isfinite(w)||w<0){valid=false;break;}
+   p=Retarget::Add(p,Retarget::Scale(rest.at(it->second).point({point[0],point[1],point[2]}),w));weights+=w;
+  }if(valid&&std::abs(weights-1)<.01f&&Finite(p))foot=std::min(foot,p.y);
+ }
  float sourceHeight=1.0461f;
  if(sourceRestReady){
-  const float sourceHip=Rotate(actor.sourceBasis,sourceRestPositions[0]).y;
+  const float sourceHip=Rotate(actor.sourceStageBasis,sourceRestPositions[0]).y;
   float sourceFoot=std::numeric_limits<float>::max();
-  for(int index:{15,16,19,20})sourceFoot=std::min(sourceFoot,Rotate(actor.sourceBasis,sourceRestPositions[index]).y);
+  for(int index:{15,16,19,20})sourceFoot=std::min(sourceFoot,Rotate(actor.sourceStageBasis,sourceRestPositions[index]).y);
   const float measured=sourceHip-sourceFoot;
   if(std::isfinite(measured)&&measured>.2f&&measured<3.f)sourceHeight=measured;
+  if(sourceSoleHeight>.2f&&sourceSoleHeight<3.f)sourceHeight=sourceSoleHeight;
  }
- actor.scale=std::clamp((hip-foot)/sourceHeight,.5f,2.f);
+ const float measuredScale=(hip-foot)/sourceHeight;if(!std::isfinite(measuredScale)||measuredScale<.25f||measuredScale>4)throw std::runtime_error("Unsupported measured character scale");actor.scale=measuredScale;
+ if(profile.contains("ground_foot_probes")){
+  if(!profile["ground_foot_probes"].is_array()||profile["ground_foot_probes"].size()>32)throw std::runtime_error("Invalid source mesh foot probes");
+  for(const auto& point:profile["ground_foot_probes"]){FootProbe probe;float totalWeight=0;
+   for(const auto& influence:point.at("influences")){const auto name=influence.at("bone_name").get<std::string>();auto found=named.find(name);if(found==named.end())continue;
+    const auto p=influence.at("local_point").get<std::vector<float>>();const float weight=influence.at("weight").get<float>();
+    if(p.size()!=3||!Finite(Vec3{p[0],p[1],p[2]})||!std::isfinite(weight)||weight<0||weight>1)throw std::runtime_error("Invalid mesh foot influence");
+    if(!Pin(found->second))throw std::runtime_error("Foot probe bone pin failed");probe.push_back({found->second,{p[0],p[1],p[2]},weight});totalWeight+=weight;
+   }if(!probe.empty()&&std::abs(totalWeight-1)<.01f){for(auto& influence:probe)influence.weight/=totalWeight;actor.footProbes.push_back(std::move(probe));}
+  }
+ }
+ for(size_t index=0;index<sourceFingerBones.size();++index){const auto name=TargetFingerName(sourceFingerBones[index].at("name").get<std::string>());if(name.empty())continue;
+  auto found=named.find(name);if(found==named.end()||!rest.contains(found->second))continue;
+  const bool left=sourceFingerBones[index].at("hand")=="left";const auto hand=left?8:12;
+  FingerBinding finger;finger.source=index;auto& b=finger.binding;b.transform=found->second;b.parent=Call(Parent,b.transform);
+  if(!b.parent||!Pin(b.transform)||!Pin(b.parent))throw std::runtime_error("Finger pin failed");
+  b.restWorld=Retarget::CarryRestAlignment(actor.bones[hand].restWorld,actor.nativeHandRest[left?0:1],rest.at(b.transform).rotation());
+  if(!Value(LocalRotation,b.transform,b.lastRotation))throw std::runtime_error("Finger local rotation unavailable");finger.from=b.lastRotation;actor.fingers.push_back(finger);
+ }
+ if(profile.contains("ground_hand_probes"))for(int side=0;side<2;++side){
+  const char* key=side==0?"left":"right";const auto& bank=profile["ground_hand_probes"];
+  if(!bank.is_object()||!bank.contains(key))continue;const auto& points=bank[key];
+  if(!points.is_array()||points.size()>32)throw std::runtime_error("Invalid source mesh hand probes");
+  for(const auto& point:points){FootProbe probe;float totalWeight=0;
+   for(const auto& influence:point.at("influences")){auto found=named.find(influence.at("bone_name").get<std::string>());if(found==named.end())continue;
+    const auto p=influence.at("local_point").get<std::vector<float>>();const float weight=influence.at("weight").get<float>();
+    if(p.size()!=3||!Finite(Vec3{p[0],p[1],p[2]})||!std::isfinite(weight)||weight<0||weight>1)throw std::runtime_error("Invalid mesh hand influence");
+    if(!Pin(found->second))throw std::runtime_error("Hand probe bone pin failed");probe.push_back({found->second,{p[0],p[1],p[2]},weight});totalWeight+=weight;
+   }if(!probe.empty()&&std::abs(totalWeight-1)<.01f){for(auto& influence:probe)influence.weight/=totalWeight;actor.handProbes[side].push_back(std::move(probe));}
+  }
+ }
+ if(named.contains("Bip001_R_Finger22"))actor.drawFinger=named.at("Bip001_R_Finger22");
  BindGroundQueries();lastSound.clear();soundCueCount=0;
  BindWeaponSockets(named);
  const bool holding=HoldEquippedWeapon();
- if(holding&&config.show_prop&&config.laevatain_blade&&profile.contains("visual_weapon"))
-  visualWeapon.Bind(api,profile.at("visual_weapon"));
- if(!holding&&!visualWeapon.Available())CreateProp();
+ if(config.show_prop&&config.visual_weapon!="equipped"){
+  const Json* visual=nullptr;
+  const auto chosen=config.visual_weapon=="laevatain_blade"?std::string("laevatain_full"):config.visual_weapon=="typhoea_bow"?std::string("typhoea_bow"):std::string{};
+  if(!chosen.empty()&&visualWeaponRegistry.contains(chosen))visual=&visualWeaponRegistry.at(chosen);
+  else if(config.visual_weapon!="source"&&profile.contains("visual_weapons")&&profile["visual_weapons"].contains(loadedMode))visual=&profile["visual_weapons"][loadedMode];
+  else if(loadedMode=="longsword"&&config.laevatain_blade&&profile.contains("visual_weapon"))visual=&profile["visual_weapon"];
+  if(visual){actor.visualMountName=visual->value("mount_socket_name",visual->value("mount_side",loadedMode=="bow"?std::string("left"):std::string("right"))=="left"?std::string("wep_L"):std::string("wep_R"));actor.visualSourceAdapter=visual->value("mount_driver",std::string{})=="mhw_source_attachment";visualWeapon.Bind(api,*visual);}
+  else if(!modeProps.empty()){
+   sourceWeapon.Bind(api,modeProps.front(),activeAssetRoot);actor.sourcePresentation=true;actor.visualMountName=loadedMode=="bow"?"wep_L":"wep_R";
+  }
+  if(modeProps.size()>1&&(loadedMode=="sword_shield"||loadedMode=="lance")){offhandWeapon.Bind(api,modeProps[1],activeAssetRoot);actor.offhandRequested=true;}
+ }
+ if(!holding&&!visualWeapon.Available()&&!sourceWeapon.Available())CreateProp();
  if(!controller.start(configuredIdleSlot))throw std::runtime_error("Idle clip unavailable");
  suppressInput=true;phase="active";detail="动作演示已接管输入";
  Log("Bound "+character+" from main skinned bindposes; skeleton="+actor.skeletonPath+" bones=21");return true;
@@ -671,21 +872,36 @@ bool ApplyGrip(float blend) {
  auto track=gripTracks.find(controller.slot);if(!actor.gripAvailable||track==gripTracks.end()||config.grip_strength<=0)return true;
  auto frame=track->second.Sample(controller.seconds);
  if(actor.sourceWeaponActive)frame.weight=actor.sourceWeaponFrame.supportWeight;
+ if(loadedMode=="longsword"){
+  const std::string model=actor.visualSourceAdapter&&visualWeapon.Available()?"wpn_misc_0016":
+   actor.sourcePresentation&&!modeProps.empty()?"source:"+modeProps.front().value("id",std::string{}):"";
+  const auto byModel=geometryContactMasks.find(model);
+  if(byModel!=geometryContactMasks.end()){
+   const auto byCharacter=byModel->second.find(actor.character);
+   if(byCharacter!=byModel->second.end()){
+    const auto mask=byCharacter->second.find(controller.slot);
+    if(mask!=byCharacter->second.end())frame.weight=mask->second.Sample(controller.seconds);
+   }
+  }
+ }
  const float strength=frame.weight*config.grip_strength*blend*
-  std::min(1.f,controller.seconds/std::max(.01f,config.blend_seconds));if(strength<.001f)return true;
+  std::min(1.f,controller.motionAge()/std::max(.01f,config.blend_seconds));if(strength<.001f)return true;
+ const int upperIndex=loadedMode=="bow"?10:6,lowerIndex=upperIndex+1,supportIndex=upperIndex+2,dominantIndex=loadedMode=="bow"?8:12;
  Vec3 shoulder,elbow,left,right;Quat rootRotation,wristRotation;
- if(!Value(WorldPosition,actor.bones[6].transform,shoulder)||!Value(WorldPosition,actor.bones[7].transform,elbow)||
-  !Value(WorldPosition,actor.bones[8].transform,left)||!Value(WorldPosition,actor.bones[12].transform,right)||
-  !Value(Rotation,actor.root,rootRotation)||!Value(Rotation,actor.bones[8].transform,wristRotation))return SkipGrip();
+ if(!Value(WorldPosition,actor.bones[upperIndex].transform,shoulder)||!Value(WorldPosition,actor.bones[lowerIndex].transform,elbow)||
+  !Value(WorldPosition,actor.bones[supportIndex].transform,left)||!Value(WorldPosition,actor.bones[dominantIndex].transform,right)||
+  !Value(Rotation,actor.root,rootRotation)||!Value(Rotation,actor.bones[supportIndex].transform,wristRotation))return SkipGrip();
  if(!Finite(shoulder)||!Finite(elbow)||!Finite(left)||!Finite(right)||Len(Sub(elbow,shoulder))<1e-5f||Len(Sub(left,elbow))<1e-5f)return SkipGrip();
  const auto offset=actor.sourceWeaponActive?Rotate(actor.gripFrameWorld,Scale(actor.sourceWeaponFrame.supportOffset,actor.scale)):
   Rotate(Mul(rootRotation,actor.sourceBasis),Scale(frame.offset,actor.scale));
  auto goal=Lerp(left,Add(right,offset),strength);
- // A source close-hand interval only nudges the supporting arm; unreachable
- // targets are clamped without stretching bones or changing the dominant hand.
- const auto solved=SolveArm(shoulder,goal,elbow,Len(Sub(elbow,shoulder)),Len(Sub(left,elbow)),Rotate(rootRotation,{-1,0,-1}));
- const std::array<Quat,3> baseline{actor.bones[6].lastRotation,actor.bones[7].lastRotation,actor.bones[8].lastRotation};
- const auto rollbackGrip=[&](){for(int k=0;k<3;++k){auto& b=actor.bones[6+k];if(Close(b.lastRotation,baseline[k]))continue;
+ // Most source contact intervals only move the supporting arm. A target
+ // beyond its fixed arm reach uses the shared-grip projection below.
+ auto solved=SolveArm(shoulder,goal,elbow,Len(Sub(elbow,shoulder)),Len(Sub(left,elbow)),Rotate(rootRotation,{-1,0,-1}));
+ const int dominantUpper=dominantIndex-2,dominantLower=dominantIndex-1;
+ const std::array<int,6> chain{upperIndex,lowerIndex,supportIndex,dominantUpper,dominantLower,dominantIndex};
+ std::array<Quat,6> baseline{};for(size_t k=0;k<chain.size();++k)baseline[k]=actor.bones[chain[k]].lastRotation;
+ const auto rollbackGrip=[&](){for(size_t k=0;k<chain.size();++k){auto& b=actor.bones[chain[k]];if(Close(b.lastRotation,baseline[k]))continue;
    Quat current;if(!Value(LocalRotation,b.transform,current))return false;
    if(Close(current,b.lastRotation)){if(!SetValue(SetLocalRotation,b.transform,baseline[k]))return false;b.lastRotation=baseline[k];}
    else b.written=false;}
@@ -693,16 +909,55 @@ bool ApplyGrip(float blend) {
  const auto writeWorld=[&](int i,Quat world){auto& b=actor.bones[i];Quat parent;
   if(!Value(Rotation,b.parent,parent))return false;auto local=Mul(Inverse(parent),world);
   if(!SetValue(SetLocalRotation,b.transform,local))return false;b.lastRotation=local;return true;};
- Quat upper;if(!Value(Rotation,actor.bones[6].transform,upper)||
-  !writeWorld(6,Mul(FromTo(Sub(elbow,shoulder),Sub(solved.elbow,shoulder)),upper)))return rollbackGrip();
+ const auto writeArm=[&](int upperIndex,int lowerIndex,int handIndex,Vec3 shoulder,Vec3 elbow,const ArmSolution& solution,Quat wrist){
+  Quat upper;if(!Value(Rotation,actor.bones[upperIndex].transform,upper)||
+   !writeWorld(upperIndex,Mul(FromTo(Sub(elbow,shoulder),Sub(solution.elbow,shoulder)),upper)))return false;
+  Vec3 movedElbow,movedHand;Quat lower;
+  if(!Value(WorldPosition,actor.bones[lowerIndex].transform,movedElbow)||!Value(WorldPosition,actor.bones[handIndex].transform,movedHand)||
+   !Value(Rotation,actor.bones[lowerIndex].transform,lower))return false;
+  return writeWorld(lowerIndex,Mul(FromTo(Sub(movedHand,movedElbow),Sub(solution.hand,movedElbow)),lower))&&writeWorld(handIndex,wrist);
+ };
+ // A source-derived contact can exceed a short character's arm reach. Move the
+ // shared grip by the least distance into both fixed-length reach volumes,
+ // retaining the source wrist offset and both original wrist rotations.
+ if(solved.clamped){Vec3 dominantShoulder,dominantElbow;Quat dominantWrist;
+  if(!Value(WorldPosition,actor.bones[dominantUpper].transform,dominantShoulder)||
+   !Value(WorldPosition,actor.bones[dominantLower].transform,dominantElbow)||
+   !Value(Rotation,actor.bones[dominantIndex].transform,dominantWrist))return rollbackGrip();
+  if(!Finite(dominantShoulder)||!Finite(dominantElbow)||Len(Sub(dominantElbow,dominantShoulder))<1e-5f||
+   Len(Sub(right,dominantElbow))<1e-5f)return rollbackGrip();
+  const auto coupled=SolveTwoHandGrip(dominantShoulder,dominantElbow,right,shoulder,elbow,left,offset,strength,
+   Rotate(rootRotation,{1,0,-1}),Rotate(rootRotation,{-1,0,-1}));
+  if(coupled.reachable){
+   if(!writeArm(dominantUpper,dominantLower,dominantIndex,dominantShoulder,dominantElbow,coupled.dominant,dominantWrist)||
+    !writeArm(upperIndex,lowerIndex,supportIndex,shoulder,elbow,coupled.support,wristRotation))return rollbackGrip();
+   return true;
+  }
+ }
+ Quat upper;if(!Value(Rotation,actor.bones[upperIndex].transform,upper)||
+  !writeWorld(upperIndex,Mul(FromTo(Sub(elbow,shoulder),Sub(solved.elbow,shoulder)),upper)))return rollbackGrip();
  Vec3 movedElbow,movedHand;Quat lower;
- if(!Value(WorldPosition,actor.bones[7].transform,movedElbow)||!Value(WorldPosition,actor.bones[8].transform,movedHand)||
-  !Value(Rotation,actor.bones[7].transform,lower))return rollbackGrip();
- if(!writeWorld(7,Mul(FromTo(Sub(movedHand,movedElbow),Sub(solved.hand,movedElbow)),lower)))return rollbackGrip();
- if(!writeWorld(8,wristRotation))return rollbackGrip();
+ if(!Value(WorldPosition,actor.bones[lowerIndex].transform,movedElbow)||!Value(WorldPosition,actor.bones[supportIndex].transform,movedHand)||
+  !Value(Rotation,actor.bones[lowerIndex].transform,lower))return rollbackGrip();
+ if(!writeWorld(lowerIndex,Mul(FromTo(Sub(movedHand,movedElbow),Sub(solved.hand,movedElbow)),lower)))return rollbackGrip();
+ if(!writeWorld(supportIndex,wristRotation))return rollbackGrip();
  return true;
 }
 
+bool LiftGroundedHand(int side,float amount){
+ using namespace Retarget;const int upper=side==0?6:10,lower=upper+1,hand=upper+2;
+ Vec3 shoulder,elbow,wrist;Quat orientation,root;
+ if(!Value(WorldPosition,actor.bones[upper].transform,shoulder)||!Value(WorldPosition,actor.bones[lower].transform,elbow)||
+  !Value(WorldPosition,actor.bones[hand].transform,wrist)||!Value(Rotation,actor.bones[hand].transform,orientation)||!Value(Rotation,actor.root,root))return false;
+ const auto goal=Add(wrist,{0,amount,0});const auto solved=SolveArm(shoulder,goal,elbow,Len(Sub(elbow,shoulder)),Len(Sub(wrist,elbow)),Rotate(root,{side==0?-1.f:1.f,0,-1}));
+ if(Len(Sub(solved.hand,goal))>.001f)return false;
+ const auto write=[&](int index,Quat world){auto& b=actor.bones[index];Quat parent;if(!Value(Rotation,b.parent,parent))return false;
+  const auto local=Mul(Inverse(parent),world);if(!SetValue(SetLocalRotation,b.transform,local))return false;b.lastRotation=local;return true;};
+ Quat rotation;if(!Value(Rotation,actor.bones[upper].transform,rotation)||!write(upper,Mul(FromTo(Sub(elbow,shoulder),Sub(solved.elbow,shoulder)),rotation)))return false;
+ Vec3 movedElbow,movedWrist;if(!Value(WorldPosition,actor.bones[lower].transform,movedElbow)||!Value(WorldPosition,actor.bones[hand].transform,movedWrist)||
+  !Value(Rotation,actor.bones[lower].transform,rotation))return false;
+ return write(lower,Mul(FromTo(Sub(movedWrist,movedElbow),Sub(solved.hand,movedElbow)),rotation))&&write(hand,orientation);
+}
 bool TerrainQuery(Vec3 origin,Vec3 direction,float distance,float radius,TerrainHit& hit){
  if(!actor.terrainMask||!Finite(origin)||!Finite(direction)||!std::isfinite(distance)||distance<=0)return false;
  const bool sphere=radius>0;void* receiver=sphere?actor.groundSphereCast:actor.groundRaycast;
@@ -727,8 +982,15 @@ bool GroundAt(Vec3 position,float expectedY,float& floor){
 }
 Vec3 GroundDisplay(Vec3 baseline,Vec3 offset,float blend){
  using namespace Retarget;
- std::array<Vec3,4> feet{};constexpr int indices[]{15,16,19,20};
- for(size_t i=0;i<feet.size();++i)if(!Value(WorldPosition,actor.bones[indices[i]].transform,feet[i]))return offset;
+ std::array<Vec3,36> feet{};constexpr int indices[]{15,16,19,20};
+ for(size_t i=0;i<4;++i)if(!Value(WorldPosition,actor.bones[indices[i]].transform,feet[i]))return offset;
+ bool meshSole=!actor.footProbes.empty();size_t count=4;std::unordered_map<void*,Mat> frames;
+ if(meshSole)for(const auto& probe:actor.footProbes){Vec3 point{};bool valid=true;
+  for(const auto& influence:probe){auto frame=frames.find(influence.transform);if(frame==frames.end()){Mat matrix;if(!Value(WorldMatrix,influence.transform,matrix)){valid=false;break;}frame=frames.emplace(influence.transform,matrix).first;}
+   point=Add(point,Scale(frame->second.point(influence.local),influence.weight));}
+  if(!valid||!Finite(point)){meshSole=false;break;}if(count<feet.size())feet[count++]=point;
+ }
+ if(!meshSole)count=4;for(size_t i=count;i<feet.size();++i)feet[i]=feet[0];
  auto guide=groundTracks.find(controller.slot);
  if(guide==groundTracks.end()){actor.groundDetail="当前动作缺少脚底参考，保留动作位移";return offset;}
  if(actor.groundMotion!=controller.motionSerial){actor.clearanceFrom=actor.clearance;actor.groundMotion=controller.motionSerial;actor.groundBlend=0;}
@@ -756,13 +1018,52 @@ Vec3 GroundDisplay(Vec3 baseline,Vec3 offset,float blend){
    if(!GroundAt(p,floor,candidate)){offset=Scale(offset,float(i-1)/steps);break;}floor=candidate;}
  }
  float rootFloor=pathFloor;bool displacedHit=baselineHit&&GroundAt(Add(baseline,offset),pathFloor,rootFloor);
- std::array<float,4> floors{};
- for(size_t i=0;i<feet.size();++i){floors[i]=rootFloor;
+ std::array<float,36> floors{};
+ for(size_t i=0;i<count;++i){floors[i]=rootFloor;
   if(displacedHit)GroundAt(Add(feet[i],offset),rootFloor,floors[i]);}
- actor.groundCorrection=FloorCorrection(feet,floors,actor.soleOffset,actor.clearance);
+ for(size_t i=count;i<floors.size();++i)floors[i]=floors[0];
+ actor.groundCorrection=FloorCorrection(feet,floors,meshSole?0:actor.soleOffset,actor.clearance);
+ // Only a source-verified hand support interval can replace a shoe anchor.
+ // During a forward roll the source shoes rise while a glove supports the
+ // body. Preserve that pose and lift only the display root as needed.
+ const float soleCorrection=actor.groundCorrection;const auto support=supportGroundTracks.find(controller.slot);
+ if(support!=supportGroundTracks.end())for(int side=0;side<2;++side){
+  const auto& guide=support->second[side];if(guide.Kind(controller.seconds)!=1||guide.active.Sample(controller.seconds)<.5f||actor.handProbes[side].empty())continue;
+  const float clearance=guide.clearance.Sample(controller.seconds)*actor.scale;
+  for(const auto& probe:actor.handProbes[side]){Vec3 point{};bool valid=true;
+   for(const auto& influence:probe){auto frame=frames.find(influence.transform);if(frame==frames.end()){Mat matrix;if(!Value(WorldMatrix,influence.transform,matrix)){valid=false;break;}frame=frames.emplace(influence.transform,matrix).first;}
+    point=Add(point,Scale(frame->second.point(influence.local),influence.weight));}
+   if(!valid||!Finite(point))continue;float floor=rootFloor;
+   if(displacedHit)GroundAt(Add(point,offset),rootFloor,floor);
+   actor.groundCorrection=std::max(actor.groundCorrection,floor+clearance-point.y);
+  }
+ }
+ if(support!=supportGroundTracks.end())for(int side=0;side<2;++side){
+  const auto& guide=support->second[side];const int kind=guide.Kind(controller.seconds);
+  if((kind!=2&&kind!=3)||(kind==2&&guide.active.Sample(controller.seconds)<.5f)||actor.handProbes[side].empty())continue;
+  const float clearance=kind==3?0:guide.clearance.Sample(controller.seconds)*actor.scale;
+  float correction=0;
+  for(const auto& probe:actor.handProbes[side]){Vec3 point{};bool valid=true;
+   for(const auto& influence:probe){auto frame=frames.find(influence.transform);if(frame==frames.end()){Mat matrix;if(!Value(WorldMatrix,influence.transform,matrix)){valid=false;break;}frame=frames.emplace(influence.transform,matrix).first;}
+    point=Add(point,Scale(frame->second.point(influence.local),influence.weight));}
+   if(!valid||!Finite(point))continue;float floor=rootFloor;if(displacedHit)GroundAt(Add(point,offset),rootFloor,floor);
+   correction=std::max(correction,floor+clearance-point.y-actor.groundCorrection);
+  }
+  if(correction>.00001f){
+   if(!LiftGroundedHand(side,correction))throw std::runtime_error("手部接地超出固定臂长可达范围，已停止演示并恢复控制");
+   frames.clear();
+  }
+ }
+ if(baselineHit&&actor.groundCorrection>soleCorrection+.01f){
+  Vec3 highest=feet[0];for(const auto& bone:actor.bones){Vec3 point;if(Value(WorldPosition,bone.transform,point)&&Finite(point)&&point.y>highest.y)highest=point;}
+  const Vec3 origin{highest.x+offset.x,rootFloor+.23f,highest.z+offset.z};TerrainHit ceiling;
+  const float required=std::max(0.f,highest.y+actor.groundCorrection+.20f*actor.scale-origin.y);
+  if(required>0&&TerrainQuery(origin,{0,1,0},required,.18f,ceiling)&&ceiling.normal.y<-.5f)
+   throw std::runtime_error("手部支撑所需高度与场景顶面冲突，已停止演示并恢复控制");
+ }
  actor.groundFloor=rootFloor;
  offset.y=actor.groundCorrection*blend;
- actor.groundDetail=displacedHit?"脚底高度与场景地面已校准":"脚底高度已校准；场景地面查询不可用";
+ actor.groundDetail=displacedHit?(meshSole?"真实鞋底网格与场景地面已校准":"脚骨参考与场景地面已校准"):(meshSole?"真实鞋底已校准；场景查询不可用":"脚骨校准；场景查询不可用");
  return offset;
 }
 
@@ -781,7 +1082,7 @@ bool ApplyPose() {
   auto desiredLocal=Mul(Inverse(parentRotation),desiredWorld);
   b.previousRotation=original;b.lastRotation=Slerp(original,desiredLocal,blend);
   if(!SetValue(SetLocalRotation,b.transform,b.lastRotation))return false;b.written=true;
-  if(index==0){Vec3 p;if(!Value(LocalPosition,b.transform,p))return false;auto hip=Rotate(actor.sourceBasis,controller.output.hip);
+  if(index==0){Vec3 p;if(!Value(LocalPosition,b.transform,p))return false;auto hip=Rotate(actor.sourceStageBasis,controller.output.hip);
    // Move the display model root when possible so renderer bounds follow it.
    if(!config.root_motion||stage){hip.x=0;hip.z=0;}hip.x*=actor.scale;hip.y*=actor.scale;hip.z*=actor.scale;
    auto vector=Rotate(modelRotation,hip);Vec3 local;void* args[]{&vector};if(!Value(InverseVector,b.parent,local,args))return false;
@@ -789,7 +1090,17 @@ bool ApplyPose() {
    if(!SetValue(SetLocalPosition,b.transform,b.lastPosition))return false;b.positionWritten=true;
   }
  }
- if(stage){auto offset=Rotate(actor.sourceBasis,controller.output.hip);
+ if(!UpdateSourceGrip(modelRotation)||!ApplyGrip(blend))return false;
+ auto fingers=fingerTracks.find(controller.slot);if(fingers!=fingerTracks.end()){
+  const auto frame=fingers->second.Sample(controller.seconds);const bool changed=actor.fingerMotion!=controller.motionSerial;
+  for(auto& finger:actor.fingers){auto& b=finger.binding;Quat original,parent;if(finger.source>=frame.size()||!Value(LocalRotation,b.transform,original)||!Value(Rotation,b.parent,parent))return false;
+   if(changed)finger.from=b.lastRotation;
+   const auto world=Mul(modelRotation,Retarget::ApplySourceDelta(frame[finger.source],b.restWorld,actor.sourceBasis));
+   const auto local=Mul(Inverse(parent),world);const auto weight=std::clamp(controller.motionAge()/std::max(.01f,controller.transitionSeconds),0.f,1.f);
+   b.previousRotation=original;b.lastRotation=Slerp(finger.from,local,weight*blend);if(!SetValue(SetLocalRotation,b.transform,b.lastRotation))return false;b.written=true;
+  }actor.fingerMotion=controller.motionSerial;
+ }
+ if(stage){auto offset=Rotate(actor.sourceStageBasis,controller.output.hip);
   offset.x=config.root_motion?offset.x*actor.scale:0;offset.y=0;offset.z=config.root_motion?offset.z*actor.scale:0;
   auto worldOffset=Rotate(modelRotation,offset);worldOffset.x*=blend;worldOffset.z*=blend;
   worldOffset=GroundDisplay(stageBaseline,worldOffset,blend);Vec3 baseline;
@@ -807,17 +1118,51 @@ bool ApplyPose() {
    }}
   if(actor.cameraTransform&&IsAlive(actor.cameraTransform)&&Value(WorldPosition,actor.cameraTransform,baseline)){
    actor.cameraPrevious=baseline;actor.cameraLast={baseline.x+worldOffset.x,
-    baseline.y+(worldOffset.y+std::max(0.f,Rotate(actor.sourceBasis,controller.output.hip).y)*actor.scale)*.5f,baseline.z+worldOffset.z};
+    baseline.y+(worldOffset.y+std::max(0.f,Rotate(actor.sourceStageBasis,controller.output.hip).y)*actor.scale)*.5f,baseline.z+worldOffset.z};
    actor.cameraWritten=SetValue(SetWorldPosition,actor.cameraTransform,actor.cameraLast);
   }
  }
- if(!UpdateSourceGrip(modelRotation)||!ApplyGrip(blend))return false;
+ for(auto& root:actor.secondaryRoots){Mat anchor;if(!IsAlive(root.anchor)||!Value(WorldMatrix,root.anchor,anchor))return false;const auto desired=Multiply(anchor,root.anchorRelative);
+  if(!WriteWeaponBinding(root.binding,desired.point(),desired.rotation()))return false;
+ }
  ApplyWeaponSockets();
  if(visualWeapon.Available()){
   void* socket=nullptr;
-  for(const auto& entry:actor.sockets)if(ObjectName(entry.binding.transform)=="wep_R"){socket=entry.binding.transform;break;}
-  if(!socket&&!actor.sockets.empty())socket=actor.sockets.front().binding.transform;
+  const auto& name=actor.visualMountName;
+  for(const auto& entry:actor.sockets)if(ObjectName(entry.binding.transform)==name){socket=entry.binding.transform;break;}
+  if(!socket){actor.visualReason="所需的原始武器安装节点未找到";return true;}
   visualWeapon.Tick(socket,actor.visualFrameSeconds);
+  if(actor.visualSourceAdapter&&visualWeapon.Ready()&&actor.sourceWeaponFrame.main.valid){Mat hand;
+   if(Value(WorldMatrix,actor.bones[12].transform,hand)){
+    const auto axes=Mul(Mul(Inverse(actor.bones[12].restWorld),actor.sourceBasis),sourceRestRotations[12]);const auto q=Mul(hand.rotation(),axes);
+    if(!visualWeapon.SetWorldPose(Retarget::Add(hand.point(),Rotate(q,Retarget::Scale(actor.sourceWeaponFrame.main.position,actor.scale))),Mul(q,actor.sourceWeaponFrame.main.rotation)))return false;
+   }
+  }
+  VisualWeapon::ManagedVisualWeapon::PoseState state;state.charge=std::max(std::clamp(controller.heldSeconds()/1.85f,0.f,1.f),loadedMode=="bow"&&controller.slot!=configuredIdleSlot?.01f:0.f);state.elapsed=actor.entrySeconds;state.fullEffects=config.effects_quality=="full";
+  state.released=projectileMotion==controller.motionSerial&&projectileEventCursor>0;
+  Mat draw;if(loadedMode=="bow"&&Value(WorldMatrix,actor.drawFinger?actor.drawFinger:actor.bones[12].transform,draw)){state.drawPointWorld=draw.point();state.drawPointValid=true;}
+  visualWeapon.UpdatePose(state);
+ }
+ if(sourceWeapon.Available()||offhandWeapon.Available()){
+  void* main=nullptr;void* other=nullptr;for(const auto& entry:actor.sockets){const auto name=ObjectName(entry.binding.transform);if(name==actor.visualMountName)main=entry.binding.transform;if(name=="wep_L")other=entry.binding.transform;}
+  if(main)sourceWeapon.Tick(main,actor.visualFrameSeconds);if(other&&actor.offhandRequested)offhandWeapon.Tick(other,actor.visualFrameSeconds);
+  const auto transport=[&](VisualWeapon::ManagedSourceWeapon& weapon,const WeaponPose::Attachment& mount,int hand){
+   if(!weapon.Ready()||!mount.valid)return;Mat target;if(!Value(WorldMatrix,actor.bones[hand].transform,target))return;
+   // Source hand axes are mapped through authored rests. Geometry was already
+   // normalized by its own root bind during export: do not invert it twice.
+   const auto axes=Mul(Mul(Inverse(actor.bones[hand].restWorld),actor.sourceBasis),sourceRestRotations[hand]);
+   const auto q=Mul(target.rotation(),axes);
+   weapon.SetWorldPose(Retarget::Add(target.point(),Rotate(q,Retarget::Scale(mount.position,actor.scale))),Mul(q,mount.rotation));
+  };
+  transport(sourceWeapon,actor.sourceWeaponFrame.main,loadedMode=="bow"?8:12);
+  if(actor.offhandRequested)transport(offhandWeapon,actor.sourceWeaponFrame.offhand,8);
+  const auto own=skinMotions.find(controller.slot);
+  if(sourceWeapon.Ready()&&own!=skinMotions.end()&&skinGeometry.contains(own->second.prop)){
+   const auto& geometry=skinGeometry.at(own->second.prop);
+   if(!sourceWeapon.UpdateSkinPositions(SourceSkin::Deform(geometry.vertices,geometry.indices,geometry.weights,own->second.track.Sample(controller.seconds))))return false;
+  }else if(sourceWeapon.Ready()&&actor.sourceSkinMotion!=controller.motionSerial&&!modeProps.empty()){
+   const auto id=modeProps.front().value("id",std::string{});if(skinGeometry.contains(id)&&!sourceWeapon.UpdateSkinPositions(skinGeometry.at(id).vertices))return false;
+  }actor.sourceSkinMotion=controller.motionSerial;
  }
  UpdateEquipmentVisibility();return true;
 }
@@ -851,30 +1196,74 @@ bool QueryPracticeTargets(){
  practice.Refresh(found,config.practice_hp);return true;
 }
 void TickPractice(float dt){
- if(practiceResetRequest){practiceResetRequest=false;practice.Clear();practiceSummary=Json::array();enemyRefresh=0;}
- if(!config.local_practice){practice.Suspend();practice.targets.clear();practiceDetail="本地练习未开启";return;}
+ if(practiceResetRequest){practiceResetRequest=false;practiceDummy.Reset();practice.Clear();localMode.Reset(loadedMode);practiceSummary=Json::array();enemyRefresh=0;}
+ if(!config.local_practice){practiceDummy.Reset();practice.Suspend();practice.targets.clear();practiceDetail="本地练习未开启";return;}
+ if(config.practice_target=="dummy"){
+  if(practice.targets.empty()){Mat root;if(!Value(WorldMatrix,actor.root,root)){practice.Suspend();return;}
+   const Vec3 point=root.point({0,config.practice_height,3});practice.Refresh({PracticeTarget{0xfffffffe,"本地练习目标",point,config.practice_radius,config.practice_hp,3}},config.practice_hp);}
+  if(!practiceDummy.Available()){
+   Json prop{{"id","local_practice_dummy"},{"vertices",Json::array()},{"indices",Json::array()}};
+   constexpr int rings=12,sides=20;constexpr float pi=3.14159265359f;
+   for(int ring=0;ring<=rings;++ring){const float a=pi*ring/rings;for(int side=0;side<sides;++side){const float b=2*pi*side/sides;prop["vertices"].push_back({config.practice_radius*std::sin(a)*std::cos(b),config.practice_radius*std::cos(a),config.practice_radius*std::sin(a)*std::sin(b)});}}
+   for(int ring=0;ring<rings;++ring)for(int side=0;side<sides;++side){const int a=ring*sides+side,b=ring*sides+(side+1)%sides,c=a+sides,d=b+sides;for(auto index:{a,c,b,b,c,d})prop["indices"].push_back(index);}
+   practiceDummy.Bind(api,prop);
+  }
+  if(practiceDummy.Tick(actor.root,dt)&&!practice.targets.empty()){practiceDummy.SetWorldPose(practice.targets.begin()->second.position,Quat{});practiceDummy.SetVisible(true);}
+ }else{
+ practiceDummy.Reset();
  if(!practiceReady){practice.Suspend();practice.targets.clear();practiceDetail="怪物读取接口未匹配；动作可继续播放";return;}
  enemyRefresh-=std::clamp(dt,0.f,.1f);
  if(enemyRefresh<=0){enemyRefresh=.15f;
-  if(!QueryPracticeTargets()){practice.Suspend();practice.targets.clear();practiceDetail="等待场景怪物数据";return;}}
+  if(!QueryPracticeTargets()){practice.Suspend();practice.targets.clear();practiceDetail="等待场景怪物数据";return;}}}
+ if(loadedMode=="bow"||loadedMode=="light_bowgun"){
+  practiceDetail="本地箭弹练习；不修改真实怪物";return;
+ }
  Vec3 grip;Quat rotation;
  if(!Value(WorldPosition,actor.bones[12].transform,grip)||!Value(Rotation,actor.bones[12].transform,rotation)){practice.Suspend();return;}
- // Only local practice volumes use this measured visual direction. No native
- // hit boxes, damage events or network requests are emitted here.
  const auto bladeAxis=actor.bladeCalibrated?actor.bladeHandAxis:practiceBladeAxis;
  if(actor.bladeCalibrated&&!actor.sockets.empty()){
   Mat hand;if(Value(WorldMatrix,actor.bones[12].transform,hand))grip=hand.point(actor.sockets.front().handPosition);}
  auto tip=Retarget::Add(grip,Rotate(rotation,Retarget::Scale(bladeAxis,config.practice_blade_length*actor.scale)));
  if(visualWeapon.Visible()){
-  Mat weaponWorld;
-  if(!Value(WorldMatrix,visualWeapon.RootTransform(),weaponWorld)){practice.Suspend();return;}
-  // The independent blade has its own verified skinned axis and root. Its
-  // length follows the native mesh evidence, not the equipped sword's axis.
-  grip=weaponWorld.point();
-  tip=weaponWorld.point(Retarget::Scale(visualWeapon.BladeAxis(),visualWeapon.Length()));
+  Mat weaponWorld;if(!Value(WorldMatrix,visualWeapon.RootTransform(),weaponWorld)){practice.Suspend();return;}
+  grip=weaponWorld.point();tip=weaponWorld.point(Retarget::Scale(visualWeapon.BladeAxis(),visualWeapon.Length()));
+ }else if(sourceWeapon.Visible()&&!modeProps.empty()&&modeProps.front().contains("source_attack_tip")){
+  Mat source;if(Value(WorldMatrix,sourceWeapon.RootTransform(),source)){
+   const auto p=modeProps.front().at("source_attack_tip").get<std::vector<float>>();if(p.size()==3){grip=source.point();tip=source.point({p[0],p[1],p[2]});}
+  }
  }
  practice.Update(controller.motionSerial,controller.slot,controller.seconds,grip,tip,config.practice_damage);
- practiceDetail=practice.targets.empty()?"20 米内暂无可用怪物":"本地模拟中；不修改怪物真实血量";
+ practiceDetail=practice.targets.empty()?"20 米内暂无可用怪物":config.practice_target=="dummy"?"本地练习目标；独立模拟血量":"本地模拟中；不修改怪物真实血量";
+}
+void TickProjectiles(float dt){
+ if(loadedMode=="bow"||loadedMode=="light_bowgun"){
+  if(projectileMotion!=controller.motionSerial){projectileMotion=controller.motionSerial;projectileEventCursor=0;}
+  auto events=projectileEvents.find(controller.slot);
+  if(events!=projectileEvents.end())while(projectileEventCursor<events->second.size()&&events->second[projectileEventCursor]<=controller.seconds+1e-6f){
+   ++projectileEventCursor;if(!localMode.ReleaseProjectile())continue;Mat hand;if(!Value(WorldMatrix,actor.bones[loadedMode=="bow"?8:12].transform,hand))continue;
+   Vec3 origin=hand.point(),forward;
+   Mat camera;if(actor.cameraTransform&&Value(WorldMatrix,actor.cameraTransform,camera))forward=Retarget::Sub(camera.point({0,0,50}),origin);
+   else{Mat root;if(!Value(WorldMatrix,actor.root,root))continue;forward=Retarget::Sub(root.point({0,0,1}),root.point());}
+   if(localProjectiles.Launch(origin,forward,config.projectile_speed,config.local_practice?config.practice_damage:0,loadedMode=="bow")&&projectileProp.is_object()&&!projectileProp.empty()){
+    auto free=std::find_if(projectileVisuals.begin(),projectileVisuals.end(),[](const auto& v){return v.id==0;});
+    if(free!=projectileVisuals.end()){
+     if(!free->mesh){free->mesh=std::make_unique<VisualWeapon::ManagedSourceWeapon>();free->mesh->Bind(api,projectileProp,activeAssetRoot);}
+     if(free->mesh->Tick(actor.root,0)){free->id=localProjectiles.active.back().id;free->mesh->SetVisible(true);}
+    }
+   }
+  }
+  localProjectiles.Update(std::clamp(dt,0.f,.1f),practice,[](Vec3 from,Vec3 to,float& fraction){
+   const auto delta=Retarget::Sub(to,from);const auto length=Retarget::Len(delta);if(length<1e-6f)return false;TerrainHit hit;
+   if(!TerrainQuery(from,Retarget::Scale(delta,1/length),length,.02f,hit))return false;fraction=hit.distance/length;return true;
+  },[](const LocalProjectile&,uint32_t){});
+  for(auto& visual:projectileVisuals)if(visual.id&&visual.mesh){auto current=std::find_if(localProjectiles.active.begin(),localProjectiles.active.end(),[&](const auto& p){return p.id==visual.id;});
+   if(current==localProjectiles.active.end()){visual.mesh->SetVisible(false);visual.id=0;}
+   else if(projectileProp.contains("source_forward_axis")){
+    const auto a=projectileProp.at("source_forward_axis").get<std::vector<float>>();
+    if(a.size()==3&&Retarget::Len({a[0],a[1],a[2]})>.001f)visual.mesh->SetWorldPose(current->position,Retarget::FromTo({a[0],a[1],a[2]},Retarget::Normalize(current->velocity)));
+   }
+  }
+ }
 }
 std::string RoundedAmount(double value){char buffer[64]{};std::snprintf(buffer,sizeof(buffer),"%.0f",value);return buffer;}
 
@@ -886,12 +1275,94 @@ bool ActorIdentityIsCurrent(void* current) {
  const auto component=Call(ModelComponent,current);
  return component&&Call(ModelGo,component)==actor.model;
 }
-constexpr Command demoSequence[]{Command::Slash,Command::Slash,Command::Slash,Command::Thrust,Command::Slash,
+void EmitSound(const AudioCue& cue){
+ if(cue.kind=="stop"){soundPlayer.StopGroup(cue.group,cue.fadeOut>=0?cue.fadeOut:cue.fade);return;}
+ const auto clip=soundClips.find(cue.clip);if(clip==soundClips.end())return;
+ const auto category=cue.group.starts_with("theme.laevat")?"fire":cue.group.starts_with("theme.typh.charge")?"charge":(cue.condition.empty()||cue.condition=="always")?(cue.loop?"charge":"weapon"):"impact";
+ const float layer=config.volumes.contains(cue.group)?config.volumes.at(cue.group):config.volumes.at(category);
+ float pan=0,attenuation=1;Mat camera;Vec3 emitter;
+ if(actor.cameraTransform&&Value(WorldMatrix,actor.cameraTransform,camera)&&Value(WorldPosition,actor.root,emitter)){
+  const auto relative=camera.inverse().point(emitter);const float distance=Retarget::Len(relative);
+  pan=std::clamp(relative.x/std::max(1.f,distance),-.8f,.8f);attenuation=1/(1+std::max(0.f,distance-8)*.1f);
+ }
+ if(soundPlayer.Play(clip->second,config.sound_volume*cue.gain*layer*attenuation,cue.group,cue.loop,cue.priority,cue.fadeIn>=0?cue.fadeIn:cue.fade,pan)){
+  lastSound=cue.clip;++soundCueCount;soundDetail="动作音效就绪";
+ }else{if(soundDetail!="音效播放失败；请检查音频设备")Log("Audio output unavailable; animation remains active");soundDetail="音效播放失败；请检查音频设备";}
+}
+void UpdateHud(){
+ HudSnapshot snapshot;snapshot.active=controller.active;snapshot.autoDemo=autoDemo;snapshot.paused=paused||hudEditing;
+ snapshot.modeLabel=modeDefinitions.contains(loadedMode)?modeDefinitions.at(loadedMode).value("label",loadedMode):loadedMode;
+ snapshot.motionLabel=motionLabels.contains(controller.slot)?motionLabels.at(controller.slot):std::string("待机");
+ snapshot.detail=detail;snapshot.feedback=practice.lastTarget.empty()?std::string{}:"模拟命中 "+practice.lastTarget;
+ snapshot.chapter=autoDemo?std::to_string(demoStep+1)+" / "+std::to_string(demoSequence.size()):std::string{};
+ snapshot.resourceValid=true;snapshot.resourceLabel=localMode.Label();snapshot.resource=localMode.Value();snapshot.resourceMax=localMode.Maximum();
+ if(!localMode.feedback.empty())snapshot.feedback=localMode.feedback;
+ snapshot.aiming=(loadedMode=="bow"||loadedMode=="light_bowgun")&&((GetAsyncKeyState(config.keys.at("aim"))&0x8000)!=0||controller.holding(Command::Charge));
+ snapshot.charge=controller.heldSeconds();snapshot.chargeMax=3;snapshot.hits=practice.hits;snapshot.totalDamage=practice.total;snapshot.lastDamage=practice.lastDamage;
+ const PracticeTarget* nearest=nullptr;for(const auto&[id,target]:practice.targets)if(!nearest||target.distance<nearest->distance)nearest=&target;
+ if(nearest){snapshot.targetValid=true;snapshot.targetName=nearest->name;snapshot.targetHp=nearest->hp;snapshot.targetMaxHp=config.practice_hp;}
+ for(const auto&[bit,command]:controller.inputBindings){auto move=controller.moves.find(command);if(move==controller.moves.end()||move->second.empty())continue;
+  const auto slot=move->second.front();const char* key=bit==1?"attack":bit==2?"secondary":bit==4?"spirit":bit==8?"dodge":bit==32?"aim":bit==64?"reload":"sheathe";
+  const int vk=config.keys.at(key);std::string label=vk==1?"左键":vk==2?"右键":vk==6?"侧键":vk==32?"空格":vk>=48&&vk<=90?std::string(1,char(vk)):std::to_string(vk);
+  snapshot.derivations.push_back({motionLabels.contains(slot)?motionLabels.at(slot):CommandName(command),label,controller.available(command),controller.buffered(command)});
+ }
+ HudSettings settings;settings.enabled=config.hud_enabled;settings.showDerivations=config.hud_show_derivations;settings.showTarget=config.hud_show_target;
+ settings.showCrosshair=config.hud_show_crosshair;settings.editing=hudEditing;settings.scale=config.hud_scale;settings.anchorX=config.hud_anchor_x;settings.anchorY=config.hud_anchor_y;
+ settings.margin=int(config.hud_margin);settings.layout=config.hud_layout;settings.theme=config.theme=="auto"?(loadedMode=="bow"?"tide":actor.character=="chr_0016_laevat"?"ember":"forest"):config.theme;
+ practiceHud.Update(snapshot,settings);float x=0,y=0;if(practiceHud.TakeLayoutEdit(x,y)){config.hud_anchor_x=x;config.hud_anchor_y=y;hudLayoutChanged=true;++configRevision;appliedConfigRevision=configRevision;}
+}
+const std::vector<Command> defaultDemoSequence{Command::Slash,Command::Slash,Command::Slash,Command::Thrust,Command::Slash,
  Command::Spirit,Command::Spirit,Command::Spirit,Command::Spirit,Command::Spirit,
  Command::Fade,Command::Slash,Command::Foresight,
  Command::Spirit,Command::Spirit,Command::Spirit,Command::Spirit,Command::Spirit,
  Command::Sheathe,Command::Iai,Command::Slash,Command::Sheathe,Command::IaiSpirit,
  Command::Helm,Command::Sheathe,Command::NormalSheathe};
+std::vector<Command> demoSequence=defaultDemoSequence;
+std::vector<Command> fullDemoSequence=defaultDemoSequence;
+void SelectDemoSequence(){
+ demoSequence.clear();const auto append=[&](Command command,int count=1){if(controller.moves.contains(command))for(int i=0;i<count;++i)demoSequence.push_back(command);};
+ if(config.demo_sequence=="full"){demoSequence=fullDemoSequence;return;}
+ if(config.demo_sequence=="basic"){
+  if(loadedMode=="bow"||loadedMode=="light_bowgun"){append(Command::Aim);append(Command::Fire,3);append(Command::Reload);}
+  else{append(Command::Slash,int(controller.moves[Command::Slash].size()));append(Command::Thrust,int(controller.moves[Command::Thrust].size()));}
+  append(Command::Dodge,int(controller.moves[Command::Dodge].size()));append(Command::NormalSheathe);
+ }else{
+  if(loadedMode=="longsword"){append(Command::Spirit,4);append(Command::Sheathe);append(Command::IaiSpirit);append(Command::Helm);}
+  else{if(controller.moves.contains(Command::Charge)){append(Command::Charge);append(Command::Release);}append(Command::Guard);append(Command::Counter);append(Command::Special,int(controller.moves[Command::Special].size()));}
+  append(Command::NormalSheathe);
+ }if(demoSequence.empty())demoSequence=fullDemoSequence;
+}
+AudioCue ThemeCue(const Json& row){
+ AudioCue cue{row.value("time",0.f),row.value("clip",std::string{}),row.value("gain",1.f)};
+ cue.kind=row.value("kind",std::string("oneshot"));cue.group=row.value("group",std::string("weapon"));cue.loop=row.value("loop",false);cue.priority=row.value("priority",35);
+ cue.fadeIn=row.value("fade_in",0.f);cue.fadeOut=row.value("fade_out",.04f);cue.variants=row.value("variants",std::vector<std::string>{});
+ if(!std::isfinite(cue.time)||cue.time<0||cue.time>30||!std::isfinite(cue.gain)||cue.gain<0||cue.gain>2||cue.priority<0||cue.priority>100||cue.group.size()>128||cue.variants.size()>64)throw std::runtime_error("Invalid theme cue");
+ if(cue.kind!="oneshot"&&cue.kind!="loop"&&cue.kind!="stop")throw std::runtime_error("Invalid theme lifecycle");
+ for(float fade:{cue.fadeIn,cue.fadeOut})if(!std::isfinite(fade)||fade<0||fade>2)throw std::runtime_error("Invalid theme release");
+ if(cue.kind!="stop"&&!soundClips.contains(cue.clip))throw std::runtime_error("Missing theme PCM");for(const auto& id:cue.variants)if(!soundClips.contains(id))throw std::runtime_error("Missing theme alternative");return cue;
+}
+void ThemePhase(const std::string& theme,const char* phase,int slot){
+ if(!themeDefinitions.contains(theme)||!themeDefinitions[theme].contains(phase))return;
+ themeTimeline.cues[slot].clear();for(const auto& row:themeDefinitions[theme][phase])themeTimeline.cues[slot].push_back(ThemeCue(row));
+ themeClock=0;themeTimeline.Update(++themeSerial,slot,0,config.sound_enabled&&config.sound_volume>0&&soundReady,EmitSound);
+}
+void TickThemeSounds(float dt){
+ const std::string selected=visualWeapon.Visible()?(actor.visualSourceAdapter?"laevatain_blade":loadedMode=="bow"?"typhoea_bow":""):"";
+ if(selected!=activeTheme){
+  if(!activeTheme.empty())ThemePhase(activeTheme,activeTheme=="laevatain_blade"?"stop":"cancel",1);
+  activeTheme=selected;themeBowCharging=false;themeBowMotion=0;
+  if(activeTheme=="laevatain_blade")ThemePhase(activeTheme,"start",0);
+ }
+ if(activeTheme=="typhoea_bow"){
+  const bool charging=localMode.In(controller,Command::Charge)||controller.holding(Command::Charge);
+  if(charging&&!themeBowCharging)ThemePhase(activeTheme,"charge",2);
+  if(projectileMotion==controller.motionSerial&&projectileEventCursor>0&&themeBowMotion!=controller.motionSerial){themeBowMotion=controller.motionSerial;ThemePhase(activeTheme,"release",3);}
+  else if(themeBowCharging&&!charging&&!localMode.In(controller,Command::Release)&&!localMode.In(controller,Command::Fire))ThemePhase(activeTheme,"cancel",4);
+  themeBowCharging=charging;
+ }
+ themeClock+=dt;
+ // No body-slot key is used here: a fire pad survives every ordinary slash.
+}
 float DemoDelay(Command command,const Clip& clip,size_t nextStep) {
  if(command==Command::Sheathe)return std::min(clip.duration(),float(controller.sheatheHoldFrame)/clip.fps)+.8f;
  if(command==Command::Helm||nextStep==0)return clip.duration()+.7f;
@@ -900,24 +1371,53 @@ float DemoDelay(Command command,const Clip& clip,size_t nextStep) {
  return std::min(clip.duration()*.90f+.18f,std::max(.01f,clip.duration()-.04f));
 }
 void TickDemo(float dt) {
- if(!autoDemo)return;demoClock+=dt;if(demoClock<demoDelay)return;
- const auto command=demoSequence[demoStep];controller.input(command);
+ if(!autoDemo||demoSequence.empty())return;demoClock+=dt;demoElapsed+=dt;if(demoClock<demoDelay)return;
+ if(demoStep==0&&demoClock>demoDelay&&controller.resting()&&!demoReturnStarted){
+  controller.returnToOrigin(.5f);demoReturnStarted=true;demoDelay+=.55f;return;}
+ if(demoFinalTail){if(!config.demo_loop){autoDemo=false;demoFinalTail=false;detail="单次演示完成；F9 可再次播放";return;}demoElapsed=0;demoFinalTail=false;}
+ demoReturnStarted=false;
+ const auto command=demoSequence[demoStep];bool released=false;
+ if(demoHeld){released=command==Command::Release;controller.held(demoHeldCommand,false);demoHeld=false;}
+ if(controller.holdPolicies.contains(command)){controller.held(command,true);demoHeld=true;demoHeldCommand=command;}
+ else if(!released)controller.input(command);
  demoStep=(demoStep+1)%std::size(demoSequence);demoClock=0;
+ if(demoStep==0)demoFinalTail=true;
  const auto& clip=controller.clips.at(controller.slot);
  demoDelay=DemoDelay(command,clip,demoStep);
+ if(demoHeld){const auto& rule=controller.HoldRule(command);demoDelay=std::max(.6f,float(std::max(0,rule.frame))/clip.fps+.2f);
+  if(command==Command::Charge&&!rule.releases.empty()){
+   const size_t stages=controller.holdVariants.contains(command)?controller.holdVariants.at(command).size()+1:1;
+   const auto level=(demoChargeLevel++/stages)%rule.releases.size();
+   // A hold loop is already a real held pose. Releasing a low charge level
+   // must not be delayed until its whole breathing loop has finished.
+   demoDelay=std::max(.25f,rule.releases[level].seconds+.12f);
+  }
+ }
 }
-uint32_t KeyBits() {
- auto down=[](int k){return k>0&&(GetAsyncKeyState(k)&0x8000)!=0;};uint32_t bits=0;
- if(down(VK_LBUTTON))bits|=1;if(down(VK_RBUTTON))bits|=2;
- if(down(config.spirit_key)||down(config.spirit_alt_key))bits|=4;
- if(down(VK_SPACE))bits|=8;if(down(VK_SHIFT)||down('R'))bits|=16;return bits;
+template<class IsDown>uint32_t KeyBitsFrom(IsDown down) {
+ uint32_t bits=0;
+ const auto aliasAvailable=[&](int key,const char* action){for(const auto&[name,value]:config.keys)if(name!=action&&value==key)return false;return true;};
+ const bool ranged=loadedMode=="bow"||loadedMode=="light_bowgun";
+ if(down(config.keys.at("attack")))bits|=1;if(down(config.keys.at("secondary"))&&(!ranged||config.keys.at("secondary")!=config.keys.at("aim")))bits|=2;
+ if(!ranged&&(down(config.keys.at("spirit"))||(loadedMode=="longsword"&&aliasAvailable(config.spirit_alt_key,"spirit")&&down(config.spirit_alt_key))))bits|=4;
+ if(down(config.keys.at("dodge")))bits|=8;
+ if(down(config.keys.at("sheathe"))&&!(ranged&&config.keys.at("sheathe")==config.keys.at("reload"))||(aliasAvailable(VK_SHIFT,"sheathe")&&down(VK_SHIFT)))bits|=16;
+ if(ranged&&controller.moves.contains(Command::Aim)&&down(config.keys.at("aim")))bits|=AimBit;
+ if(ranged&&controller.moves.contains(Command::Reload)&&down(config.keys.at("reload")))bits|=ReloadBit;
+ return bits;
 }
+uint32_t KeyBits(){return KeyBitsFrom([](int k){return k>0&&(GetAsyncKeyState(k)&0x8000)!=0;});}
 void Frame(float dt) {
  if(unityThread&&unityThread!=GetCurrentThreadId())return;unityThread=GetCurrentThreadId();
  int frame=-1;if(Value(FrameCount,nullptr,frame)&&frame==lastFrame)return;lastFrame=frame;
  soundPlayer.Poll();
  if(cleanupPending){Cleanup();ResetKeys();}
  if(!initialized||!ready)return;
+ if(!pendingMode.empty()){
+  const auto next=pendingMode;pendingMode.clear();if(actor.model)Cleanup();
+  try{ReadMode(next);detail="武器模式已切换，请开始演示";appliedConfigRevision=configRevision;}
+  catch(const std::exception& e){config.mode=loadedMode;detail=std::string("模式载入失败：")+e.what();}
+ }
  if(!Focused()||!config.enabled){if(actor.model)Cleanup();ResetKeys();commands.clear();previewRequest=-1;
   resyncFocusKeys=true;
   if(!config.enabled)toggleRequest=demoRequest=false;return;}
@@ -932,33 +1432,40 @@ void Frame(float dt) {
  if(toggleRequest){toggleRequest=false;if(actor.model){Cleanup();return;}if(!Bind())return;previousBits=KeyBits();}
  if(demoRequest){demoRequest=false;
   if(!actor.model){if(!Bind())return;previousBits=KeyBits();}
-  autoDemo=!autoDemo;demoStep=0;demoClock=0;demoDelay=.6f;
+  autoDemo=!autoDemo;demoStep=0;demoClock=0;demoDelay=.6f;demoChargeLevel=0;demoElapsed=0;demoFinalTail=false;
+  if(demoHeld){controller.held(demoHeldCommand,false);demoHeld=false;}
   if(autoDemo&&controller.idleSlot!=configuredIdleSlot)controller.start(configuredIdleSlot);
   detail=autoDemo?"自动演示中；攻击键切回手动，F8/Esc 结束":"已切回手动演示";
  }
  if(!actor.model)return;
  auto current=Call(MainCharacter);
  if(!ActorIdentityIsCurrent(current)){Cleanup();detail="角色切换或模型替换，演示已退出";return;}
+ if(paused||hudEditing){previousBits=KeyBits();commands.clear();previewRequest=-1;actor.visualFrameSeconds=0;
+  if(!ApplyPose()){Cleanup();detail="暂停期间姿势失效，已退出";}UpdateHud();return;}
  if(previewRequest>=0){autoDemo=false;controller.start(previewRequest);previewRequest=-1;}
  auto bits=KeyBits();const auto edges=bits&~previousBits;
- if(edges||!commands.empty()){autoDemo=false;detail="手动演示中，F9 可切换自动演示";}
- controller.inputBits(edges,bits);previousBits=bits;
+ if(edges||!commands.empty()){autoDemo=false;if(demoHeld){controller.held(demoHeldCommand,false);demoHeld=false;}detail="手动演示中，F9 可切换自动演示";}
+ if(!autoDemo)controller.hardwareInput(edges,bits);previousBits=bits;
  for(auto c:commands)controller.input(c);commands.clear();
  auto step=std::clamp(dt,0.f,.1f)*config.speed;float remaining=step;
  while(remaining>0){float sub=std::min(remaining,1.f/120);TickDemo(sub);controller.tick(sub);remaining-=sub;}
  actor.entrySeconds+=step;actor.visualFrameSeconds=std::clamp(dt,0.f,.25f);
  if(!controller.active){Cleanup();return;}
  if(!ApplyPose()){Cleanup();detail="姿势绑定失效，已恢复原生控制";return;}
+ const auto previousHits=practice.hits;
+ localMode.Tick(std::clamp(dt,0.f,.1f),controller);
  try{TickPractice(dt);}catch(const std::exception& e){practice.Suspend();practice.targets.clear();practiceDetail=std::string("怪物读取暂不可用：")+e.what();}
- practiceHud.Update(config.local_practice,"本地太刀练习 · 模拟血量\n"+practiceDetail+"\n命中 "+std::to_string(practice.hits)+" 次 · 伤害 "+RoundedAmount(practice.total)+
-  (practice.lastTarget.empty()?"":"\n"+practice.lastTarget+" −"+RoundedAmount(practice.lastDamage)));
+ TickProjectiles(dt);
  soundTimeline.Update(controller.motionSerial,controller.slot,controller.seconds,
-  config.sound_enabled&&config.sound_volume>0&&soundReady,[](const AudioCue& cue){
-   const auto clip=soundClips.find(cue.clip);if(clip==soundClips.end())return;
-   if(soundPlayer.Play(clip->second,config.sound_volume*cue.gain)){lastSound=cue.clip;++soundCueCount;soundDetail="动作音效就绪";}
-   else {if(soundDetail!="音效播放失败；请检查音频设备")Log("Audio output unavailable; animation remains active");
-    soundDetail="音效播放失败；请检查音频设备";}
-  });
+  config.sound_enabled&&config.sound_volume>0&&soundReady,EmitSound);
+ const bool audible=config.sound_enabled&&config.sound_volume>0&&soundReady;
+ if(practice.hits>previousHits){localMode.Hit(controller);soundTimeline.Condition("hit",audible,EmitSound);}
+ const auto simulated=config.local_practice&&config.practice_target=="dummy"?localMode.DummyAttack(std::clamp(dt,0.f,.1f),controller,!practice.targets.empty()):std::string{};
+ if(!simulated.empty())soundTimeline.Condition(simulated,audible,EmitSound);
+ if(autoDemo){soundTimeline.Condition("counter",audible,EmitSound);soundTimeline.Condition("guard",audible,EmitSound);}
+ TickThemeSounds(std::clamp(dt,0.f,.1f));
+ UpdateHud();
+ if(resumeSoundLoops){resumeSoundLoops=false;soundTimeline.ResumeLoops(config.sound_enabled&&config.sound_volume>0&&soundReady,EmitSound);themeTimeline.ResumeLoops(config.sound_enabled&&config.sound_volume>0&&soundReady,EmitSound);}
 }
 void __cdecl TailDetour(void* self,float dt,void* method) {
  {std::lock_guard lock(gate);int frame=-1;
@@ -1058,11 +1565,25 @@ bool Resolve() {
  return frameHooked&&inputHooked&&InstallShields(std::make_index_sequence<std::size(shields)>{});
 }
 float DemoDuration() {
- float result=.6f;int slot=configuredIdleSlot;size_t step=0;
+ // Single tours also finish the display-origin return before holding the
+ // ordinary sheath. TickDemo adds that final 0.55-second return interval.
+ float result=config.demo_loop?1.15f:1.70f;int slot=configuredIdleSlot;size_t step=0,chargeLevel=0,releaseLevel=0;const HoldPolicy* previousHold=nullptr;
  for(auto command:demoSequence){auto move=controller.moves.find(command);if(move==controller.moves.end()||move->second.empty())continue;
-  const auto& sequence=move->second;auto current=std::find(sequence.begin(),sequence.end(),slot);
+  const int previousSlot=slot;const auto& sequence=move->second;auto current=std::find(sequence.begin(),sequence.end(),slot);
   slot=current!=sequence.end()&&std::next(current)!=sequence.end()?*std::next(current):sequence.front();
-  auto clip=controller.clips.find(slot);if(clip!=controller.clips.end())result+=DemoDelay(command,clip->second,(++step)%std::size(demoSequence));
+  if(command==Command::Release&&previousHold&&!previousHold->releases.empty())slot=previousHold->releases[releaseLevel].slot;
+  const HoldPolicy* rule=controller.holdPolicies.contains(command)?&controller.holdPolicies.at(command):nullptr;
+  if(auto variants=controller.holdVariants.find(command);variants!=controller.holdVariants.end())for(const auto& variant:variants->second)
+   if(variant.fromSlots.contains(previousSlot)){slot=variant.slot;rule=&variant.policy;break;}
+  auto clip=controller.clips.find(slot);if(clip!=controller.clips.end()){
+   float duration=DemoDelay(command,clip->second,(++step)%std::size(demoSequence));previousHold=nullptr;
+   if(rule){duration=std::max(.6f,float(std::max(0,rule->frame))/clip->second.fps+.2f);
+    if(command==Command::Charge&&!rule->releases.empty()){
+     const size_t stages=controller.holdVariants.contains(command)?controller.holdVariants.at(command).size()+1:1;
+     releaseLevel=(chargeLevel++/stages)%rule->releases.size();duration=std::max(.25f,rule->releases[releaseLevel].seconds+.12f);previousHold=rule;
+    }
+   }result+=duration;
+  }
  }
  return result/std::max(.25f,config.speed);
 }
@@ -1075,24 +1596,68 @@ Json PracticeTargets(){
 }
 Json Status() {
  Json targets=PracticeTargets();if(!controller.active&&targets.empty())targets=practiceSummary;
- return Json{{"runtime_ready",ready},{"active",controller.active},{"slot",controller.slot},{"character",actor.character},{"detail",detail},{"phase",phase},{"auto_demo",autoDemo},{"demo_step",demoStep},{"demo_seconds",DemoDuration()},{"weapon_mode",visualWeapon.Visible()?"laevatain":(actor.weaponHeld?"equipped":(actor.prop?"fallback":"none"))},{"sound_ready",soundReady},{"sound_enabled",config.sound_enabled},{"sound_detail",!config.sound_enabled?"音效已关闭":(config.sound_volume==0?"音量为零":soundDetail)},
+ Json supported=Json::array();for(const auto&[id,p]:characterProfiles)supported.push_back(id);
+ Json modes=Json::array();for(const auto&[id,p]:modeDefinitions)if(std::filesystem::exists(packageRoot/std::filesystem::path(p.value("data_root",std::string("assets")))/L"catalog.json"))modes.push_back(id);
+ Json actions=Json::array(),derivations=Json::array();for(const auto&[command,slots]:controller.moves){
+  const auto name=CommandName(command);actions.push_back(name);const auto slot=slots.empty()?0:slots.front();
+  derivations.push_back({{"name",name},{"label",motionLabels.contains(slot)?motionLabels.at(slot):name},{"available",controller.available(command)},{"buffered",controller.buffered(command)}});}
+ const bool aimed=controller.isHeld(Command::Aim)||controller.holding(Command::Charge);
+ const auto modeLabel=modeDefinitions.contains(loadedMode)?modeDefinitions.at(loadedMode).value("label",loadedMode):loadedMode;
+ return Json{{"runtime_ready",ready},{"active",controller.active},{"slot",controller.slot},{"character",actor.character},{"detail",detail},{"phase",phase},{"auto_demo",autoDemo},{"demo_step",demoStep},{"demo_seconds",DemoDuration()},{"weapon_mode",visualWeapon.Visible()?config.visual_weapon:(actor.weaponHeld?"equipped":(actor.prop?"fallback":"none"))},{"sound_ready",soundReady},{"sound_enabled",config.sound_enabled},{"sound_detail",!config.sound_enabled?"音效已关闭":(config.sound_volume==0?"音量为零":soundDetail)},
   {"last_sound",lastSound},{"last_sound_label",soundLabels.contains(lastSound)?soundLabels.at(lastSound):""},{"sound_cues",soundCueCount},{"ground_detail",actor.groundDetail},{"ground_correction",actor.groundCorrection},
   {"practice",{{"enabled",config.local_practice},{"ready",practiceReady},{"detail",practiceDetail},{"targets",targets},
    {"hits",practice.hits},{"total",practice.total},{"last_damage",practice.lastDamage},{"last_target",practice.lastTarget},{"summary",!controller.active}}},
   {"grip_ready",actor.gripAvailable},{"grip_detail",actor.gripAvailable?"辅助握刀可用":"辅助握刀不可用，已保留基础重定向"},
   {"blade_calibrated",visualWeapon.Visible()||actor.bladeCalibrated},{"weapon_pose_detail",actor.weaponPoseDetail},
   {"visual_weapon_ready",visualWeapon.Ready()},{"visual_weapon_visible",visualWeapon.Visible()},{"visual_weapon_detail",actor.visualReason.empty()?visualWeapon.Status():actor.visualReason},{"laevatain_blade",config.laevatain_blade},
-  {"skeleton_path",actor.skeletonPath},{"supported_characters",Json::array({"chr_0016_laevat","chr_0003_endminf"})},
+  {"skeleton_path",actor.skeletonPath},{"supported_characters",supported},{"rest_registration",actor.restRegistration},
+  {"secondary_skin_roots",actor.secondaryRoots.size()},
+  {"mode",loadedMode},{"mode_label",modeLabel},{"motion_label",motionLabels.contains(controller.slot)?motionLabels.at(controller.slot):std::string("待机")},
+  {"paused",paused},{"hud_editing",hudEditing},{"config_revision",configRevision},{"applied_config_revision",appliedConfigRevision},
+  {"demo_sequence",config.demo_sequence},{"demo_loop",config.demo_loop},{"keyboard_preset",config.keyboard_preset},{"demo_elapsed",demoElapsed/std::max(.25f,config.speed)},{"demo_progress",std::clamp(demoElapsed/std::max(.001f,DemoDuration()*config.speed),0.f,1.f)},{"demo_sequences",{"full","basic","signature"}},
+  {"hud_layout_changed",hudLayoutChanged},{"hud",{{"anchor_x",config.hud_anchor_x},{"anchor_y",config.hud_anchor_y},{"scale",config.hud_scale},{"layout",config.hud_layout},{"theme",config.theme}}},
+  {"capabilities",{{"modes",modes},{"commands",actions},{"pause",true},{"hud_edit",true},{"local_practice",true}}},
+  {"resource",{{"label",localMode.Label()},{"value",localMode.Value()},{"max",localMode.Maximum()},{"level",localMode.level},{"local_only",true},{"blocks",localMode.blocks},{"feedback",localMode.feedback}}},
+  {"aim",{{"active",aimed},{"charge",controller.heldSeconds()},{"max_charge",3}}},
+  {"derivations",derivations},{"catalog",productCatalog},
+  {"projectiles",localProjectiles.active.size()},{"projectile_markers",projectileEvents.size()},
   {"palm_aligned_left",actor.palmAligned[0]},{"palm_aligned_right",actor.palmAligned[1]}};
 }
 void Configure(const char* raw) {
  if(!raw||std::strlen(raw)>65536)throw std::runtime_error("Invalid configuration size");
  auto j=Json::parse(raw);if(!j.is_object())throw std::runtime_error("Configuration must be object");Configuration c;
+ const auto schema=j.value("schema_version",1);if(schema<1||schema>2)throw std::runtime_error("Unsupported configuration version");
+ c.mode=j.value("mode",std::string("longsword"));c.visual_weapon=j.value("visual_weapon",std::string("auto"));c.theme=j.value("theme",std::string("auto"));c.hud_layout=j.value("hud_layout",std::string("teaching"));c.effects_quality=j.value("effects_quality",std::string("full"));
+ if(schema==1&&!j.contains("visual_weapon")&&!j.value("laevatain_blade",true))c.visual_weapon="equipped";
+ c.demo_sequence=j.value("demo_sequence",std::string("full"));c.demo_loop=j.value("demo_loop",true);
+ c.keyboard_preset=j.value("keyboard_preset",std::string("mouse5"));
+ if(!std::set<std::string>{"mouse5","mouse3","custom"}.contains(c.keyboard_preset))throw std::runtime_error("Unknown keyboard preset");
+ if(!std::set<std::string>{"full","basic","signature"}.contains(c.demo_sequence))throw std::runtime_error("Unknown demo sequence");
+ if(!std::set<std::string>{"longsword","sword_shield","greatsword","lance","light_bowgun","bow"}.contains(c.mode))throw std::runtime_error("Unknown weapon mode");
+ if(!std::set<std::string>{"auto","equipped","laevatain_blade","typhoea_bow","source"}.contains(c.visual_weapon))throw std::runtime_error("Unknown visual weapon");
+ if(c.visual_weapon=="laevatain_blade"&&c.mode!="longsword")throw std::runtime_error("Flame blade adapter currently requires longsword source geometry");
+ if(c.visual_weapon=="typhoea_bow"&&c.mode!="bow")throw std::runtime_error("Bow model requires bow mode");
+ if(!std::set<std::string>{"auto","forest","ember","tide","high_contrast"}.contains(c.theme)||!std::set<std::string>{"compact","teaching","photo"}.contains(c.hud_layout))throw std::runtime_error("Unknown presentation theme/layout");
+ if(c.effects_quality!="full"&&c.effects_quality!="reduced")throw std::runtime_error("Unknown effects quality");
+ c.practice_target=j.value("practice_target",std::string("dummy"));if(c.practice_target!="dummy"&&c.practice_target!="monsters")throw std::runtime_error("Unknown practice target source");
+ c.hud_enabled=j.value("hud_enabled",true);c.hud_show_derivations=j.value("hud_show_derivations",true);c.hud_show_target=j.value("hud_show_target",true);c.hud_show_crosshair=j.value("hud_show_crosshair",true);
  c.enabled=j.value("enabled",true);c.root_motion=j.value("root_motion",true);c.show_prop=j.value("show_prop",true);
  c.sound_enabled=j.value("sound_enabled",true);
  c.local_practice=j.value("local_practice",false);c.laevatain_blade=j.value("laevatain_blade",true);
  auto key=[&](const char* name,int defaultKey){auto k=j.value(name,defaultKey);if(k<1||k>255)throw std::runtime_error(name);return k;};
- c.toggle_key=key("toggle_key",VK_F8);c.spirit_key=key("spirit_key",VK_XBUTTON2);c.spirit_alt_key=key("spirit_alt_key",VK_CONTROL);
+ const int unique=c.keyboard_preset=="mouse3"?VK_MBUTTON:VK_XBUTTON2;
+ c.toggle_key=key("toggle_key",VK_F8);c.spirit_key=key("spirit_key",unique);c.spirit_alt_key=key("spirit_alt_key",c.spirit_key);
+ c.keys["reload"]=c.keyboard_preset=="mouse3"?'R':VK_XBUTTON1;
+ if(c.mode=="bow"||c.mode=="light_bowgun")c.keys["secondary"]=unique;
+ c.keys["spirit"]=c.spirit_key;if(j.contains("keys")){if(!j["keys"].is_object())throw std::runtime_error("Invalid key bindings");
+  for(auto it=j["keys"].begin();it!=j["keys"].end();++it){if(!c.keys.contains(it.key())||!it.value().is_number_integer())throw std::runtime_error("Invalid input binding");
+   const auto value=it.value().get<int>();if(value<1||value>255||value==VK_ESCAPE||value==c.toggle_key||value==VK_F9)throw std::runtime_error("Reserved or invalid input key");c.keys[it.key()]=value;}}
+ if(j.contains("mode_keys")){if(!j["mode_keys"].is_object()||j["mode_keys"].size()>6)throw std::runtime_error("Invalid mode binding registry");
+  for(auto it=j["mode_keys"].begin();it!=j["mode_keys"].end();++it){if(!std::set<std::string>{"longsword","sword_shield","greatsword","lance","light_bowgun","bow"}.contains(it.key())||!it.value().is_object())throw std::runtime_error("Unknown key mode");
+   auto keys=c.keys;for(auto keyIt=it.value().begin();keyIt!=it.value().end();++keyIt){if(!keys.contains(keyIt.key()))throw std::runtime_error("Unknown input key");const int value=keyIt.value().get<int>();
+    if(value<1||value>255||value==VK_ESCAPE||value==c.toggle_key||value==VK_F9)throw std::runtime_error("Reserved mode key");keys[keyIt.key()]=value;}c.mode_keys[it.key()]=std::move(keys);}
+  if(!j.contains("keys")&&c.mode_keys.contains(c.mode))c.keys=c.mode_keys.at(c.mode);
+ }c.mode_keys[c.mode]=c.keys;
  auto number=[&](const char* name,float defaultValue,float min,float max){float n=j.value(name,defaultValue);if(!std::isfinite(n)||n<min||n>max)throw std::runtime_error(name);return n;};
  c.speed=number("speed",1,.25f,2);c.blend_seconds=number("blend_seconds",.12f,.02f,.5f);c.buffer_seconds=number("buffer_seconds",.3f,.08f,1);
  c.sound_volume=number("sound_volume",.65f,0,1);
@@ -1100,26 +1665,36 @@ void Configure(const char* raw) {
  c.practice_hp=number("practice_hp",1000,1,1000000);c.practice_damage=number("practice_damage",100,1,100000);
  c.practice_radius=number("practice_radius",.65f,.05f,3);c.practice_height=number("practice_height",.9f,0,5);
  c.practice_blade_length=number("practice_blade_length",1.25f,.1f,3);
- if(c.local_practice!=config.local_practice||c.practice_hp!=config.practice_hp)practiceResetRequest=true;
+ c.projectile_speed=number("projectile_speed",30,1,120);
+ c.hud_scale=number("hud_scale",1,.75f,2);c.hud_anchor_x=number("hud_anchor_x",.02f,0,1);c.hud_anchor_y=number("hud_anchor_y",.05f,0,1);c.hud_margin=number("hud_margin",16,0,128);
+ if(j.contains("volumes")){if(!j["volumes"].is_object())throw std::runtime_error("Invalid sound groups");for(auto it=j["volumes"].begin();it!=j["volumes"].end();++it){
+  if(!c.volumes.contains(it.key()))throw std::runtime_error("Unknown sound group");const float value=it.value().get<float>();if(!std::isfinite(value)||value<0||value>1)throw std::runtime_error("Invalid sound group volume");c.volumes[it.key()]=value;}}
+ if(c.local_practice!=config.local_practice||c.practice_hp!=config.practice_hp||c.practice_target!=config.practice_target||c.practice_radius!=config.practice_radius||c.practice_height!=config.practice_height)practiceResetRequest=true;
  if(practiceResetRequest&&!controller.active){practice.Clear();practiceSummary=Json::array();practiceResetRequest=false;}
  if(c.practice_radius!=config.practice_radius||c.practice_height!=config.practice_height||c.practice_blade_length!=config.practice_blade_length){practice.Suspend();enemyRefresh=0;}
- if(!c.sound_enabled||c.sound_volume==0){soundPlayer.Stop();soundTimeline.Mute();}
- if(!c.enabled||c.show_prop!=config.show_prop||c.laevatain_blade!=config.laevatain_blade)cleanupPending=actor.model!=nullptr;
+ if(!c.sound_enabled||c.sound_volume==0){soundPlayer.Stop();soundTimeline.Mute();themeTimeline.Mute();}
+ if(c.sound_enabled&&c.sound_volume>0&&(!config.sound_enabled||config.sound_volume==0))resumeSoundLoops=true;
+ if(c.sound_enabled&&c.sound_volume>0&&(c.sound_volume!=config.sound_volume||c.volumes!=config.volumes)){soundPlayer.Stop();resumeSoundLoops=true;}
+ if(!c.enabled||c.show_prop!=config.show_prop||c.laevatain_blade!=config.laevatain_blade||c.visual_weapon!=config.visual_weapon)cleanupPending=actor.model!=nullptr;
  if(!c.enabled){suppressInput=false;soundPlayer.Stop();practiceHud.Update(false,"");}
- config=c;controller.transitionSeconds=c.blend_seconds;controller.bufferSeconds=c.buffer_seconds;
+ const bool sequenceChanged=c.demo_sequence!=config.demo_sequence;
+ config=c;if(j.contains("hud_anchor_x")&&j.contains("hud_anchor_y"))hudLayoutChanged=false;controller.transitionSeconds=c.blend_seconds;controller.bufferSeconds=c.buffer_seconds;
+ if(initialized&&c.mode==loadedMode&&sequenceChanged){SelectDemoSequence();if(autoDemo){demoStep=0;demoClock=0;demoDelay=.6f;demoElapsed=0;demoFinalTail=false;
+   if(demoHeld){controller.held(demoHeldCommand,false);demoHeld=false;}
+  }}
+ ++configRevision;if(initialized&&c.mode!=loadedMode){pendingMode=c.mode;if(!actor.model){ReadMode(c.mode);pendingMode.clear();appliedConfigRevision=configRevision;}}
+ else appliedConfigRevision=configRevision;
 }
 Command ParseCommand(const std::string& n) {
- if(n=="slash")return Command::Slash;if(n=="thrust")return Command::Thrust;if(n=="spirit")return Command::Spirit;
- if(n=="fade")return Command::Fade;if(n=="foresight")return Command::Foresight;if(n=="sheathe")return Command::Sheathe;
- if(n=="iai")return Command::Iai;if(n=="iai_spirit")return Command::IaiSpirit;if(n=="helm")return Command::Helm;
- if(n=="dodge")return Command::Dodge;if(n=="normal_sheathe")return Command::NormalSheathe;throw std::runtime_error("Unknown command");
+ return CommandFromName(n);
 }
 void ReadAudio() {
  soundPlayer.Stop();soundTimeline.Reset();soundTimeline.cues.clear();soundClips.clear();soundLabels.clear();soundReady=false;
+ themeTimeline.Reset();themeTimeline.cues.clear();themeDefinitions=Json::object();activeTheme.clear();themeClock=0;themeBowCharging=false;themeBowMotion=0;
  try {
-  const auto root=packageRoot/L"assets/audio";std::ifstream file(root/L"cues.json");
+  const auto root=activeAudioRoot.empty()?(activeAssetRoot.empty()?packageRoot/L"assets":activeAssetRoot)/L"audio":activeAudioRoot;std::ifstream file(root/L"cues.json");
   if(!file)throw std::runtime_error("Audio cue manifest missing");Json manifest;file>>manifest;
-  if(manifest.at("schema_version")!=1||!manifest.at("clips").is_array()||manifest["clips"].size()>64||!manifest.at("cues").is_object())
+  if((manifest.at("schema_version")!=1&&manifest.at("schema_version")!=2)||!manifest.at("clips").is_array()||manifest["clips"].size()>1024||!manifest.at("cues").is_object())
    throw std::runtime_error("Invalid audio manifest");
   for(const auto& entry:manifest["clips"]){const auto id=entry.at("id").get<std::string>();
    const auto path=std::filesystem::path(entry.at("file").get<std::string>());
@@ -1130,40 +1705,50 @@ void ReadAudio() {
   }
   size_t count=0;
   for(auto it=manifest["cues"].begin();it!=manifest["cues"].end();++it){size_t consumed=0;const int slot=std::stoi(it.key(),&consumed);
-   if(consumed!=it.key().size()||!controller.clips.contains(slot)||!it.value().is_array()||it.value().size()>32)throw std::runtime_error("Invalid audio cue slot");
+   if(consumed!=it.key().size()||!controller.clips.contains(slot)||!it.value().is_array()||it.value().size()>256)throw std::runtime_error("Invalid audio cue slot");
    auto& cues=soundTimeline.cues[slot];float previous=-1;
    for(const auto& item:it.value()){AudioCue cue{item.at("time").get<float>(),item.at("clip").get<std::string>(),item.value("gain",1.f)};
+    cue.kind=item.value("kind",std::string("oneshot"));cue.group=item.value("group",std::string("weapon"));
+    cue.condition=item.value("condition",std::string{});cue.loop=item.value("loop",false);cue.priority=item.value("priority",0);cue.fade=item.value("fade",0.f);
+    cue.fadeIn=item.value("fade_in",-1.f);cue.fadeOut=item.value("fade_out",-1.f);
+    for(float fade:{cue.fadeIn,cue.fadeOut})if(!std::isfinite(fade)||fade< -1||fade>2)throw std::runtime_error("Invalid split audio fade");
+    if(item.contains("variants"))cue.variants=item.at("variants").get<std::vector<std::string>>();
+    if((cue.kind!="oneshot"&&cue.kind!="start"&&cue.kind!="loop"&&cue.kind!="stop")||cue.group.size()>128||cue.condition.size()>64||
+      cue.priority<0||cue.priority>100||!std::isfinite(cue.fade)||cue.fade<0||cue.fade>2||cue.variants.size()>64)throw std::runtime_error("Invalid audio lifecycle cue");
+    for(const auto& variant:cue.variants)if(!soundClips.contains(variant))throw std::runtime_error("Unknown audio variant");
     if(!std::isfinite(cue.time)||cue.time<0||cue.time>controller.clips.at(slot).duration()||cue.time<previous||
-     !std::isfinite(cue.gain)||cue.gain<0||cue.gain>2||!soundClips.contains(cue.clip))throw std::runtime_error("Invalid audio cue");
+     !std::isfinite(cue.gain)||cue.gain<0||cue.gain>2||(cue.kind!="stop"&&!soundClips.contains(cue.clip)))throw std::runtime_error("Invalid audio cue");
     previous=cue.time;cues.push_back(std::move(cue));++count;
    }
   }
   if(soundClips.empty()||count==0)throw std::runtime_error("Empty audio manifest");
-  soundReady=true;soundDetail="动作音效就绪";
+  const auto themeRoot=packageRoot/L"assets/audio";std::ifstream themed(themeRoot/L"theme_cues.json");
+  if(themed){Json manifest;themed>>manifest;if(manifest.at("schema_version")!=1||!manifest.at("clips").is_array()||manifest["clips"].size()>64||!manifest.at("themes").is_object())throw std::runtime_error("Invalid independent theme manifest");
+   for(const auto& entry:manifest["clips"]){const auto id=entry.at("id").get<std::string>();auto path=std::filesystem::path(entry.at("file").get<std::string>());
+    if(id.empty()||path.has_parent_path()||path.is_absolute()||path.extension()!=L".wav")throw std::runtime_error("Invalid theme PCM path");auto pcm=ReadPcmWav(themeRoot/path);BalanceShowcaseSound(pcm);
+    if(!soundClips.emplace(id,std::move(pcm)).second)throw std::runtime_error("Duplicate theme PCM");soundLabels[id]=entry.value("label",id);
+   }themeDefinitions=manifest.at("themes");for(auto theme=themeDefinitions.begin();theme!=themeDefinitions.end();++theme)for(const auto& soundPhase:theme.value())for(const auto& row:soundPhase)ThemeCue(row);
+  }
+  soundReady=true;soundDetail="动作及独立武器音效就绪";
  }catch(const std::exception& e){soundClips.clear();soundTimeline.cues.clear();soundDetail=std::string("音效资源未就绪：")+e.what();}
 }
-void ReadAssets() {
- auto assets=packageRoot/L"assets";auto read=[](const std::filesystem::path& p){std::ifstream f(p);if(!f)throw std::runtime_error("Missing "+p.string());Json j;f>>j;return j;};
- auto catalog=read(assets/L"catalog.json");if(!catalog.is_array()||catalog.size()>512)throw std::runtime_error("Invalid catalog");
+void ReadMotionAssets(const std::filesystem::path& assets) {
+ auto read=[](const std::filesystem::path& p){std::ifstream f(p);if(!f)throw std::runtime_error("Missing "+p.string());Json j;f>>j;return j;};
+ auto catalog=read(assets/L"catalog.json");if(!catalog.is_array()||catalog.size()>4096)throw std::runtime_error("Invalid catalog");
  controller.clips.clear();for(auto& entry:catalog){auto file=entry.at("file").get<std::string>();auto relative=std::filesystem::path(file);
   if(relative.has_parent_path()||relative.is_absolute()||relative.extension()!=L".lsm")throw std::runtime_error("Invalid clip path");
   auto clip=ReadClip(assets/relative,21);clip.slot=entry.at("slot").get<int>();controller.clips.emplace(clip.slot,std::move(clip));}
- characterProfiles.clear();
- for(const auto& [file,id]:std::array<std::pair<const wchar_t*,const char*>,2>{{
-   {L"female_admin.json","chr_0003_endminf"},{L"laevatain.json","chr_0016_laevat"}}}){
-  auto selected=read(packageRoot/L"profiles"/file);
-  if(selected.at("character_id")!=id)throw std::runtime_error("Unexpected character profile");
-  const auto axis=selected.value("practice_blade_axis",std::vector<float>{0,0,1});
-  if(axis.size()!=3||!Finite(Vec3{axis[0],axis[1],axis[2]})||Retarget::Len({axis[0],axis[1],axis[2]})<1e-5f)throw std::runtime_error("Invalid practice blade axis");
-  characterProfiles.emplace(id,std::move(selected));
- }
  profile=characterProfiles.at("chr_0003_endminf");
  const auto axis=profile.value("practice_blade_axis",std::vector<float>{0,0,1});
  practiceBladeAxis=Retarget::Normalize({axis[0],axis[1],axis[2]});
  auto source=read(assets/L"source_rig.json");sourceRestReady=false;
+ sourceSoleHeight=source.contains("sole_geometry")?source["sole_geometry"].value("hip_height",1.0568615f):1.0568615f;
+ if(!std::isfinite(sourceSoleHeight)||sourceSoleHeight<.2f||sourceSoleHeight>3)throw std::runtime_error("Invalid source sole stature");
  for(int i=0;i<21;++i){const auto& p=source.at("bones").at(semantic[i]).at("position");
   sourceRestPositions[i]={p.at(0).get<float>(),p.at(1).get<float>(),p.at(2).get<float>()};
-  if(!Finite(sourceRestPositions[i]))throw std::runtime_error("Invalid source rest position");}
+  if(!Finite(sourceRestPositions[i]))throw std::runtime_error("Invalid source rest position");
+  const auto q=source.at("bones").at(semantic[i]).at("rotation").get<std::vector<float>>();if(q.size()!=4)throw std::runtime_error("Invalid source rest rotation");
+  sourceRestRotations[i]=Normalize({q[0],q[1],q[2],q[3]});}
  sourceRestReady=true;sourcePalmsReady=false;
  if(source.contains("hand_anatomy")){
   const std::array<const char*,2> sides{"left","right"};
@@ -1177,10 +1762,23 @@ void ReadAssets() {
   }
   sourcePalmsReady=true;
  }
+ fingerTracks.clear();sourceFingerBones=Json::array();auto fingerRoot=assets;
+ if(modeDefinitions.contains(loadedMode)&&modeDefinitions.at(loadedMode).contains("finger_root")){
+  const auto relative=std::filesystem::path(modeDefinitions.at(loadedMode).at("finger_root").get<std::string>());
+  if(relative.is_absolute()||relative.has_root_name())throw std::runtime_error("Invalid finger root");for(const auto& part:relative)if(part==L"..")throw std::runtime_error("Unsafe finger root");fingerRoot=packageRoot/relative;}
+ if(std::filesystem::exists(fingerRoot/L"finger_tracks.json")){
+  const auto manifest=read(fingerRoot/L"finger_tracks.json");if(manifest.at("schema_version")!=1||!manifest.at("bones").is_array()||manifest["bones"].size()>96||!manifest.at("tracks").is_object())throw std::runtime_error("Invalid finger manifest");
+  sourceFingerBones=manifest.at("bones");std::set<std::string> names;for(const auto& bone:sourceFingerBones)if(!names.insert(bone.at("name").get<std::string>()).second)throw std::runtime_error("Duplicate source finger semantic");
+  for(auto it=manifest["tracks"].begin();it!=manifest["tracks"].end();++it){const int slot=std::stoi(it.key());const auto path=std::filesystem::path(it.value().at("file").get<std::string>());
+   if(path.has_parent_path()||path.is_absolute()||path.extension()!=L".lsf"||!controller.clips.contains(slot))throw std::runtime_error("Invalid finger track path/slot");
+   auto track=ReadFingers(fingerRoot/path,controller.clips.at(slot).frames.size(),sourceFingerBones.size());if(track.fps!=controller.clips.at(slot).fps)throw std::runtime_error("Finger motion clock mismatch");fingerTracks.emplace(slot,std::move(track));}
+ }
  sourceWeaponTracks.clear();auto weapons=read(assets/L"source_weapon_tracks.json");
- if(weapons.at("schema_version")!=1||!weapons.at("tracks").is_object()||weapons["tracks"].size()>64)
+ const auto weaponSchema=weapons.at("schema_version").get<int>();
+ if((weaponSchema!=1&&weaponSchema!=2&&weaponSchema!=3)||!weapons.at("tracks").is_object()||weapons["tracks"].size()>4096)
   throw std::runtime_error("Invalid source weapon manifest");
- for(auto it=weapons["tracks"].begin();it!=weapons["tracks"].end();++it){size_t consumed=0;int slot=std::stoi(it.key(),&consumed);
+ if(weaponSchema==3)sourceWeaponTracks=PackedTracks::ReadSourceWeapon(assets,weapons,controller.clips);
+ else for(auto it=weapons["tracks"].begin();it!=weapons["tracks"].end();++it){size_t consumed=0;int slot=std::stoi(it.key(),&consumed);
   if(consumed!=it.key().size()||!controller.clips.contains(slot))throw std::runtime_error("Invalid source weapon slot");
   WeaponPose::SourceTrack track;track.fps=it.value().at("fps").get<float>();
   if(track.fps!=controller.clips.at(slot).fps||it.value().at("frames").size()!=controller.clips.at(slot).frames.size())
@@ -1190,24 +1788,83 @@ void ReadAssets() {
    WeaponPose::SourceFrame frame{{q[0],q[1],q[2],q[3]},{p[0],p[1],p[2]},row.at("support_weight").get<float>()};
    if(!Finite(frame.rotation)||std::abs(Dot(frame.rotation,frame.rotation)-1)>.001f||!Finite(frame.supportOffset)||Retarget::Len(frame.supportOffset)>3||
      !std::isfinite(frame.supportWeight)||frame.supportWeight<0||frame.supportWeight>1)throw std::runtime_error("Invalid source weapon sample");
+   const auto attachment=[&](const char* side,const char* node){WeaponPose::Attachment result;
+    if(!row.contains(side)||!row.contains("attachments")||!row["attachments"].contains(node))return result;
+    const auto& hand=row.at(side);const auto& socket=row["attachments"].at(node);
+    const auto h=hand.at("position").get<std::vector<float>>(),hp=hand.at("rotation_xyzw").get<std::vector<float>>();
+    const auto p=socket.at("position").get<std::vector<float>>(),q=socket.at("rotation_xyzw").get<std::vector<float>>();
+    if(h.size()!=3||p.size()!=3||hp.size()!=4||q.size()!=4)throw std::runtime_error("Invalid authored source attachment");
+    const Quat handQ=Normalize({hp[0],hp[1],hp[2],hp[3]}),socketQ=Normalize({q[0],q[1],q[2],q[3]});
+    result.position=Rotate(Inverse(handQ),Retarget::Sub({p[0],p[1],p[2]},{h[0],h[1],h[2]}));result.rotation=Mul(Inverse(handQ),socketQ);result.valid=true;
+    if(!Finite(result.position)||Retarget::Len(result.position)>3)throw std::runtime_error("Invalid source attachment distance");return result;};
+   frame.main=attachment(loadedMode=="bow"?"left":"right",loadedMode=="bow"?"30":"47");frame.offhand=attachment("left","30");
    track.frames.push_back(frame);}
   sourceWeaponTracks.emplace(slot,std::move(track));}
+ geometryContactMasks.clear();const auto contactFile=assets/L"contact_masks.json";
+ if(std::filesystem::exists(contactFile)){
+  const auto contacts=read(contactFile);
+  if(contacts.at("schema_version")!=2||!contacts.at("models").is_object()||contacts["models"].size()>2||
+   contacts.value("authored_contact_flag",true))throw std::runtime_error("Invalid geometric contact bank");
+  for(auto model=contacts["models"].begin();model!=contacts["models"].end();++model){
+   if(model.key()!="wpn_misc_0016"&&model.key()!="source:longsword_bs_swo001")throw std::runtime_error("Unknown geometric contact model");
+   for(auto character=model.value().at("characters").begin();character!=model.value().at("characters").end();++character){
+    if(!characterProfiles.contains(character.key()))throw std::runtime_error("Unknown geometric contact character");
+    auto& target=geometryContactMasks[model.key()][character.key()];const auto& tracks=character.value().at("tracks");
+    if(!tracks.is_object()||tracks.size()>4096)throw std::runtime_error("Invalid geometric contact tracks");
+    for(auto it=tracks.begin();it!=tracks.end();++it){size_t consumed=0;const int slot=std::stoi(it.key(),&consumed);
+     if(consumed!=it.key().size()||!controller.clips.contains(slot))throw std::runtime_error("Unknown geometric contact slot");
+     const auto& row=it.value();GeometryContactMask mask;mask.fps=row.at("fps").get<float>();mask.weights=row.at("weights").get<std::vector<float>>();
+     const auto& passed=row.at("pass_mask");
+     if(mask.fps!=controller.clips.at(slot).fps||row.at("frames").get<size_t>()!=mask.weights.size()||
+      mask.weights.size()!=controller.clips.at(slot).frames.size()||!passed.is_array()||passed.size()!=mask.weights.size())throw std::runtime_error("Geometric contact dimensions mismatch");
+     for(size_t f=0;f<mask.weights.size();++f){bool verified=false;
+      if(passed[f].is_boolean())verified=passed[f].get<bool>();
+      else if(passed[f].is_number_integer()&&(passed[f]==0||passed[f]==1))verified=passed[f]==1;
+      else throw std::runtime_error("Invalid geometric contact pass flag");
+      if(!std::isfinite(mask.weights[f])||mask.weights[f]<0||mask.weights[f]>1||(!verified&&mask.weights[f]!=0))throw std::runtime_error("Unverified geometric contact weight");
+     }
+     target.emplace(slot,std::move(mask));
+    }
+   }
+  }
+ }
  groundTracks.clear();auto ground=read(assets/L"ground_tracks.json");
- if(ground.at("schema_version")!=1||!ground.at("tracks").is_object()||ground["tracks"].size()>512)throw std::runtime_error("Invalid ground manifest");
+ const auto groundSchema=ground.at("schema_version").get<int>();
+ if((groundSchema!=1&&groundSchema!=2)||!ground.at("tracks").is_object()||ground["tracks"].size()>4096)throw std::runtime_error("Invalid ground manifest");
  for(auto it=ground["tracks"].begin();it!=ground["tracks"].end();++it){size_t consumed=0;int slot=std::stoi(it.key(),&consumed);
   if(consumed!=it.key().size()||!controller.clips.contains(slot))throw std::runtime_error("Invalid ground slot");
   GroundTrack track;track.fps=it.value().at("fps").get<float>();track.clearance=it.value().at("clearance").get<std::vector<float>>();
   const auto& clip=controller.clips.at(slot);
   if(track.fps!=clip.fps||track.clearance.size()!=clip.frames.size())throw std::runtime_error("Ground track dimensions mismatch");
-  for(float value:track.clearance)if(!std::isfinite(value)||value<0||value>4)throw std::runtime_error("Invalid foot clearance");
+  for(float value:track.clearance)if(!std::isfinite(value)||value<0||value>8)throw std::runtime_error("Invalid foot clearance");
   groundTracks.emplace(slot,std::move(track));}
+ supportGroundTracks.clear();const auto supportFile=assets/L"support_ground_tracks.json";
+ if(std::filesystem::exists(supportFile)){
+  const auto support=read(supportFile);if(support.at("schema_version")!=1||!support.at("tracks").is_object()||support["tracks"].size()>4096)throw std::runtime_error("Invalid supporting ground bank");
+  for(auto it=support["tracks"].begin();it!=support["tracks"].end();++it){size_t used=0;const int slot=std::stoi(it.key(),&used);
+   if(used!=it.key().size()||!controller.clips.contains(slot))throw std::runtime_error("Unknown supporting ground slot");
+   const auto& clip=controller.clips.at(slot);const auto& row=it.value();const float fps=row.at("fps").get<float>();
+   if(fps!=clip.fps||row.at("frames").get<size_t>()!=clip.frames.size())throw std::runtime_error("Supporting ground dimensions mismatch");
+   std::array<SupportGroundSide,2> sides;
+   for(int side=0;side<2;++side){const auto& values=row.at(side==0?"left":"right");auto& target=sides[side];target.active.fps=target.clearance.fps=fps;
+    target.active.clearance=values.at("active").get<std::vector<float>>();target.clearance.clearance=values.at("clearance").get<std::vector<float>>();
+    target.kind=values.value("kind",std::vector<int>(clip.frames.size(),1));
+    if(target.active.clearance.size()!=clip.frames.size()||target.clearance.clearance.size()!=clip.frames.size()||target.kind.size()!=clip.frames.size())throw std::runtime_error("Incomplete supporting ground frames");
+    for(int value:target.kind)if(value<0||value>3)throw std::runtime_error("Invalid ground support kind");
+    for(float value:target.active.clearance)if(!std::isfinite(value)||value<0||value>1)throw std::runtime_error("Invalid ground support flag");
+    for(float value:target.clearance.clearance)if(!std::isfinite(value)||value<0||value>8)throw std::runtime_error("Invalid supporting hand clearance");
+   }supportGroundTracks.emplace(slot,std::move(sides));
+  }
+ }
  gripTracks.clear();auto grip=read(assets/L"grip_tracks.json");
- if(grip.at("schema_version")!=1||!grip.at("tracks").is_object()||grip.at("tracks").size()>64)throw std::runtime_error("Invalid grip manifest");
- for(auto it=grip["tracks"].begin();it!=grip["tracks"].end();++it){const int slot=std::stoi(it.key());auto path=std::filesystem::path(it.value().get<std::string>());
+ const auto gripSchema=grip.at("schema_version").get<int>();
+ if((gripSchema!=1&&gripSchema!=2)||!grip.at("tracks").is_object()||grip.at("tracks").size()>4096)throw std::runtime_error("Invalid grip manifest");
+ if(gripSchema==2)gripTracks=PackedTracks::ReadGripBank(assets,grip,controller.clips);
+ else for(auto it=grip["tracks"].begin();it!=grip["tracks"].end();++it){const int slot=std::stoi(it.key());auto path=std::filesystem::path(it.value().get<std::string>());
   if(path.has_parent_path()||path.is_absolute()||path.extension()!=L".lsg"||!controller.clips.contains(slot))throw std::runtime_error("Invalid grip path");
   gripTracks.emplace(slot,ReadGrip(assets/path,controller.clips.at(slot).frames.size()));}
  practice.Clear();practiceSummary=Json::array();practice.windows.clear();auto hit=read(assets/L"hit_windows.json");
- if(hit.at("schema_version")!=1||!hit.at("windows").is_object()||hit["windows"].size()>64)throw std::runtime_error("Invalid practice manifest");
+ if(hit.at("schema_version")!=1||!hit.at("windows").is_object()||hit["windows"].size()>4096)throw std::runtime_error("Invalid practice manifest");
  for(auto it=hit["windows"].begin();it!=hit["windows"].end();++it){int slot=std::stoi(it.key());
   if(!controller.clips.contains(slot)||!it.value().is_array()||it.value().size()>16)throw std::runtime_error("Invalid hit slot");
   float lastEnd=-1;for(const auto& w:it.value()){HitWindow window{w.at(0).get<float>(),w.at(1).get<float>(),w.at(2).get<float>()};
@@ -1219,8 +1876,145 @@ void ReadAssets() {
   if(sequence.empty())throw std::runtime_error("Empty move sequence");for(auto slot:sequence)if(!controller.clips.contains(slot))throw std::runtime_error("Configured move slot unavailable");
   controller.setMove(ParseCommand(it.key()),std::move(sequence));}
  if(moves.contains("sheathe_hold_frame"))controller.sheatheHoldFrame=moves["sheathe_hold_frame"].get<int>();
- for(auto id:{controller.idleSlot,306})if(!controller.clips.contains(id))throw std::runtime_error("Required motion missing");
+ if(!controller.clips.contains(controller.idleSlot))throw std::runtime_error("Required idle motion missing");
+ motionLabels.clear();if(moves.contains("labels"))for(auto it=moves["labels"].begin();it!=moves["labels"].end();++it)motionLabels[std::stoi(it.key())]=it.value().get<std::string>();
+ controller.holdPolicies.clear();if(moves.contains("hold_commands"))for(auto it=moves["hold_commands"].begin();it!=moves["hold_commands"].end();++it){
+  const auto command=ParseCommand(it.key());HoldPolicy policy;policy.frame=it.value().value("frame",-1);policy.loop=it.value().value("loop",false);
+  if(!controller.moves.contains(command)||policy.frame< -1)throw std::runtime_error("Invalid hold command");
+  float previous=-1;for(const auto& r:it.value().value("releases",Json::array())){HoldRelease release{r.at("seconds").get<float>(),r.at("slot").get<int>()};
+   if(!std::isfinite(release.seconds)||release.seconds<0||release.seconds<previous||!controller.clips.contains(release.slot))throw std::runtime_error("Invalid charge release");
+   policy.releases.push_back(release);previous=release.seconds;}controller.holdPolicies[command]=std::move(policy);}
+ if(moves.contains("inputs")){controller.inputBindings.clear();const std::map<std::string,uint32_t> names{{"slash",1},{"attack",1},{"thrust",2},{"secondary",2},{"spirit",4},{"dodge",8},{"sheathe",16},{"aim",32},{"reload",64}};
+  for(auto it=moves["inputs"].begin();it!=moves["inputs"].end();++it){auto n=names.find(it.key());if(n==names.end())throw std::runtime_error("Invalid input mapping");controller.inputBindings[n->second]=ParseCommand(it.value().get<std::string>());}}
+ if(moves.contains("chords"))for(auto it=moves["chords"].begin();it!=moves["chords"].end();++it){const auto bits=std::stoul(it.key());const auto command=ParseCommand(it.value().get<std::string>());
+  if(bits<1||bits>127||!controller.moves.contains(command))throw std::runtime_error("Invalid chord");controller.chordBindings[uint32_t(bits)]=command;}
+ if((loadedMode=="bow"||loadedMode=="light_bowgun")&&controller.moves.contains(Command::Aim))controller.inputBindings[AimBit]=Command::Aim;
+ if((loadedMode=="light_bowgun"||loadedMode=="bow")&&controller.moves.contains(Command::Reload))controller.inputBindings[ReloadBit]=Command::Reload;
+ controller.hardwareRoutes.clear();if(moves.contains("hardware_routes"))for(auto slot=moves["hardware_routes"].begin();slot!=moves["hardware_routes"].end();++slot){const int id=std::stoi(slot.key());
+  if(!controller.clips.contains(id)||!slot.value().is_object())throw std::runtime_error("Invalid hardware follow-up slot");
+  for(auto it=slot.value().begin();it!=slot.value().end();++it){const auto bits=std::stoul(it.key());const auto command=ParseCommand(it.value().get<std::string>());
+   if(bits<1||bits>127||!controller.moves.contains(command))throw std::runtime_error("Invalid hardware follow-up command");controller.hardwareRoutes[id][uint32_t(bits)]=command;}}
+ controller.tapHoldBindings.clear();if(moves.contains("input_behavior")){const std::map<std::string,uint32_t> names{{"attack",1},{"secondary",2},{"spirit",4},{"dodge",8},{"sheathe",16},{"aim",32},{"reload",64}};
+  for(auto it=moves["input_behavior"].begin();it!=moves["input_behavior"].end();++it){const auto key=names.find(it.key());const auto command=ParseCommand(it.value().at("hold").get<std::string>());const float seconds=it.value().value("hold_seconds",.35f);
+   if(key==names.end()||!std::isfinite(seconds)||seconds<.05f||seconds>2||!controller.holdPolicies.contains(command))throw std::runtime_error("Invalid tap/hold input rule");
+   if(!controller.inputBindings.contains(key->second)||controller.inputBindings.at(key->second)!=ParseCommand(it.value().at("tap").get<std::string>()))throw std::runtime_error("Tap action differs from input binding");
+   controller.tapHoldBindings[key->second]={command,seconds};}}
+ controller.holdVariants.clear();if(moves.contains("hold_variants"))for(auto it=moves["hold_variants"].begin();it!=moves["hold_variants"].end();++it){const auto command=ParseCommand(it.key());
+  if(!controller.holdPolicies.contains(command)||!it.value().is_array()||it.value().size()>16)throw std::runtime_error("Invalid contextual charge variants");
+  for(const auto& row:it.value()){HoldVariant variant;variant.slot=row.at("slot").get<int>();variant.fromSlots=row.at("from_slots").get<std::set<int>>();
+   if(!controller.clips.contains(variant.slot)||variant.fromSlots.empty())throw std::runtime_error("Invalid contextual hold slot");
+   for(int from:variant.fromSlots)if(!controller.clips.contains(from))throw std::runtime_error("Unknown charge prerequisite");
+   variant.policy.frame=row.value("frame",-1);variant.policy.loop=row.value("loop",false);
+   if(variant.policy.frame< -1||variant.policy.frame>=int(controller.clips.at(variant.slot).frames.size()))throw std::runtime_error("Invalid contextual hold frame");
+   float previous=-1;for(const auto& release:row.at("releases")){HoldRelease value{release.at("seconds").get<float>(),release.at("slot").get<int>()};
+    if(!std::isfinite(value.seconds)||value.seconds<0||value.seconds<previous||!controller.clips.contains(value.slot))throw std::runtime_error("Invalid contextual charge release");
+    variant.policy.releases.push_back(value);previous=value.seconds;}
+   controller.holdVariants[command].push_back(std::move(variant));}}
+ if((loadedMode=="bow"||loadedMode=="light_bowgun")&&controller.moves.contains(Command::Aim))controller.inputBindings[AimBit]=Command::Aim;
+ if((loadedMode=="light_bowgun"||loadedMode=="bow")&&controller.moves.contains(Command::Reload))controller.inputBindings[ReloadBit]=Command::Reload;
+ modeProps.clear();projectileProp=Json{};const auto propsRoot=assets/L"props/index.json";
+ if(std::filesystem::exists(propsRoot)){const auto registry=read(propsRoot);const auto& rows=registry.contains("props")?registry.at("props"):registry.at("items");
+  if(!rows.is_array()||rows.size()>16)throw std::runtime_error("Invalid source props registry");
+  for(const auto& row:rows){const auto relative=std::filesystem::path(row.at("file").get<std::string>());if(relative.is_absolute()||relative.extension()!=L".json")throw std::runtime_error("Invalid prop file");
+   for(const auto& part:relative)if(part==L"..")throw std::runtime_error("Unsafe prop path");auto prop=read(assets/relative);
+   const auto id=prop.value("id",row.value("id",std::string{}));
+   if(id.find("ya001")!=std::string::npos||row.value("role",std::string{})=="projectile")projectileProp=std::move(prop);else modeProps.push_back(std::move(prop));}}
+ if(loadedMode=="light_bowgun"&&projectileProp.empty()){
+  // A locally authored tracer, independent of the native bullet system.
+  projectileProp={{"id","local_bullet_tracer"},{"source_forward_axis",{0,0,1}},{"vertices",{{-.008f,-.008f,0},{.008f,-.008f,0},{.008f,.008f,0},{-.008f,.008f,0},{-.008f,-.008f,.2f},{.008f,-.008f,.2f},{.008f,.008f,.2f},{-.008f,.008f,.2f}}},{"indices",{0,1,2,0,2,3,4,6,5,4,7,6,0,4,5,0,5,1,1,5,6,1,6,2,2,6,7,2,7,3,3,7,4,3,4,0}}};
+ }
+ projectileEvents.clear();const auto markersPath=assets/L"projectile_events.json";
+ if(std::filesystem::exists(markersPath)){const auto markers=read(markersPath);if(markers.at("schema_version")!=1||!markers.at("tracks").is_object())throw std::runtime_error("Invalid projectile event manifest");
+  for(auto it=markers["tracks"].begin();it!=markers["tracks"].end();++it){const int slot=std::stoi(it.key());if(!controller.clips.contains(slot)||!it.value().is_array()||it.value().size()>128)throw std::runtime_error("Invalid projectile event slot");
+   float previous=-1;for(const auto& marker:it.value()){const float time=marker.at("time").get<float>();if(!std::isfinite(time)||time<0||time<previous||time>controller.clips.at(slot).duration())throw std::runtime_error("Invalid projectile marker");projectileEvents[slot].push_back(time);previous=time;}}
+ }
+ skinGeometry.clear();skinMotions.clear();const auto skinPath=assets/L"source_skin_tracks.json";
+ if(std::filesystem::exists(skinPath)){const auto manifest=read(skinPath);if(manifest.at("schema_version")!=1||!manifest.at("props").is_object()||!manifest.at("tracks").is_object())throw std::runtime_error("Invalid source own-palette manifest");
+  for(auto it=manifest["props"].begin();it!=manifest["props"].end();++it){const auto path=std::filesystem::path(it.value().at("file").get<std::string>());
+   if(path.is_absolute()||path.extension()!=L".json")throw std::runtime_error("Invalid own-palette prop path");for(const auto& part:path)if(part==L"..")throw std::runtime_error("Unsafe skin prop");
+   const auto prop=read(assets/path);SkinGeometry geometry;geometry.bones=it.value().at("bone_names").size();
+   if(!geometry.bones||geometry.bones>128||prop.at("vertices").size()>65535)throw std::runtime_error("Invalid source skin palette size");
+   for(const auto& p:prop.at("vertices")){if(p.size()!=3)throw std::runtime_error("Invalid skin vertex");geometry.vertices.push_back({p[0].get<float>(),p[1].get<float>(),p[2].get<float>()});}
+   geometry.indices=it.value().at("skin_bone_indices").get<std::vector<SourceSkin::Indices>>();geometry.weights=it.value().at("skin_weights").get<std::vector<SourceSkin::Weights>>();
+   SourceSkin::Deform(geometry.vertices,geometry.indices,geometry.weights,std::vector<SourceSkin::Matrix>(geometry.bones,SourceSkin::Identity()));skinGeometry.emplace(it.key(),std::move(geometry));
+  }
+  for(auto it=manifest["tracks"].begin();it!=manifest["tracks"].end();++it){const int slot=std::stoi(it.key());const auto id=it.value().at("prop_id").get<std::string>();auto path=std::filesystem::path(it.value().at("file").get<std::string>());
+   if(!controller.clips.contains(slot)||!skinGeometry.contains(id)||path.is_absolute()||path.extension()!=L".lsk")throw std::runtime_error("Invalid source skin track");for(const auto& part:path)if(part==L"..")throw std::runtime_error("Unsafe skin track");
+   auto track=SourceSkin::Read(assets/path,controller.clips.at(slot).frames.size(),skinGeometry.at(id).bones);if(track.fps!=controller.clips.at(slot).fps)throw std::runtime_error("Source skin clock mismatch");skinMotions.emplace(slot,SkinMotion{id,std::move(track)});
+  }
+ }
  ReadAudio();
+}
+void ReadMode(const std::string& id){
+ auto found=modeDefinitions.find(id);if(found==modeDefinitions.end())throw std::runtime_error("Unknown weapon mode: "+id);
+ const auto relative=std::filesystem::path(found->second.value("data_root",std::string("assets")));
+ if(relative.is_absolute()||relative.has_root_name())throw std::runtime_error("Invalid mode root");
+ for(const auto& part:relative)if(part==L"..")throw std::runtime_error("Unsafe mode root");
+ // A failed switch restores the entire previous loaded set, including source
+ // anatomy and audio; it never mixes a new pose with an old weapon track.
+ auto oldController=std::move(controller);auto oldGrip=std::move(gripTracks);auto oldGround=std::move(groundTracks);auto oldGeometryContacts=std::move(geometryContactMasks);auto oldSupportGround=std::move(supportGroundTracks);
+ auto oldWeapons=std::move(sourceWeaponTracks);auto oldWindows=std::move(practice.windows);auto oldFingers=std::move(fingerTracks);auto oldFingerBones=std::move(sourceFingerBones);
+ auto oldSounds=std::move(soundClips);auto oldSoundLabels=std::move(soundLabels);auto oldTimeline=std::move(soundTimeline);
+ auto oldThemeTimeline=std::move(themeTimeline);const auto oldThemes=themeDefinitions;
+ const auto oldRest=sourceRestPositions;const auto oldRestRotations=sourceRestRotations;const auto oldSoleHeight=sourceSoleHeight;const auto oldPalms=sourcePalmFrames;const bool oldRestReady=sourceRestReady,oldPalmsReady=sourcePalmsReady,oldSoundReady=soundReady;
+ const auto oldRoot=activeAssetRoot,oldAudioRoot=activeAudioRoot;const auto oldMode=loadedMode;const int oldIdle=configuredIdleSlot;
+ const auto oldKeys=config.keys;const auto oldModeKeys=config.mode_keys;const auto oldLocalMode=localMode;
+ auto oldDemo=demoSequence;auto oldFullDemo=fullDemoSequence;auto oldLabels=std::move(motionLabels);auto oldProjectiles=std::move(projectileEvents);auto oldProps=std::move(modeProps);const auto oldProjectileProp=projectileProp;const auto oldSoundDetail=soundDetail;
+ auto oldSkinGeometry=std::move(skinGeometry);auto oldSkinMotions=std::move(skinMotions);
+ try{
+  controller=Controller{};controller.longswordRules=id=="longsword";soundTimeline=AudioTimeline{};
+  activeAssetRoot=packageRoot/relative;const auto audioRelative=std::filesystem::path(found->second.value("audio_root",(relative/L"audio").generic_string()));
+  if(audioRelative.is_absolute()||audioRelative.has_root_name())throw std::runtime_error("Invalid audio root");for(const auto& part:audioRelative)if(part==L"..")throw std::runtime_error("Unsafe audio root");
+  activeAudioRoot=packageRoot/audioRelative;loadedMode=id;ReadMotionAssets(activeAssetRoot);
+  controller.transitionSeconds=config.blend_seconds;controller.bufferSeconds=config.buffer_seconds;
+  demoSequence.clear();std::ifstream moveInput(activeAssetRoot/L"moves.json");Json modeMoves;moveInput>>modeMoves;
+  const auto& modeDemo=modeMoves.contains("demo")?modeMoves.at("demo"):found->second.value("demo",Json::array());
+  for(const auto& name:modeDemo)demoSequence.push_back(ParseCommand(name.get<std::string>()));
+  if(demoSequence.empty()&&id=="longsword")demoSequence=defaultDemoSequence;
+  if(demoSequence.empty())for(const auto&[command,slots]:controller.moves)if(!slots.empty())demoSequence.push_back(command);
+  for(auto command:demoSequence)if(!controller.moves.contains(command))throw std::runtime_error("Demo references unavailable command");
+  if(demoSequence.empty())throw std::runtime_error("Mode lacks complete demo sequence");
+  fullDemoSequence=demoSequence;SelectDemoSequence();
+  if(config.mode_keys.contains(id))config.keys=config.mode_keys.at(id);
+  else if(found->second.contains("default_bindings")&&found->second["default_bindings"].contains("keys")){
+   const auto& bindings=found->second["default_bindings"];
+   const auto& preset=bindings.contains("presets")&&bindings["presets"].contains(config.keyboard_preset)?bindings["presets"][config.keyboard_preset]:bindings;
+   for(auto it=preset["keys"].begin();it!=preset["keys"].end();++it){const int key=it.value().get<int>();
+    if(!config.keys.contains(it.key())||key<1||key>255||key==VK_ESCAPE||key==config.toggle_key||key==VK_F9)throw std::runtime_error("Invalid default binding");config.keys[it.key()]=key;}
+   config.mode_keys[id]=config.keys;
+  }
+  localResource=0;localAmmo=6;localMode.Reset(id);lastSound.clear();soundCueCount=0;config.mode=id;
+ }catch(...){
+  controller=std::move(oldController);gripTracks=std::move(oldGrip);groundTracks=std::move(oldGround);sourceWeaponTracks=std::move(oldWeapons);geometryContactMasks=std::move(oldGeometryContacts);supportGroundTracks=std::move(oldSupportGround);
+  practice.windows=std::move(oldWindows);fingerTracks=std::move(oldFingers);sourceFingerBones=std::move(oldFingerBones);soundClips=std::move(oldSounds);soundLabels=std::move(oldSoundLabels);soundTimeline=std::move(oldTimeline);themeTimeline=std::move(oldThemeTimeline);themeDefinitions=oldThemes;
+  sourceRestPositions=oldRest;sourceRestRotations=oldRestRotations;sourceSoleHeight=oldSoleHeight;sourcePalmFrames=oldPalms;sourceRestReady=oldRestReady;sourcePalmsReady=oldPalmsReady;soundReady=oldSoundReady;
+  activeAssetRoot=oldRoot;activeAudioRoot=oldAudioRoot;loadedMode=oldMode;configuredIdleSlot=oldIdle;config.keys=oldKeys;config.mode_keys=oldModeKeys;localMode=oldLocalMode;skinGeometry=std::move(oldSkinGeometry);skinMotions=std::move(oldSkinMotions);demoSequence=std::move(oldDemo);fullDemoSequence=std::move(oldFullDemo);motionLabels=std::move(oldLabels);projectileEvents=std::move(oldProjectiles);modeProps=std::move(oldProps);projectileProp=oldProjectileProp;soundDetail=oldSoundDetail;throw;
+ }
+}
+void ReadAssets(){
+ characterProfiles.clear();const auto profilesRoot=packageRoot/L"profiles";
+ for(const auto& file:std::filesystem::recursive_directory_iterator(profilesRoot)){
+  if(!file.is_regular_file()||file.path().extension()!=L".json")continue;
+  std::ifstream input(file.path());Json selected;input>>selected;if(!selected.is_object()||!selected.contains("character_id")||!selected.contains("bones"))continue;
+  const auto id=selected.at("character_id").get<std::string>();if(!id.starts_with("chr_")||id.size()>64)throw std::runtime_error("Invalid character profile ID");
+  const auto axis=selected.value("practice_blade_axis",std::vector<float>{0,0,1});
+  if(axis.size()!=3||!Finite(Vec3{axis[0],axis[1],axis[2]})||Retarget::Len({axis[0],axis[1],axis[2]})<1e-5f)throw std::runtime_error("Invalid practice blade axis");
+  if(!characterProfiles.emplace(id,std::move(selected)).second)throw std::runtime_error("Duplicate character profile");
+ }
+ if(!characterProfiles.contains("chr_0003_endminf")||!characterProfiles.contains("chr_0016_laevat"))throw std::runtime_error("Reference character profiles missing");
+ visualWeaponRegistry.clear();for(const auto& file:std::filesystem::recursive_directory_iterator(profilesRoot/L"weapons")){
+  if(!file.is_regular_file()||file.path().extension()!=L".json")continue;std::ifstream input(file.path());Json value;input>>value;
+  if(value.is_object()&&value.contains("asset_path_hash")&&value.contains("renderer_path"))visualWeaponRegistry[file.path().stem().string()]=std::move(value);
+ }
+ modeDefinitions.clear();const auto modesPath=packageRoot/L"assets/modes/index.json";
+ if(std::filesystem::exists(modesPath)){std::ifstream input(modesPath);Json index;input>>index;
+  if(!index.is_object()||!index.contains("modes")||!index["modes"].is_array()||index["modes"].size()>32)throw std::runtime_error("Invalid mode registry");
+  for(const auto& item:index["modes"]){const auto id=item.at("id").get<std::string>();if(!modeDefinitions.emplace(id,item).second)throw std::runtime_error("Duplicate weapon mode");}}
+ if(!modeDefinitions.contains("longsword"))modeDefinitions["longsword"]={{"id","longsword"},{"label","太刀"},{"data_root","assets"}};
+ ReadMode(config.mode);
+ const auto productPath=packageRoot/L"assets/product_catalog.json";
+ if(std::filesystem::exists(productPath)){std::ifstream input(productPath);input>>productCatalog;}
+ else productCatalog={{"schema",1},{"modes",Json::array()},{"characters",Json::array()},{"weapons",Json::array()}};
 }
 BE_Result BE_CALL Initialize(const BE_ThirdPartyHostV1* host,const char* raw) {
  if(!host||host->version!=1||host->struct_size<sizeof(BE_ThirdPartyHostV1)||!host->package_root||!host->reply)return BE_Result_InvalidArgument;
@@ -1237,7 +2031,8 @@ BE_Result BE_CALL Initialize(const BE_ThirdPartyHostV1* host,const char* raw) {
   for(int n=0;n<10&&!exitBootstrap;++n)std::this_thread::sleep_for(std::chrono::milliseconds(100));
  }});return BE_Result_Ok;
 }
-BE_Result BE_CALL ConfigurationChanged(const char* raw) {std::lock_guard lock(gate);try{Configure(raw);return BE_Result_Ok;}catch(...){return BE_Result_InvalidArgument;}}
+BE_Result BE_CALL ConfigurationChanged(const char* raw) {std::lock_guard lock(gate);const auto previous=config;const auto revision=configRevision;const auto applied=appliedConfigRevision;const auto pending=pendingMode;
+ try{Configure(raw);return BE_Result_Ok;}catch(...){config=previous;configRevision=revision;appliedConfigRevision=applied;pendingMode=pending;return BE_Result_InvalidArgument;}}
 BE_Result BE_CALL Message(const char* request,const char* raw) {
  std::lock_guard lock(gate);if(!initialized)return BE_Result_NotReady;
  try {if(!raw||std::strlen(raw)>65536)throw std::runtime_error("Message too long");auto j=Json::parse(raw);auto action=j.at("action").get<std::string>();
@@ -1245,13 +2040,23 @@ BE_Result BE_CALL Message(const char* request,const char* raw) {
   if(action=="status"){}
   else if(action=="practice_reset"){practiceResetRequest=true;if(!controller.active){practice.Clear();practiceSummary=Json::array();practiceResetRequest=false;}}
   else if(action=="stop"){stopRequest=true;suppressInput=false;soundPlayer.Stop();practiceHud.Update(false,"");}
+  else if(action=="catalog"){}
+  else if(action=="set_mode"){const auto next=j.at("mode").get<std::string>();if(!modeDefinitions.contains(next))result=BE_Result_NotFound;
+   else{const auto previous=config;const auto revision=configRevision,applied=appliedConfigRevision;const auto pending=pendingMode;
+    try{config.mode=next;if((config.visual_weapon=="laevatain_blade"&&next!="longsword")||(config.visual_weapon=="typhoea_bow"&&next!="bow"))config.visual_weapon="auto";
+     ++configRevision;if(actor.model)pendingMode=next;else{ReadMode(next);appliedConfigRevision=configRevision;}}
+    catch(...){config=previous;configRevision=revision;appliedConfigRevision=applied;pendingMode=pending;throw;}}}
   else if(!ready)result=BE_Result_NotReady;
+  else if(action=="pause"){if(!controller.active)result=BE_Result_NotReady;else{paused=true;soundPlayer.Stop();commands.clear();detail="演示已暂停";}}
+  else if(action=="resume"){if(!controller.active)result=BE_Result_NotReady;else{paused=false;hudEditing=false;resumeSoundLoops=true;previousBits=KeyBits();detail="演示继续";}}
+  else if(action=="hud_edit"){hudEditing=j.value("enabled",!hudEditing);if(hudEditing){paused=true;soundPlayer.Stop();commands.clear();}else{paused=false;resumeSoundLoops=true;previousBits=KeyBits();}}
   else if(action=="toggle")toggleRequest=true;
   else if(action=="demo")demoRequest=true;
   else if(action=="command"){if(!controller.active)result=BE_Result_NotReady;else if(commands.size()<16)commands.push_back(ParseCommand(j.at("name").get<std::string>()));else result=BE_Result_Conflict;}
   else if(action=="preview"){auto slot=j.at("slot").get<int>();if(!controller.active)result=BE_Result_NotReady;else if(!controller.clips.contains(slot))result=BE_Result_NotFound;else previewRequest=slot;}
   else result=BE_Result_InvalidArgument;
-  auto body=Status().dump();return bridge.reply(bridge.context,request,result,body.c_str());
+  auto response=Status();response["request_id"]=j.value("request_id",std::string{});response["action"]=action;
+  response["accepted"]=result==BE_Result_Ok;auto body=response.dump();return bridge.reply(bridge.context,request,result,body.c_str());
  }catch(const std::exception& e){auto body=Json{{"error",e.what()}}.dump();return bridge.reply(bridge.context,request,BE_Result_InvalidArgument,body.c_str());}
 }
 void BE_CALL Shutdown() {

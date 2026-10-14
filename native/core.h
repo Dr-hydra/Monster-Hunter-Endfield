@@ -8,6 +8,7 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -95,18 +96,43 @@ inline Clip ReadClip(const std::filesystem::path& path,size_t bone_count=21) {
     }
     return result;
 }
-enum class Command { Slash,Thrust,Spirit,Fade,Foresight,Sheathe,Iai,IaiSpirit,Helm,Dodge,Stop,NormalSheathe };
-enum InputBit : uint32_t { SlashBit=1,ThrustBit=2,SpiritBit=4,DodgeBit=8,SheatheBit=16 };
+enum class Command { Slash,Thrust,Spirit,Fade,Foresight,Sheathe,Iai,IaiSpirit,Helm,Dodge,Stop,NormalSheathe,
+    Charge,Release,Guard,Aim,Fire,Reload,Special,Advance,Backstep,Counter,Draw };
+inline const std::map<std::string,Command>& CommandNames(){
+    static const std::map<std::string,Command> names{{"slash",Command::Slash},{"thrust",Command::Thrust},
+        {"spirit",Command::Spirit},{"fade",Command::Fade},{"foresight",Command::Foresight},{"sheathe",Command::Sheathe},
+        {"iai",Command::Iai},{"iai_spirit",Command::IaiSpirit},{"helm",Command::Helm},{"dodge",Command::Dodge},
+        {"stop",Command::Stop},{"normal_sheathe",Command::NormalSheathe},{"charge",Command::Charge},
+        {"release",Command::Release},{"guard",Command::Guard},{"aim",Command::Aim},{"fire",Command::Fire},
+        {"reload",Command::Reload},{"special",Command::Special},{"advance",Command::Advance},
+        {"backstep",Command::Backstep},{"counter",Command::Counter},{"draw",Command::Draw}};return names;
+}
+inline Command CommandFromName(const std::string& name){auto found=CommandNames().find(name);
+    if(found==CommandNames().end())throw std::runtime_error("Unknown command: "+name);return found->second;}
+inline std::string CommandName(Command command){for(const auto&[name,value]:CommandNames())if(value==command)return name;return "unknown";}
+struct HoldRelease{float seconds=0;int slot=0;};
+struct HoldPolicy{int frame=-1;bool loop=false;std::vector<HoldRelease> releases;};
+struct HoldVariant{int slot=0;std::set<int> fromSlots;HoldPolicy policy;};
+struct TapHoldBinding{Command command;float seconds=.35f;};
+enum InputBit : uint32_t { SlashBit=1,ThrustBit=2,SpiritBit=4,DodgeBit=8,SheatheBit=16,AimBit=32,ReloadBit=64 };
 class Controller {
 public:
     std::map<int,Clip> clips;
     std::map<Command,std::vector<int>> moves{
-        {Command::Slash,{101,102,103}},{Command::Thrust,{110,111}},{Command::Spirit,{104,105,106,107}},
-        {Command::Fade,{112}},{Command::Foresight,{150}},{Command::Sheathe,{306}},
-        {Command::Iai,{307}},{Command::IaiSpirit,{308}},{Command::Helm,{160}},{Command::Dodge,{3}},{Command::NormalSheathe,{3}}};
+        {Command::Slash,{101,102,107}},{Command::Thrust,{105,112}},{Command::Spirit,{104,106,108,109}},
+        {Command::Fade,{103,127,128}},{Command::Foresight,{140}},{Command::Sheathe,{306}},
+        {Command::Iai,{307}},{Command::IaiSpirit,{311}},{Command::Helm,{1000}},{Command::Dodge,{9,11}},{Command::NormalSheathe,{3}}};
     bool active=false; int slot=1; float seconds=0; Pose output;
     uint64_t motionSerial=0;
     int idleSlot=1,sheatheHoldFrame=80;
+    bool longswordRules=true;
+    std::map<Command,HoldPolicy> holdPolicies;
+    std::map<Command,std::vector<HoldVariant>> holdVariants;
+    std::map<int,std::map<uint32_t,Command>> hardwareRoutes;
+    std::map<uint32_t,TapHoldBinding> tapHoldBindings;
+    std::map<uint32_t,Command> inputBindings{{SlashBit,Command::Slash},{ThrustBit,Command::Thrust},
+        {SpiritBit,Command::Spirit},{DodgeBit,Command::Dodge},{SheatheBit,Command::NormalSheathe}};
+    std::map<uint32_t,Command> chordBindings;
     float transitionFraction=0.55f,transitionSeconds=0.10f,bufferSeconds=0.3f,chordSeconds=0.08f;
     void setMove(Command command,std::vector<int> sequence) { moves[command]=std::move(sequence); }
     bool start(int idle=1) {
@@ -114,8 +140,65 @@ public:
         auto found=clips.find(idle); if(found==clips.end()||found->second.frames.empty())return false;
         active=true;slot=idle;seconds=0;++motionSerial;output=found->second.sample(0);return true;
     }
-    void stop() {active=false;seconds=0;pending_=false;edgeBits_=0;clock_=0;blendElapsed_=transitionSeconds;blendFrom_={};rootOffset_={};}
-    bool sheathed() const {auto it=moves.find(Command::Sheathe);return it!=moves.end()&&!it->second.empty()&&slot==it->second.front();}
+    void stop() {active=false;seconds=0;pending_=false;edgeBits_=0;clock_=0;blendElapsed_=transitionSeconds;blendFrom_={};rootOffset_={};heldCommands_.clear();holdTime_=0;holding_=false;returning_=false;normalSheathing_=false;activeHoldPolicy_={};tapHoldSince_.clear();tapHoldCancelled_.clear();}
+    bool sheathed() const {if(!longswordRules)return false;auto it=moves.find(Command::Sheathe);return it!=moves.end()&&!it->second.empty()&&slot==it->second.front();}
+    bool available(Command command)const{return active&&moves.contains(command)&&!moves.at(command).empty()&&canTransition()&&
+        !(longswordRules&&resting()&&(command==Command::Sheathe||command==Command::Foresight));}
+    bool buffered()const{return pending_||edgeBits_!=0;}
+    bool buffered(Command command)const{return pending_&&pendingCommand_==command;}
+    float heldSeconds()const{return holding_?holdTime_:0;}
+    float motionAge()const{return blendElapsed_;}
+    bool holding(Command command)const{return holding_&&holdCommand_==command;}
+    const HoldPolicy& HoldRule(Command command)const{return holding(command)?activeHoldPolicy_:holdPolicies.at(command);}
+    bool isHeld(Command command)const{return heldCommands_.contains(command);}
+    bool normalSheathed()const{const auto* clip=current();return active&&normalSheathing_&&clip&&seconds+1e-5f>=clip->duration();}
+    bool resting()const{return slot==idleSlot||normalSheathed();}
+    void returnToOrigin(float duration=.5f){if(!std::isfinite(duration)||duration<=0)return;
+        returnFrom_=rootOffset_;returnDuration_=duration;returnElapsed_=0;returning_=true;}
+    void held(Command command,bool down,bool activate=true){
+        if(down){if(heldCommands_.insert(command).second&&activate)input(command);return;}
+        const bool was=heldCommands_.erase(command)!=0;
+        if(!was||!active)return;
+        if(holding_&&holdCommand_==command){
+            const auto& rule=activeHoldPolicy_;int release=idleSlot;
+            for(const auto& level:rule.releases)if(holdTime_+1e-6f>=level.seconds)release=level.slot;
+            holding_=false;holdTime_=0;pending_=false;
+            if(clips.contains(release))transition(release);
+        }else if(pending_&&pendingCommand_==command)pending_=false;
+    }
+    // Resolve a combination before starting constituent hold actions. This
+    // keeps guard+attack/counter and aim+attack from being swallowed by holds.
+    void hardwareInput(uint32_t edges,uint32_t heldBits){
+        if(longswordRules){inputBits(edges,heldBits);return;}
+        if(auto routes=hardwareRoutes.find(slot);routes!=hardwareRoutes.end())for(const auto&[bits,command]:routes->second)
+            if((edges&bits)==bits){input(command);return;}
+        edges&=127;heldBits&=127;uint32_t chord=0;Command selected{};unsigned best=0;
+        for(const auto&[bits,command]:chordBindings)if((heldBits&bits)==bits){
+            unsigned count=0;for(auto b=bits;b;b>>=1)count+=b&1;
+            if(count>best){chord=bits;selected=command;best=count;}
+        }
+        std::set<Command> down;
+        for(const auto&[bit,command]:inputBindings)if((heldBits&bit)&&!(chord&bit)&&holdPolicies.contains(command))down.insert(command);
+        if(chord&&holdPolicies.contains(selected))down.insert(selected);
+        std::set<Command> promoted;
+        for(const auto&[bit,behavior]:tapHoldBindings){
+            if(!(heldBits&bit)){tapHoldSince_.erase(bit);tapHoldCancelled_.erase(bit);continue;}
+            tapHoldSince_.try_emplace(bit,clock_);
+            if(edges&~bit)tapHoldCancelled_.insert(bit);
+            if(!chord&&!tapHoldCancelled_.contains(bit)&&clock_-tapHoldSince_.at(bit)>=behavior.seconds){down.insert(behavior.command);promoted.insert(behavior.command);}
+        }
+        // Releases run first; a new chord then owns the resulting transition.
+        for(const auto&[command,rule]:holdPolicies)if(!down.contains(command))held(command,false);
+        for(auto command:down){bool fresh=false;
+            if(chord&&command==selected)fresh=(edges&chord)!=0;
+            else for(const auto&[bit,mapped]:inputBindings)if(mapped==command&&(edges&bit))fresh=true;
+            if(command==Command::Aim&&(down.contains(Command::Charge)||((edges&SlashBit)&&moves.contains(Command::Fire))))fresh=false;
+            held(command,true,fresh);
+        }
+        for(auto command:promoted)if(!holding(command))input(command);
+        if(chord){if((edges&chord)&&!holdPolicies.contains(selected))input(selected);return;}
+        for(const auto&[bit,command]:inputBindings)if((edges&bit)&&!holdPolicies.contains(command)){input(command);break;}
+    }
     void input(Command command) {
         if(command==Command::Stop){stop();return;} if(!active)return;
         if(sheathed()){if(command==Command::Slash)command=Command::Iai;else if(command==Command::Spirit)command=Command::IaiSpirit;}
@@ -123,7 +206,14 @@ public:
         pending_=true;pendingCommand_=command;pendingUntil_=clock_+std::max(0.f,bufferSeconds);
     }
     void inputBits(uint32_t edges,uint32_t held) {
-        if(!active)return; edges&=31;held&=31;if(!edges)return;
+        if(!active)return; edges&=127;held&=127;if(!edges)return;
+        if(!longswordRules){
+            const auto combined=edges|held;for(auto it=chordBindings.rbegin();it!=chordBindings.rend();++it)
+                if((combined&it->first)==it->first){input(it->second);return;}
+            for(auto[bit,command]:inputBindings)if(edges&bit){input(command);break;}
+            return;
+        }
+        edges&=31;held&=31;if(!edges)return;
         // A held spirit key from special sheathe must not turn the next left
         // click into Helmbreaker. The sheathed state owns these follow-ups.
         if(sheathed()) {
@@ -141,7 +231,11 @@ public:
         else if((combined&(SpiritBit|SlashBit))==(SpiritBit|SlashBit))chord=Command::Helm;
         else if((combined&(SlashBit|ThrustBit))==(SlashBit|ThrustBit))chord=Command::Fade;
         else haveChord=false;
-        if(haveChord){edgeBits_=0;input(chord);return;}
+        if(haveChord){edgeBits_=0;
+            // The shipped Hunter Notes require these two follow-ups after
+            // an attack. Direct pose/demo commands remain separate.
+            if(resting()&&(chord==Command::Sheathe||chord==Command::Foresight))return;
+            input(chord);return;}
         if(!edgeBits_)edgeUntil_=clock_+std::max(0.f,chordSeconds);
         edgeBits_|=edges;
     }
@@ -157,10 +251,17 @@ private:
     double clock_=0,pendingUntil_=0,edgeUntil_=0;
     bool pending_=false;Command pendingCommand_=Command::Slash;uint32_t edgeBits_=0;
     Pose blendFrom_;float blendElapsed_=0;Vec3 rootOffset_{};
+    std::set<Command> heldCommands_;bool holding_=false;Command holdCommand_=Command::Charge;float holdTime_=0;
+    HoldPolicy activeHoldPolicy_;
+    std::map<uint32_t,double> tapHoldSince_;std::set<uint32_t> tapHoldCancelled_;
+    bool returning_=false;float returnElapsed_=0,returnDuration_=0;Vec3 returnFrom_{};
+    bool normalSheathing_=false;
     const Clip* current()const {auto it=clips.find(slot);return it==clips.end()?nullptr:&it->second;}
     bool canTransition()const {
         const Clip* clip=current();if(!clip)return false;
         if(slot==idleSlot)return true;
+        if(normalSheathing_)return normalSheathed();
+        if(holding_)return true;
         if(sheathed())return seconds>=std::min(clip->duration(),float(std::max(0,sheatheHoldFrame))/clip->fps);
         return seconds>=clip->duration()*std::clamp(transitionFraction,0.f,1.f);
     }
@@ -168,11 +269,20 @@ private:
         auto it=moves.find(command);if(it==moves.end()||it->second.empty())return false;
         const auto& sequence=it->second;auto at=std::find(sequence.begin(),sequence.end(),slot);
         int next=sequence.front();if(at!=sequence.end()&&std::next(at)!=sequence.end())next=*std::next(at);
+        const HoldPolicy* policy=holdPolicies.contains(command)?&holdPolicies.at(command):nullptr;
+        if(auto variants=holdVariants.find(command);variants!=holdVariants.end())for(const auto& variant:variants->second)
+            if(variant.fromSlots.contains(slot)){next=variant.slot;policy=&variant.policy;break;}
         auto clip=clips.find(next);if(clip==clips.end()||clip->second.frames.empty())return false;
         if(!output.rotations.empty()&&output.rotations.size()!=clip->second.frames.front().rotations.size())return false;
-        transition(next);return true;
+        transition(next);
+        normalSheathing_=command==Command::NormalSheathe;
+        if(policy&&heldCommands_.contains(command)){activeHoldPolicy_=*policy;holding_=true;holdCommand_=command;holdTime_=0;}
+        return true;
     }
     void transition(int next) {
+        holding_=false;holdTime_=0;
+        normalSheathing_=false;
+        returning_=false;
         blendFrom_=output;blendElapsed_=0;
         const auto& initial=clips.at(next).frames.front().hip;
         rootOffset_.x=output.hip.x-initial.x;rootOffset_.z=output.hip.z-initial.z;
@@ -190,14 +300,21 @@ private:
         }
         const Clip* clip=current();if(!clip||clip->frames.empty()){stop();return;}
         seconds+=dt;
+        if(holding_)holdTime_+=dt;
         if(pending_&&clock_>pendingUntil_+1e-7)pending_=false;
         if(pending_&&canTransition()) {Command command=pendingCommand_;pending_=false;if(play(command))clip=current();}
-        if(sheathed())seconds=std::min(seconds,std::min(clip->duration(),float(std::max(0,sheatheHoldFrame))/clip->fps));
+        if(holding_){const auto& rule=activeHoldPolicy_;
+            if(rule.loop&&clip->duration()>0)seconds=std::fmod(seconds,clip->duration());
+            else seconds=std::min(seconds,rule.frame<0?clip->duration():std::min(clip->duration(),float(rule.frame)/clip->fps));}
+        else if(normalSheathing_)seconds=std::min(seconds,clip->duration());
+        else if(sheathed())seconds=std::min(seconds,std::min(clip->duration(),float(std::max(0,sheatheHoldFrame))/clip->fps));
         else if(slot==idleSlot) {if(clip->duration()>0)seconds=std::fmod(seconds,clip->duration());else seconds=0;}
         else if(seconds>=clip->duration()) {
             auto idle=clips.find(idleSlot);if(idle==clips.end()||idle->second.frames.empty()){stop();return;}
             transition(idleSlot);clip=&idle->second;
         }
+        if(returning_&&resting()){returnElapsed_+=dt;const float t=std::clamp(returnElapsed_/returnDuration_,0.f,1.f);
+            const float eased=t*t*(3-2*t);rootOffset_.x=returnFrom_.x*(1-eased);rootOffset_.z=returnFrom_.z*(1-eased);if(t>=1)returning_=false;}
         Pose target=clip->sample(seconds);target.hip.x+=rootOffset_.x;target.hip.z+=rootOffset_.z;blendElapsed_+=dt;
         if(!blendFrom_.rotations.empty()&&transitionSeconds>0&&blendElapsed_<transitionSeconds)
             output=Lerp(blendFrom_,target,blendElapsed_/transitionSeconds);

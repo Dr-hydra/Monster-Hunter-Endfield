@@ -1,0 +1,133 @@
+{
+  "schema": 2,
+  "resource_id": "wpn_misc_0016",
+  "asset_path": "assets/beyond/dynamicassets/gameplay/prefabs/weapons/wpn_misc_0016.prefab",
+  "asset_path_hash": "381157020907152362",
+  "renderer_path": "Mesh_Sword/lod0/S_wpn_misc_00016_02_lod0",
+  "mount_bone_path": "Root/wep_quan_jnt/wep_jian_jnt",
+  "mount_reference_path": "",
+  "mount_position": [
+    0,
+    0,
+    0
+  ],
+  "mount_rotation_xyzw": [
+    0,
+    0,
+    0,
+    1
+  ],
+  "mount_mode": "resource-derived-MHW-mode-blade-adapter",
+  "mount_runtime_verified": false,
+  "mount_evidence": "Native blade skin from exact bindpose has root blade +Y / transverse +X / face normal +Z. Original normalized MHW bs_swo001 has the same geometry frame and grip origin. In MHW modes drive the clone root with transported actual source main attachment; preserve wrists and own blade/ring/VFX palettes. Original skill StaticWeaponData10 default GEN_wep_M_1_final is rest data, not a proven dynamic held mount.",
+  "blade_root_axis": [
+    1e-07,
+    1.0,
+    3e-07
+  ],
+  "edge_root_axis": [
+    1.0,
+    -1e-07,
+    -3e-07
+  ],
+  "blade_length_m": 2.068854,
+  "material_policy": "readonly-native-shared-materials",
+  "clone_policy": "pure-gameobjects-transforms-multiple-owned-skinned-renderers",
+  "vfx_status": "own 38-bone VFX/ring/native materials; independent material timeline; original skill installation not yet decoded",
+  "runtime_verified": false,
+  "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+  "id": "laevatain_blade",
+  "display_name": "莱万汀火焰长刀",
+  "mount_side": "right",
+  "renderer_paths": [
+    "Mesh_Sword/lod0/S_wpn_misc_00016_02_lod0",
+    "Mesh_Ring/lod0/S_wpn_misc_00016_01_lod0",
+    "Mesh_VFX/lod0/S_wpn_misc_00016_03_lod0"
+  ],
+  "controls": {
+    "type": "flame_blade",
+    "start_duration": 0.6,
+    "material_effects": [
+      {
+        "renderer_path": "Mesh_Sword/lod0/S_wpn_misc_00016_02_lod0",
+        "property": "_VFXColorIntensity",
+        "rest_value": 80,
+        "start_duration": 0.6
+      },
+      {
+        "renderer_path": "Mesh_Sword/lod0/S_wpn_misc_00016_02_lod0",
+        "property": "_VFXColorAlpha",
+        "rest_value": 6,
+        "start_duration": 0.6
+      }
+    ],
+    "source_start_asset": "p_laevat_skill_ult_wep_01_sword_start_asset",
+    "source_envelope_evidence": "native .asset duration=0.6; blade native material VFXColorIntensity80/VFXColorAlpha6; material property block on clone only"
+  },
+  "parts": [
+    {
+      "renderer": "blade",
+      "bones": 1
+    },
+    {
+      "renderer": "ring",
+      "bones": 1
+    },
+    {
+      "renderer": "chain_vfx",
+      "bones": 38
+    }
+  ],
+  "mount_driver": "mhw_source_attachment",
+  "source_model_adapter": {
+    "mode": "longsword",
+    "source_prop": "assets/modes/longsword/props/bs_swo001.json",
+    "source_attachment_function": 47,
+    "source_hand_function": 12,
+    "geometry_rotation_xyzw": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "geometry_position": [
+      0,
+      0,
+      0
+    ],
+    "native_blade_axis": [
+      0,
+      1,
+      0
+    ],
+    "source_blade_axis": [
+      0,
+      1,
+      0
+    ],
+    "native_transverse_axis": [
+      1,
+      0,
+      0
+    ],
+    "source_transverse_axis": [
+      1,
+      0,
+      0
+    ],
+    "geometry_frame_verified": true,
+    "native_skill_held_mount_verified": false,
+    "evidence": "Actual indexed source/native skinned meshes; imported MHW root bind removed exactly once. Shared +Y blade/+X width/+Z face normal, grip origin0. MHW attachment is transported through aligned source hand rest, not copied target wep_R rest."
+  },
+  "native_skill_mount": {
+    "weapon_index": 10,
+    "default_character_point": 152,
+    "default_transform": "GEN_wep_M_1_final",
+    "held_mount_verified": false,
+    "source_config": "research/weapon-coverage/config-trees/asset-data_chr_0016_laevat.decoded.json",
+    "original_animation": "A_actor_laevat_battle_attack_ult_01",
+    "animation_tracks": 312,
+    "animation_frames": 311,
+    "original_animation_acl_verified": true
+  }
+}

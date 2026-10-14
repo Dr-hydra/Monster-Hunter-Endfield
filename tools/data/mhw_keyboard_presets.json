@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "source": "Capcom Monster Hunter World: Iceborne Official Steam Web Manual",
+  "source_url": "https://game.capcom.com/manual/MHW_PC/en/steam/page/2/2",
+  "preset_source_url": "https://game.capcom.com/manual/MHW_PC/en/steam/page/19/1",
+  "verification_scope": "Physical default keyboard/mouse mappings only; weapon-specific derivations are verified separately from Hunter's Notes.",
+  "naming_policy": "The manual identifies defaults by mouse button count; mouse5/mouse3 are explicit module identifiers, not asserted official Type 1/Type 2 names.",
+  "fixed_sheathe_auxiliary": 16,
+  "presets": {
+    "mouse5": {
+      "label": "怪猎官方默认 · 5 键鼠标",
+      "close_range": {"attack": 1, "secondary": 2, "spirit": 6, "dodge": 32, "sheathe": 69, "aim": 2, "reload": 5},
+      "ranged": {"attack": 1, "secondary": 6, "spirit": 6, "dodge": 32, "sheathe": 69, "aim": 2, "reload": 5}
+    },
+    "mouse3": {
+      "label": "怪猎官方默认 · 3 键鼠标",
+      "close_range": {"attack": 1, "secondary": 2, "spirit": 4, "dodge": 32, "sheathe": 69, "aim": 2, "reload": 82},
+      "ranged": {"attack": 1, "secondary": 4, "spirit": 4, "dodge": 32, "sheathe": 69, "aim": 2, "reload": 82}
+    }
+  }
+}
