@@ -14,6 +14,139 @@ SPEC.loader.exec_module(PACKAGE)
 
 
 class PackageBoundaryTests(unittest.TestCase):
+    def test_combat_package_rejects_stale_or_unmapped_source_windows(self):
+        row = {'outgoing': [[0.1, 0.2]], 'defensive': [], 'gauge_gain_by_window': [1],
+               'gauge_gain': 1, 'gauge_cost': 0, 'reload_at': -1, 'motion_value_by_window': [22]}
+        parameters = dict.fromkeys(('stamina_max', 'stamina_regen', 'charge_drain', 'guard_hit_cost',
+                                    'bow_shot_cost', 'bow_dodge_cost', 'gauge_auto_seconds', 'bow_chain_seconds'), 1)
+        parameters.update(gauge_decay=0, gauge_auto_gain=0, ammo_capacity=6)
+        valid = {'schema_version': 1, 'mode': 'lance', 'parameters': parameters,
+                 'motions': {'42': row}, 'authored_windows': {'42': [
+                     {'window_id': 0, 'begin': 0.1, 'end': 0.2, 'contact_role': 'weapon'}]}}
+        motions = {42: {'duration': 1}}
+        PACKAGE.validate_combat(valid, 'lance', motions)
+        mutations = [lambda d: d.update(mode='bow'),
+                     lambda d: d['motions']['42']['outgoing'][0].__setitem__(1, 1.5),
+                     lambda d: d['authored_windows']['42'][0].update(window_id=1),
+                     lambda d: d['authored_windows']['42'][0].update(begin=0),
+                     lambda d: d['authored_windows']['42'][0].update(contact_role='invented'),
+                     lambda d: d['parameters'].update(ammo_capacity=True),
+                     lambda d: d['motions']['42'].update(gauge_gain_by_window=[])]
+        for mutate in mutations:
+            corrupt = copy.deepcopy(valid)
+            mutate(corrupt)
+            with self.assertRaises(ValueError):
+                PACKAGE.validate_combat(corrupt, 'lance', motions)
+        with self.assertRaises(ValueError):
+            PACKAGE.validate_combat(valid, 'lance', {})
+
+    def test_weapon_combat_metadata_rejects_corrupt_damage_branches_and_releases(self):
+        parameters=dict.fromkeys(('stamina_max','stamina_regen','charge_drain','guard_hit_cost',
+                                  'bow_shot_cost','bow_dodge_cost','gauge_auto_seconds','bow_chain_seconds'),1)
+        parameters.update(gauge_decay=0,gauge_auto_gain=0,ammo_capacity=6)
+        row={'outgoing':[[.1,.2],[.3,.4]],'defensive':[], 'gauge_gain_by_window':[0,0],
+             'gauge_gain':0,'gauge_cost':0,'reload_at':-1,'motion_value_by_window':[10,25],
+             'motion_value_by_level_by_window':[[0,10,15,25],[0,10,15,25]],
+             'motion_value_scope_by_window':['source_col','source_col'],
+             'lance_counter':True,'counter_short_slot':42,'counter_full_slot':42,'counter_full_seconds':.5,
+             'completion_followup_slot':42,'hit_followup_slot':42,
+             'true_charge':True,'true_charge_first_window':0,'true_charge_final_window':1,
+             'weak_finish_multiplier':1.2,'weak_finish_scope':'motion_has_weakpoint_first_hit',
+             'timed_inputs':[{'command':'special','begin':.3,'end':.5,'input_gate_begin':.2,'input_gate_end':.6,
+                              'normal_slot':42,'timed_slot':42}],
+             'projectile':True,'projectile_markers':[.1,.3],
+             'projectile_tiers':[{'arrows':3,'shell_id':10,'motion_value':9,'speed':45,'range':15,'radius':.2}]}
+        good={'schema_version':1,'mode':'bow','parameters':parameters,'motions':{'42':row},
+              'authored_windows':{'42':[]},'bow_charge_seconds':[0,1,2,3]}
+        motions={42:{'duration':1}}
+        PACKAGE.validate_combat(good,'bow',motions)
+        changes=[('motion_value_by_window',[]),('motion_value_by_window',[True,25]),
+                 ('motion_value_by_window',[-1,25]),('motion_value_by_window',[float('nan'),25]),
+                 ('motion_value_by_level_by_window',[[0,10,15,25]]),
+                 ('motion_value_by_level_by_window',[[0,10,15],[0,10,15,25]]),
+                 ('motion_value_by_level_by_window',[[0,10,float('inf'),25],[0,10,15,25]]),
+                 ('motion_value_scope_by_window',['source_col']),
+                 ('counter_short_slot',99),('counter_full_slot',0),('counter_short_slot',True),
+                 ('lance_counter',False),('counter_full_seconds',float('nan')),
+                 ('completion_followup_slot',99),('hit_followup_slot',True),
+                 ('true_charge_first_window',1),('true_charge_final_window',2),
+                 ('true_charge_first_window',True),('true_charge',1),
+                 ('weak_finish_multiplier',0),('weak_finish_multiplier',float('nan')),
+                 ('weak_finish_scope','target_part_must_remain_same'),
+                 ('projectile',False),('projectile_markers',[.3,.1]),
+                 ('projectile_markers',[.1,.1]),('projectile_markers',[0,1.1]),
+                 ('projectile_markers',[float('inf')]),('projectile_markers',[0,.1,.2])]
+        for field,value in changes:
+            invalid=copy.deepcopy(good);invalid['motions']['42'][field]=value
+            with self.subTest(field=field,value=value),self.assertRaises(ValueError):
+                PACKAGE.validate_combat(invalid,'bow',motions)
+        for field,value in [('begin',-.1),('end',.1),('input_gate_begin',.4),('input_gate_end',.4),
+                            ('input_gate_end',1.1),('timed_slot',99),('normal_slot',True),('command','')]:
+            invalid=copy.deepcopy(good);invalid['motions']['42']['timed_inputs'][0][field]=value
+            with self.subTest(branch=field),self.assertRaises(ValueError):
+                PACKAGE.validate_combat(invalid,'bow',motions)
+        for field,value in [('arrows',0),('arrows',65),('arrows',True),('shell_id',-1),('shell_id',True),
+                            ('motion_value',-1),('speed',float('nan')),('range',float('inf')),('radius',-.1)]:
+            invalid=copy.deepcopy(good);invalid['motions']['42']['projectile_tiers'][0][field]=value
+            with self.subTest(tier=field),self.assertRaises(ValueError):
+                PACKAGE.validate_combat(invalid,'bow',motions)
+        for charge in ([0,1,2],[0,1,1,3],[0,1,True,3],[0,1,2,float('inf')]):
+            invalid=copy.deepcopy(good);invalid['bow_charge_seconds']=charge
+            with self.subTest(charge=charge),self.assertRaises(ValueError):
+                PACKAGE.validate_combat(invalid,'bow',motions)
+
+    def test_hold_source_loop_cannot_be_empty_or_outside_clip(self):
+        motions={42:{'frames':181}}
+        good={'commands':{'counter':[42]},'hold_commands':{'counter':{'frame':-1,'loop':True,'loop_frame':150}}}
+        PACKAGE.validate_controls(good,motions,'lance')
+        for value in (-1,180,181,True,.5):
+            invalid=copy.deepcopy(good);invalid['hold_commands']['counter']['loop_frame']=value
+            with self.subTest(loop_frame=value),self.assertRaises(ValueError):
+                PACKAGE.validate_controls(invalid,motions,'lance')
+        invalid=copy.deepcopy(good);invalid['hold_commands']['counter']['loop']=False
+        with self.assertRaises(ValueError):PACKAGE.validate_controls(invalid,motions,'lance')
+        invalid=copy.deepcopy(good);del invalid['hold_commands']['counter']['loop_frame']
+        with self.assertRaises(ValueError):PACKAGE.validate_controls(invalid,{42:{'frames':1}},'lance')
+
+    def test_delayed_shell_damage_requires_all_gauge_level_values(self):
+        parameters=dict.fromkeys(('stamina_max','stamina_regen','charge_drain','guard_hit_cost',
+                                  'bow_shot_cost','bow_dodge_cost','gauge_auto_seconds','bow_chain_seconds'),1)
+        parameters.update(gauge_decay=0,gauge_auto_gain=0,ammo_capacity=6)
+        row={'outgoing':[[0,.1],[.4,.5],[.45,.55]],'defensive':[], 'gauge_gain_by_window':[0,0,0],
+             'gauge_gain':0,'gauge_cost':0,'reload_at':-1,'motion_value_by_window':[0,0,0],
+             'motion_value_by_level_by_window':[[0,0,0,0],[0,10,15,25],[0,10,15,25]],'helm_finish':True}
+        good={'schema_version':1,'mode':'longsword','parameters':parameters,'motions':{'42':row},
+              'authored_windows':{'42':[]},'helm_followup':{'slot':42,'start_seconds':0},
+              'delayed_hit':{'hit_limit':2,'first_delay':.4,'between_delay':.05,'last_delay':.05,
+                             'triggers':{'42':[{'window_id':0,'begin':0,'end':.1,'pulse_window_ids':[1,2],
+                                                'pulse_offsets':[.4,.45]}]}}}
+        PACKAGE.validate_combat(good,'longsword',{42:{'duration':1}})
+        del good['motions']['42']['motion_value_by_level_by_window']
+        with self.assertRaises(ValueError):PACKAGE.validate_combat(good,'longsword',{42:{'duration':1}})
+
+    def test_sword_shield_constraint_contact_keeps_source_mv_and_bone_scope(self):
+        parameters=dict.fromkeys(('stamina_max','stamina_regen','charge_drain','guard_hit_cost',
+                                  'bow_shot_cost','bow_dodge_cost','gauge_auto_seconds','bow_chain_seconds'),1)
+        parameters.update(gauge_decay=0,gauge_auto_gain=0,ammo_capacity=6)
+        contact={'window_id':0,'begin':.1,'end':.2,'contact_role':'constraint_attack','bank':3,
+                 'native_bone_binding_known':False,'source_move':{'Attack_Type':1,'Motion_Value':45}}
+        row={'outgoing':[[.1,.2]],'defensive':[],'gauge_gain_by_window':[0],'gauge_gain':0,
+             'gauge_cost':0,'reload_at':-1,'motion_value_by_window':[45]}
+        good={'schema_version':1,'mode':'sword_shield','parameters':parameters,'motions':{'42':row},
+              'authored_windows':{'42':[contact]}}
+        motions={42:{'duration':1}}
+        PACKAGE.validate_combat(good,'sword_shield',motions)
+        for field,value in [('bank',2),('bank',True),('native_bone_binding_known',True),
+                            ('source_move',{}),('source_move',[]),
+                            ('source_move',{'Attack_Type':True,'Motion_Value':45}),
+                            ('source_move',{'Attack_Type':2,'Motion_Value':45}),
+                            ('source_move',{'Attack_Type':1,'Motion_Value':100})]:
+            invalid=copy.deepcopy(good);invalid['authored_windows']['42'][0][field]=value
+            with self.subTest(field=field),self.assertRaises(ValueError):
+                PACKAGE.validate_combat(invalid,'sword_shield',motions)
+        invalid=copy.deepcopy(good);invalid['motions']['42']['motion_value_by_window']=[100]
+        with self.assertRaises(ValueError):PACKAGE.validate_combat(invalid,'sword_shield',motions)
+
     def test_runtime_paths_cannot_escape_archive(self):
         for value in ('../file.lsf', 'assets/../../secret', 'G:/source', '/absolute', r'assets\file'):
             with self.subTest(value=value), self.assertRaises(ValueError):

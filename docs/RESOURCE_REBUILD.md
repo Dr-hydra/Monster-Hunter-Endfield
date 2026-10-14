@@ -1,21 +1,21 @@
 # 素材重建与离线交付
 
-工作根目录固定为 `G:\Monster Hunter Endfield`。不启动游戏或本地游戏服务端，不计算产物哈希。原资源、解包索引、Blender 工具和烘焙数据保留本地；源仓库只保存实现、配置与来源说明。
+命令在仓库根目录运行，使用合法取得且匹配版本的本地素材。默认不计算产物哈希。原资源、解包索引、Blender 工具和烘焙数据保留本地；源仓库只保存实现、配置与来源说明。
 
 ## 输入与工具
 
-| 输入/工具 | 当前位置与要求 |
+| 输入/工具 | 路径与要求 |
 | --- | --- |
-| 怪猎世界/冰原 | `G:\SteamLibrary\steamapps\common\Monster Hunter World`，读取 `chunk` 原版与补丁有效覆盖 |
-| 终末地客户端 | `G:\Arknights Endfield`，本期源 manifest 为 `2954fa80-23c1-1579-2b22-4ecfd6d70418` |
-| BE 导出资料 | `G:\Better Endfield`，当前有效 VFS、角色表、NativeAssetReader 及保留引用的对象图 |
+| 怪猎世界/冰原 | `<怪猎安装目录>`，读取 `chunk` 原版与补丁有效覆盖 |
+| 终末地客户端 | `<终末地安装目录>`，本期源 manifest 为 `2954fa80-23c1-1579-2b22-4ecfd6d70418` |
+| BE 导出资料 | `<BE资源工具目录>`，当前有效 VFS、角色表、NativeAssetReader 及保留引用的对象图 |
 | Blender | `local/tools/blender/blender-4.5.14-windows-x64/blender.exe`；MHW Model Editor 与 MHW Anim Tools 放在本地 tooling 路径 |
 | Python | 3.12，NumPy、SciPy、Pillow；脚本各自读取本地格式工具和依赖路径 |
 | 音频 | `local/tools/vgmstream/vgmstream-cli.exe` 与本地 wwiser；从 Bank/HIRC/Media 解码，不触发游戏事件 |
 | Windows 构建 | CMake ≥3.25、Visual Studio 2022 C++ x64，`third_party/include` 的 EML ABI 1/format 1 SDK 与 JSON 头 |
 | 网页检查 | Node/npx、`@playwright/cli`、本机 Edge；只读本地 HTTP 用于资源加载 |
 
-工具和原游戏素材不在源码 Git 中。新机器先按 [第三方来源说明](../THIRD_PARTY_NOTICES.md) 获取对应工具，再提供合法取得的匹配版本资料。脚本存在当前 G 盘路径和 tooling 目录约定，迁移机器先核对各脚本顶部 `ROOT`/`BE`/缓存路径；不能只复制 Git 后把缺素材误认为构建器能自动创造。
+工具和原游戏素材不在源码 Git 中。新机器先按 [第三方来源说明](../THIRD_PARTY_NOTICES.md) 获取对应工具，再提供合法取得的匹配版本资料。部分脚本仍有本地绝对路径、tooling 目录和既有缓存约定，新机器先核对各脚本顶部 `ROOT`／`BE`／缓存路径；不能只复制 Git 后把缺素材误认为构建器能自动创造。
 
 ## 数据流水线及边界
 
@@ -23,7 +23,7 @@
 
 `tools/mhw_multi_bake.py` 在 Blender 后台求值 21 主骨、左右手/挂点、手指和源姿势；缺层组件使用明确记录的原版 idle 上下文。`tools/mhw_multi_ground.py` 用真实源鞋底网格/权重生成接地轨道，保留原 LSM 髋部参考。源武器模型由 MOD3/MRL3 读取，UV/纹理由 `tools/weapon_texture_decode.py` 定向转换。
 
-源控制/派生证据包括 FSM、MBD、COL 作者招式名称及 LMT TIML。音频按 `TIML → WWEV ReqNo → Wwise HIRC → Media → PCM` 发布。原生 C++ 战斗控制器、完整 Wwise RTPC/容器选择和武器 carry 状态没有假称重放；未找到源 own-skin 触发的动作保留规范化绑定姿势，不补猜测动画。
+源控制/派生证据包括 FSM、MBD、COL 作者招式名称及 LMT TIML。音频按 `TIML → WWEV ReqNo → Wwise HIRC → Media → PCM` 发布。部分原生 C++ 控制分支已有来源核证（见 [控制来源核证](implementation/combat-source-closure.md)）；完整原战斗控制器、Wwise RTPC／容器选择和武器 carry 状态未重放；未找到源 own-skin 触发的动作保留规范化绑定姿势，不补猜测动画。
 
 `tools/endfield_profiles.py` 和 `tools/endfield_weapon_profiles.py` 读取 BE 的完整引用图，生成 33 角色与 80 装备/两把特殊模型配置。主骨、30 指骨、鞋底 probe、按 renderer 的 bind 注册矩阵分别保存。`tools/weapon_reference_decode.py` 按真实 RefTypes 完整解码角色 CharacterData 的 `ReferencedObjectData`；禁止省略后再把错位字段当挂点证据。
 
@@ -31,11 +31,12 @@
 
 ## 从原始资源重建六模式
 
+以下是现有素材工作区的流水线记录，依赖 ignored 本地格式工具、对象图和缓存。它不是新克隆的自动从零构建脚本；先逐个确认输入已准备齐全。
+
 以下流程会重写本地烘焙资料，应在角色/挂载人工校准已写入脚本和版本控制后执行。所有原动作、COL 名称、上下文和不确定项由对应发布脚本保留，禁止重建后手动改成“原生已确认”。
 
 ```powershell
-Set-Location -LiteralPath 'G:\Monster Hunter Endfield'
-$mheBlender = 'G:\Monster Hunter Endfield\local\tools\blender\blender-4.5.14-windows-x64\blender.exe'
+$mheBlender = Join-Path (Get-Location).Path 'local/tools/blender/blender-4.5.14-windows-x64/blender.exe'
 python tools/mhw_extract_original.py --select '(^|/)hm/wp/wp03/' --select '(^|/)sound/.*wp03' --select '(^|/)wp/(w03|swo)/' --select '(^|/)pl/m_equip/pl043_0000/(body|arm|leg)/'
 python tools/mhw_multi_extract.py
 & $mheBlender --background --factory-startup --python tools/mhw_bake_original.py
@@ -81,7 +82,8 @@ python tools/endfield_weapon_profiles.py --extract-equipment
 python tools/weapon_reference_decode.py
 cmake -S tools/offline_retarget -B build/offline-retarget -G 'Visual Studio 17 2022' -A x64
 cmake --build build/offline-retarget --config Release
-& 'build/offline-retarget/Release/endfield_retarget_oracle.exe' 'G:/Monster Hunter Endfield' 'G:/Monster Hunter Endfield/research/character-coverage/oracle'
+$mheRoot = (Get-Location).Path
+& 'build/offline-retarget/Release/endfield_retarget_oracle.exe' $mheRoot (Join-Path $mheRoot 'research/character-coverage/oracle')
 python tools/endfield_mesh_audit.py
 python tools/endfield_special_previews.py
 ```
@@ -93,7 +95,6 @@ python tools/endfield_special_previews.py
 已有素材，或完成上述重建后，在 PowerShell 中执行：
 
 ```powershell
-Set-Location -LiteralPath 'G:\Monster Hunter Endfield'
 cmake -S . -B build/development -G 'Visual Studio 17 2022' -A x64
 cmake --build build/development --config Release
 ctest --test-dir build/development -C Release --output-on-failure
@@ -114,6 +115,6 @@ python tools/package.py --package-root build/development/package
 
 只读 HTTP 服务在项目根目录提供 `127.0.0.1:8877`，运行 `tools/ui_browser_verify.cjs` 和 `tools/ui_catalog_browser_verify.cjs`。前者在独立页面注入显式 `?mock=1` 测试桥接；生产页面没有测试宿主。后者读取实际目录、PCM、源姿势和所有 198 个目标网格入口，检查资源依赖与默认键位。`tools/ui_final_controls_verify.cjs` 另验序列/循环/本地箭弹速度保存与全部 8 条特殊音源试听，`tools/ui_source_tours_verify.cjs` 检查六份实际源网格有声 MP4。网页/原生接口 mock 不能代替 EML 本身。
 
-最终 ZIP 还要通过真实 EML `ModuleStore` 的隔离导入和 `OfflineHost` 的初始化、配置/状态/模式/暂停/停止回执；做法见 [EML 离线宿主验证](implementation/eml-verification.md)。使用独立临时 module store，不写用户现用安装、游戏或服务端。浏览器/HTTP/OfflineHost 结束后关闭本次创建的进程。
+最终 ZIP 还要通过真实 EML `ModuleStore` 的隔离导入和 `OfflineHost` 的初始化、配置/状态/模式/暂停/停止回执；做法见 [EML 离线宿主验证](implementation/eml-verification.md)。使用独立临时 module store，不写用户现用安装、游戏或服务端。浏览器/HTTP/OfflineHost 结束后关闭该记录创建的进程。
 
 运行日志放 `build` 或 `output`，网页截图放 `output/playwright`。默认以路径清单、文件尺寸、二进制维度和直接数据核对验证，不生成产物哈希。原游戏资源、媒体、网格及大型输出维持 Git ignore。

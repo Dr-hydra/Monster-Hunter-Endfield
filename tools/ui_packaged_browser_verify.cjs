@@ -8,7 +8,8 @@ async page => {
  await page.goto(address.href);
  await page.waitForFunction(()=>document.getElementById('catalog-state').textContent==='资源目录已载入');
  const embedded=await page.evaluate(()=>({product:window.MHE_PRODUCT_CATALOG,audio:window.MHE_AUDIO_CATALOG,preview:window.LONGSWORD_PREVIEW}));
- ensure(embedded.product?.version==='1.0.0-offline-rc1','actual ZIP embeds final release catalog');
+ const manifest=await page.evaluate(async()=>{const response=await fetch('../module.json');if(!response.ok)throw Error('Package manifest missing');return response.json();});
+ ensure(embedded.product?.version===manifest.version,'actual ZIP embeds the same release version as its manifest');
  ensure(embedded.product.modes.length===6&&embedded.product.characters.length===33&&embedded.product.weapons.length===82,'actual ZIP embeds 6 modes / 33 characters / 82 models');
  ensure(embedded.preview?.clips.length===embedded.product.preview.clips&&embedded.preview.missing_source_previews.length===0,'actual ZIP embeds all evaluated source clips');
  ensure(embedded.product.characters.every(character=>Object.values(character.modes).every(mode=>mode.runtime_status==='pending')),'package preserves deferred game validation');

@@ -1,16 +1,15 @@
-# Build-time dependency provenance
+# Build-time dependencies
 
-The SDK headers in `include/BetterEndfield` are copied without edits from
-`G:/Endfield Mod Loader/include/BetterEndfield` on 2026-10-13. They provide
-the existing format 1 / ABI 1 interface; they are not a replacement host.
-The source project's AGPL-3.0 license is retained in
-`licenses/EML-AGPL-3.0.txt`.
+The headers in `include/BetterEndfield` come from the
+[E Mod Loader SDK](https://github.com/Dr-hydra/Endfield-Mod-Loader).
+They provide the format 1 / Native ABI 1 interface. The SDK is covered by
+AGPL-3.0-only; its license is retained in `licenses/EML-AGPL-3.0.txt`.
+The loader itself must be installed separately.
 
-`include/nlohmann/json.hpp` is the existing single-header nlohmann JSON
-3.12.0 from `G:/Endfield Mod Loader/native/shared/third_party/nlohmann`.
-Its copyright and SPDX comments are retained unchanged. The full MIT
-license is included as `licenses/nlohmann-json-MIT.txt`, downloaded from
-the author's [v3.12.0 release](https://raw.githubusercontent.com/nlohmann/json/v3.12.0/LICENSE.MIT).
+`include/nlohmann/json.hpp` is nlohmann/json 3.12.0. Its original copyright
+and SPDX comments are retained. The MIT license is included in
+`licenses/nlohmann-json-MIT.txt`; the upstream release is
+[v3.12.0](https://github.com/nlohmann/json/tree/v3.12.0).
 
-No game assets, credentials, host binaries or backend implementation are
-included in these dependencies. No artifact hashes were computed.
+This directory contains build-time headers and license notices. It does
+not contain game assets, credentials, loader binaries or server code.

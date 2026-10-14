@@ -12,8 +12,11 @@
 #include "fingers.h"
 #include "grounding.h"
 #include "practice.h"
+#include "target_geometry.h"
 #include "projectiles.h"
 #include "mode_state.h"
+#include "combat_assets.h"
+#include "pose_lease.h"
 #include "source_skin.h"
 #include "practice_hud.h"
 #include "audio.h"
@@ -29,12 +32,25 @@
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
+#ifdef MHE_MODULE_EXTENSION_HEADER
+#include MHE_MODULE_EXTENSION_HEADER
+#endif
 
 namespace {
 using Json=nlohmann::json;
 using namespace LS;
-constexpr char ID[]="endfield.longsword.showcase";
-constexpr char FrameOwner[]="endfield.longsword.showcase.frame";
+#ifndef MHE_MODULE_ID
+#define MHE_MODULE_ID "endfield.longsword.showcase"
+#endif
+#ifndef MHE_MODULE_FRAME_OWNER
+#define MHE_MODULE_FRAME_OWNER "endfield.longsword.showcase.frame"
+#endif
+#ifndef MHE_MODULE_TOGGLE_DEFAULT
+#define MHE_MODULE_TOGGLE_DEFAULT VK_F8
+#endif
+constexpr char ID[]=MHE_MODULE_ID;
+constexpr char FrameOwner[]=MHE_MODULE_FRAME_OWNER;
+constexpr int ToggleDefault=MHE_MODULE_TOGGLE_DEFAULT;
 constexpr char Game[]="Gameplay.Beyond.dll";
 constexpr char Core[]="UnityEngine.CoreModule.dll";
 std::recursive_mutex gate;
@@ -79,6 +95,7 @@ bool demoReturnStarted=false;
 LocalProjectiles localProjectiles;
 uint64_t projectileMotion=std::numeric_limits<uint64_t>::max();
 std::map<int,std::vector<float>> projectileEvents;size_t projectileEventCursor=0;
+ProjectileRelease activeProjectileRelease;
 float localResource=0;int localAmmo=6;
 ModeState localMode;
 struct ProjectileVisual {uint64_t id=0;std::unique_ptr<VisualWeapon::ManagedSourceWeapon> mesh;};
@@ -90,13 +107,17 @@ struct SkinMotion{std::string prop;SourceSkin::Track track;};
 std::map<int,SkinMotion> skinMotions;
 struct Configuration {
  bool enabled=true, root_motion=true, show_prop=true, sound_enabled=true, local_practice=false, laevatain_blade=true;
- int toggle_key=VK_F8, spirit_key=VK_XBUTTON2, spirit_alt_key=VK_XBUTTON2;
+ int toggle_key=ToggleDefault, spirit_key=VK_XBUTTON2, spirit_alt_key=VK_XBUTTON2;
  float speed=1,blend_seconds=.12f,buffer_seconds=.3f,sound_volume=.65f,practice_hp=1000,practice_damage=100,grip_strength=1;
  float practice_radius=.65f,practice_height=.9f,practice_blade_length=1.25f;
  std::string mode="longsword",visual_weapon="auto",theme="auto",hud_layout="teaching",effects_quality="full",practice_target="dummy",demo_sequence="full";
  bool demo_loop=true;
  std::string keyboard_preset="mouse5";
  float projectile_speed=30;
+ bool target_lock=true,combat_rules=true;
+ std::string target_camera="focus";
+ int lock_key='Q',focus_key=VK_CONTROL,cycle_key=VK_TAB;
+ float target_range=30;
  bool hud_enabled=true,hud_show_derivations=true,hud_show_target=true,hud_show_crosshair=true;
  float hud_scale=1,hud_anchor_x=.02f,hud_anchor_y=.05f,hud_margin=16;
  std::map<std::string,int> keys{{"attack",VK_LBUTTON},{"secondary",VK_RBUTTON},{"spirit",VK_XBUTTON2},
@@ -105,6 +126,9 @@ struct Configuration {
  std::map<std::string,float> volumes{{"weapon",1.f},{"impact",1.f},{"charge",1.f},{"fire",1.f},{"voice",0.f}};
 } config;
 bool toggleRequest=false, stopRequest=false, demoRequest=false, autoDemo=false;
+bool presentationPreview=false;
+bool ManualCombatActive(){return controller.active&&config.enabled&&config.local_practice&&config.combat_rules&&
+ !autoDemo&&!presentationPreview&&!paused&&!hudEditing;}
 size_t demoStep=0;float demoClock=0,demoDelay=.6f;
 size_t demoChargeLevel=0;bool demoHeld=false;Command demoHeldCommand=Command::Aim;
 float demoElapsed=0;bool demoFinalTail=false;
@@ -122,7 +146,8 @@ enum Index {MainCharacter,ModelComponent,ModelGo,Template,Valid,AliveEntity,Tran
  LineWorld,ShaderFind,MaterialCtor,RendererMaterial,MaterialColor,FrameCount,
  WeaponComponent,WeaponSetState,WeaponDisablePriority,WeaponPriorityActive,WeaponForceUpdate,
  WorldPosition,SetWorldPosition,MainCamera,AllEnemies,EntityPosition,EntityUid,EntityName,
- TerrainRaycast,TerrainSphereCast,WeaponViewPart,WeaponModel,FilterMesh,MeshBounds,RendererEnabled,RendererSetEnabled,MethodCount};
+ TerrainRaycast,TerrainSphereCast,WeaponViewPart,WeaponModel,FilterMesh,MeshBounds,RendererEnabled,RendererSetEnabled,
+ RendererBounds,EntityServerId,EntityServerGeneration,EntityServerBattleId,MethodCount};
 Method methods[]{
  M(Game,"Beyond.Gameplay.Core","PlayerController","GetMainCharacter",nullptr,nullptr,0),
  M(Game,"Beyond.Gameplay.Core","Entity","get_modelCom",nullptr,nullptr,0),
@@ -183,7 +208,11 @@ Method methods[]{
  M(Core,"UnityEngine","MeshFilter","get_sharedMesh",nullptr,"UnityEngine.Mesh",0),
  M(Core,"UnityEngine","Mesh","get_bounds",nullptr,"UnityEngine.Bounds",0),
  M(Core,"UnityEngine","Renderer","get_enabled",nullptr,"System.Boolean",0),
- M(Core,"UnityEngine","Renderer","set_enabled","System.Boolean","System.Void",1)
+ M(Core,"UnityEngine","Renderer","set_enabled","System.Boolean","System.Void",1),
+ M(Core,"UnityEngine","Renderer","get_bounds",nullptr,"UnityEngine.Bounds",0),
+ M(Game,"Beyond.Gameplay.Core","Entity","get_serverId",nullptr,"System.UInt64",0),
+ M(Game,"Beyond.Gameplay.Core","Entity","get_serverGeneration",nullptr,"System.UInt32",0),
+ M(Game,"Beyond.Gameplay.Core","Entity","get_serverBattleInstId",nullptr,"System.UInt64",0)
 };
 #undef M
 static_assert(std::size(methods)==MethodCount);
@@ -341,6 +370,28 @@ void BindGroundQueries(){
  }
 }
 Practice practice;
+PoseLease poseLease;
+DelayedHits delayedHits;
+CombatCollision delayedContact;
+std::map<int,std::vector<CollisionWindow>> delayedContactWindows;
+std::map<int,std::vector<DelayedHitRule>> delayedRules;
+TargetLock targetLock;
+TargetIdentities targetIdentities;
+std::vector<CombatTarget> targetSnapshot;
+bool lockRequest=false,focusRequest=false,cycleRequest=false,targetReleaseRequest=false;
+bool previousLock=false,previousFocus=false,previousCycle=false;
+bool ownedCamera=false;Quat cameraPrevious{},cameraLast{};
+std::string targetingDetail="Q 选择目标，Ctrl 聚焦；Tab 为本模组切换目标快捷键";
+int combatFollowupSlot=0;float combatFollowupSeconds=0;uint64_t combatFollowupMotion=0;
+Command combatFollowupCommand=Command::Helm;
+void ApplyCombatOutcome(const CombatEvent&,const CombatOutcome&);
+uint64_t pumpedMotionSerial=0;
+bool practiceAttackRequest=false,practiceAttackFromFront=true,practiceAttackGuardable=true;
+uint64_t practiceAttackSerial=0;
+void RestoreTargetCamera();
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ModuleExtension moduleExtension;
+#endif
 Vec3 practiceBladeAxis{0,0,1};
 Json practiceSummary=Json::array();
 Json PracticeTargets();
@@ -568,6 +619,15 @@ void ApplyWeaponSockets() {
  }
 }
 void Cleanup() {
+ localMode.combatEnabled=false;
+ presentationPreview=false;
+ pumpedMotionSerial=0;
+ delayedHits.Clear();delayedContact.Suspend();
+ RestoreTargetCamera();targetLock.Release();targetIdentities.Clear();targetSnapshot.clear();
+ lockRequest=focusRequest=cycleRequest=targetReleaseRequest=practiceAttackRequest=false;combatFollowupSlot=0;combatFollowupMotion=0;
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ moduleExtension.Deactivate();
+#endif
  paused=false;hudEditing=false;resumeSoundLoops=false;
  demoReturnStarted=false;
  demoHeld=false;demoChargeLevel=0;
@@ -583,8 +643,8 @@ void Cleanup() {
  if(IsAlive(actor.prop)){void* args[]{actor.prop};Call(ObjectDestroy,nullptr,args);}
  if(IsAlive(actor.propMaterial)){void* args[]{actor.propMaterial};Call(ObjectDestroy,nullptr,args);}
  for(auto h:actor.pins)if(api&&api->gchandle_free)api->gchandle_free(api->context,h);
- actor=Actor{};cleanupPending=false;phase=initialized?"ready":"stopped";
- if(initialized)detail="演示已结束，F8 手动 / F9 自动开始";
+ actor=Actor{};cleanupPending=false;poseLease.Release();phase=initialized?"ready":"stopped";
+ if(initialized)detail="演示已结束，"+(config.toggle_key>=VK_F1&&config.toggle_key<=VK_F24?"F"+std::to_string(config.toggle_key-VK_F1+1):"快捷键 "+std::to_string(config.toggle_key))+" 手动 / F9 自动开始";
 }
 void Collect(void* t,std::unordered_map<std::string,void*>& map,int depth=0) {
  if(!t||depth>64||map.size()>4096)return;
@@ -664,7 +724,7 @@ void CreateProp() {
  struct Color{float r,g,b,a;} color{.86f,.93f,1,1};SetValue(MaterialColor,material,color);
 }
 
-bool Bind() {
+bool Bind() try {
  Cleanup();practiceSummary=Json::array();practice.Clear();auto entity=Call(MainCharacter);bool valid=false,alive=false;
  if(!entity||!Value(Valid,entity,valid)||!valid||!Value(AliveEntity,entity,alive)||!alive){detail="当前角色尚未就绪";return false;}
  auto data=Call(Template,entity);auto id=data?api->field_get_value_object(api->context,templateId.field_info,data):nullptr;
@@ -843,6 +903,7 @@ bool Bind() {
  }
  if(named.contains("Bip001_R_Finger22"))actor.drawFinger=named.at("Bip001_R_Finger22");
  BindGroundQueries();lastSound.clear();soundCueCount=0;
+ if(!poseLease.Acquire()){Cleanup();detail="另一个模块正在控制角色，请先结束其演示";return false;}
  BindWeaponSockets(named);
  const bool holding=HoldEquippedWeapon();
  if(config.show_prop&&config.visual_weapon!="equipped"){
@@ -859,9 +920,13 @@ bool Bind() {
  }
  if(!holding&&!visualWeapon.Available()&&!sourceWeapon.Available())CreateProp();
  if(!controller.start(configuredIdleSlot))throw std::runtime_error("Idle clip unavailable");
+ localMode.Reset(loadedMode);
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ moduleExtension.Activate(actor.entity);
+#endif
  suppressInput=true;phase="active";detail="动作演示已接管输入";
  Log("Bound "+character+" from main skinned bindposes; skeleton="+actor.skeletonPath+" bones=21");return true;
-}
+}catch(...){Cleanup();throw;}
 
 bool SkipGrip(){
  if(actor.gripAvailable)Log("Supporting-hand IK unavailable; continuing with the retargeted pose");
@@ -1102,6 +1167,9 @@ bool ApplyPose() {
  }
  if(stage){auto offset=Rotate(actor.sourceStageBasis,controller.output.hip);
   offset.x=config.root_motion?offset.x*actor.scale:0;offset.y=0;offset.z=config.root_motion?offset.z*actor.scale:0;
+#ifdef MHE_MODULE_EXTENSION_HEADER
+  moduleExtension.FilterDisplayMotion(offset);
+#endif
   auto worldOffset=Rotate(modelRotation,offset);worldOffset.x*=blend;worldOffset.z*=blend;
   worldOffset=GroundDisplay(stageBaseline,worldOffset,blend);Vec3 baseline;
   {
@@ -1183,24 +1251,82 @@ bool QueryPracticeTargets(){
  auto raw=size?api->object_unbox(api->context,size):nullptr;if(!raw||!items)return false;
  int count=0;std::memcpy(&count,raw,sizeof(count));if(count<0||count>8192||count>Count(items))return false;
  Vec3 origin;if(!Value(WorldPosition,actor.root,origin))return false;
- std::vector<PracticeTarget> found;found.reserve(32);
+ std::vector<PracticeTarget> found;found.reserve(32);targetIdentities.Begin();
  for(int i=0;i<count;++i){auto entity=Item(items,i);bool valid=false,alive=false;uint32_t uid=0;Vec3 position;
   if(!entity||entity==actor.entity||!Value(Valid,entity,valid)||!valid||!Value(AliveEntity,entity,alive)||!alive||
-   !Value(EntityUid,entity,uid)||!uid||!Value(EntityPosition,entity,position)||!Finite(position)||Retarget::Len(Retarget::Sub(position,origin))>20)continue;
+   !Value(EntityUid,entity,uid)||!uid||!Value(EntityPosition,entity,position)||!Finite(position)||Retarget::Len(Retarget::Sub(position,origin))>config.target_range+10)continue;
   auto name=Text(Call(EntityName,entity));if(name.empty())name="附近怪物";
   const float distance=Retarget::Len(Retarget::Sub(position,origin));
-  position.y+=config.practice_height;found.push_back({uid,std::move(name),position,config.practice_radius,config.practice_hp,distance});
+  uint64_t serverId=0,battleId=0;uint32_t serverGeneration=0;
+  Value(EntityServerId,entity,serverId);Value(EntityServerBattleId,entity,battleId);Value(EntityServerGeneration,entity,serverGeneration);
+  PracticeTarget target{uid,std::move(name),position,config.practice_radius,config.practice_hp,distance};
+  target.generation=targetIdentities.Observe(uid,reinterpret_cast<uintptr_t>(entity),serverId,serverGeneration);
+  target.serverId=serverId;target.serverBattleInstId=battleId;target.serverGeneration=serverGeneration;
+  auto modelCom=Call(ModelComponent,entity);auto model=modelCom?Call(ModelGo,modelCom):nullptr;
+  if(model&&rendererClass.type_object&&methods[RendererBounds].r.method_info){
+   bool include=false;void* args[]{rendererClass.type_object,&include};auto renderers=Call(GetComponents,model,args);
+   for(int r=0;r<std::min(Count(renderers),16);++r){struct Bounds{Vec3 center,extents;} bounds{};bool visible=false;auto renderer=Item(renderers,r);
+    if(!renderer||!Value(RendererEnabled,renderer,visible)||!visible||!Value(RendererBounds,renderer,bounds))continue;
+    auto capsule=BoundsHurtCapsule(bounds.center,bounds.extents,uint32_t(r+1));
+    if(!capsule||Retarget::Len(Retarget::Sub(bounds.center,position))>30)continue;target.hurt.push_back(*capsule);
+   }
+  }
+  if(target.hurt.empty()){target.position.y+=config.practice_height;target.hurt.push_back({target.position,target.position,target.radius,0,0});}
+  else target.position=Retarget::Scale(Retarget::Add(target.hurt.front().a,target.hurt.front().b),.5f);
+  found.push_back(std::move(target));
  }
  std::sort(found.begin(),found.end(),[](const auto& a,const auto& b){return a.distance==b.distance?a.id<b.id:a.distance<b.distance;});
  if(found.size()>128)found.resize(128);
- practice.Refresh(found,config.practice_hp);return true;
+ targetIdentities.End();practice.Refresh(found,config.practice_hp);targetSnapshot=practice.Geometry();
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ moduleExtension.RefreshTargets();
+#endif
+ return true;
+}
+bool SceneBlocked(Vec3 from,Vec3 to,float& fraction){
+ const auto delta=Retarget::Sub(to,from);const float length=Retarget::Len(delta);
+ if(length<1e-6f)return false;TerrainHit hit;
+ if(!TerrainQuery(from,Retarget::Scale(delta,1/length),length,0,hit))return false;
+ fraction=hit.distance/length;return true;
+}
+void RestoreTargetCamera(){
+ if(!ownedCamera)return;Quat current;
+ if(actor.cameraTransform&&Value(LocalRotation,actor.cameraTransform,current)&&Close(current,cameraLast))SetValue(SetLocalRotation,actor.cameraTransform,cameraPrevious);
+ ownedCamera=false;
+}
+void TickTargetCamera(float dt){
+ if(targetReleaseRequest){targetReleaseRequest=false;targetLock.Release();RestoreTargetCamera();lockRequest=focusRequest=cycleRequest=false;}
+ if(!config.target_lock){targetLock.Release();RestoreTargetCamera();lockRequest=focusRequest=cycleRequest=false;return;}
+ Mat root,camera;if(!actor.cameraTransform||!Value(WorldMatrix,actor.root,root)||!Value(WorldMatrix,actor.cameraTransform,camera)){targetLock.Release();RestoreTargetCamera();return;}
+ TargetingView view{root.point(),camera.point(),Retarget::Sub(camera.point({0,0,1}),camera.point()),{0,1,0}};
+ targetLock.settings.mode=config.target_camera=="target"?TargetCameraMode::TargetCamera:TargetCameraMode::FocusCamera;
+ targetLock.settings.acquireRange=config.target_range;targetLock.settings.releaseRange=config.target_range+10;
+ targetLock.Update(std::clamp(dt,0.f,.1f),targetSnapshot,view,SceneBlocked);
+ if(lockRequest){if(targetLock.Selected())targetLock.Cycle(1,targetSnapshot,view,SceneBlocked);else targetLock.Acquire(targetSnapshot,view,SceneBlocked);}
+ if(cycleRequest)targetLock.Cycle(1,targetSnapshot,view,SceneBlocked);
+ const auto focus=targetLock.Camera(focusRequest||lockRequest);lockRequest=cycleRequest=focusRequest=false;
+ if(!focus){if(!targetLock.Selected())RestoreTargetCamera();return;}
+ const auto delta=Retarget::Sub(focus->point,camera.point());if(Retarget::Len(delta)<1e-5f)return;
+ const auto forward=Retarget::Normalize(delta);auto right=Retarget::Cross({0,1,0},forward);
+ if(Retarget::Len(right)<1e-5f)return;
+ const auto desired=Retarget::BasisRotation(right,Retarget::Cross(forward,right));
+ Quat parentRotation{};auto parent=Call(Parent,actor.cameraTransform);if(parent&&!Value(Rotation,parent,parentRotation))return;
+ Quat current;if(!Value(LocalRotation,actor.cameraTransform,current))return;
+ if(!ownedCamera||!Close(current,cameraLast))cameraPrevious=current;
+ cameraLast=Slerp(current,Mul(Inverse(parentRotation),desired),focus->persistent?std::clamp(dt*12.f,0.f,1.f):1.f);
+ if(SetValue(SetLocalRotation,actor.cameraTransform,cameraLast))ownedCamera=true;
+ targetingDetail="镜头已选择目标；近战方向仍由角色朝向和源动作决定";
 }
 void TickPractice(float dt){
- if(practiceResetRequest){practiceResetRequest=false;practiceDummy.Reset();practice.Clear();localMode.Reset(loadedMode);practiceSummary=Json::array();enemyRefresh=0;}
- if(!config.local_practice){practiceDummy.Reset();practice.Suspend();practice.targets.clear();practiceDetail="本地练习未开启";return;}
+ if(practiceResetRequest){practiceResetRequest=false;practiceDummy.Reset();practice.Clear();delayedHits.Clear();delayedContact.Suspend();localMode.Reset(loadedMode);practiceSummary=Json::array();enemyRefresh=0;pumpedMotionSerial=0;}
+ if(!config.local_practice){practiceDummy.Reset();practice.Suspend();
+  enemyRefresh-=std::clamp(dt,0.f,.1f);if(config.target_lock&&enemyRefresh<=0){enemyRefresh=.15f;if(!QueryPracticeTargets())targetSnapshot.clear();}
+  if(!config.target_lock)targetSnapshot.clear();practice.targets.clear();practiceDetail="本地练习未开启";return;}
  if(config.practice_target=="dummy"){
   if(practice.targets.empty()){Mat root;if(!Value(WorldMatrix,actor.root,root)){practice.Suspend();return;}
-   const Vec3 point=root.point({0,config.practice_height,3});practice.Refresh({PracticeTarget{0xfffffffe,"本地练习目标",point,config.practice_radius,config.practice_hp,3}},config.practice_hp);}
+   const Vec3 point=root.point({0,config.practice_height,3});PracticeTarget dummy{0xfffffffe,"本地练习目标（整球模拟弱点）",point,config.practice_radius,config.practice_hp,3};
+   dummy.approximateGeometry=false;dummy.hurt.push_back({point,point,config.practice_radius,0,0,true,true});practice.Refresh({dummy},config.practice_hp);}
+  targetSnapshot=practice.Geometry();
   if(!practiceDummy.Available()){
    Json prop{{"id","local_practice_dummy"},{"vertices",Json::array()},{"indices",Json::array()}};
    constexpr int rings=12,sides=20;constexpr float pi=3.14159265359f;
@@ -1211,10 +1337,9 @@ void TickPractice(float dt){
   if(practiceDummy.Tick(actor.root,dt)&&!practice.targets.empty()){practiceDummy.SetWorldPose(practice.targets.begin()->second.position,Quat{});practiceDummy.SetVisible(true);}
  }else{
  practiceDummy.Reset();
- if(!practiceReady){practice.Suspend();practice.targets.clear();practiceDetail="怪物读取接口未匹配；动作可继续播放";return;}
- enemyRefresh-=std::clamp(dt,0.f,.1f);
- if(enemyRefresh<=0){enemyRefresh=.15f;
-  if(!QueryPracticeTargets()){practice.Suspend();practice.targets.clear();practiceDetail="等待场景怪物数据";return;}}}
+ if(!practiceReady){practice.Suspend();practice.targets.clear();targetSnapshot.clear();practiceDetail="怪物读取接口未匹配；动作可继续播放";return;}
+ if(!QueryPracticeTargets()){practice.Suspend();practice.targets.clear();targetSnapshot.clear();practiceDetail="等待场景怪物数据";return;}}
+ if(presentationPreview||autoDemo){practice.Suspend();practiceDetail="自动演示或动作预览；练习血量保持原状态";return;}
  if(loadedMode=="bow"||loadedMode=="light_bowgun"){
   practiceDetail="本地箭弹练习；不修改真实怪物";return;
  }
@@ -1232,24 +1357,59 @@ void TickPractice(float dt){
    const auto p=modeProps.front().at("source_attack_tip").get<std::vector<float>>();if(p.size()==3){grip=source.point();tip=source.point({p[0],p[1],p[2]});}
   }
  }
- practice.Update(controller.motionSerial,controller.slot,controller.seconds,grip,tip,config.practice_damage);
+ std::vector<WeaponCapsule> weapons{{grip,tip,.04f*actor.scale,0}};
+ if(offhandWeapon.Visible()){Mat shield;if(Value(WorldMatrix,offhandWeapon.RootTransform(),shield))weapons.push_back({shield.point(),shield.point({0,0,.15f}),.25f*actor.scale,1});}
+ Vec3 hip,chest;if(Value(WorldPosition,actor.bones[0].transform,hip)&&Value(WorldPosition,actor.bones[2].transform,chest))weapons.push_back({hip,chest,.2f*actor.scale,2});
+ Vec3 origin;if(!Value(WorldPosition,actor.bones[0].transform,origin)){practice.Suspend();return;}
+ const float teachingDamage=config.practice_damage;
+ const auto sourceSerial=controller.motionSerial;const int sourceSlot=controller.slot;const float sourceSeconds=controller.seconds;
+ const float sourceMultiplier=localMode.DamageMultiplier(controller);const int sourceLevel=localMode.HelmOriginalLevel();
+ practice.UpdateCombat(sourceSerial,sourceSlot,sourceSeconds,weapons,origin,8.f*actor.scale,teachingDamage,SceneBlocked);
+ if(controller.motionSerial!=sourceSerial){delayedContact.Suspend();return;}
+ if(auto windows=delayedContactWindows.find(sourceSlot);windows!=delayedContactWindows.end()){
+  const auto geometry=practice.Geometry();const auto contacts=delayedContact.Update(sourceSerial,sourceSlot,sourceSeconds,weapons,windows->second,geometry,origin,8.f*actor.scale,SceneBlocked);
+  for(const auto& contact:contacts){const auto found=practice.targets.find(uint32_t(contact.key.id));if(found==practice.targets.end())continue;const auto& t=found->second;
+   const uint32_t id=uint32_t(contact.strike-1);auto rules=delayedRules.find(sourceSlot);if(rules==delayedRules.end())continue;
+   auto rule=std::find_if(rules->second.begin(),rules->second.end(),[&](const auto& r){return r.triggerWindow==id;});if(rule==rules->second.end())continue;
+   auto target=std::find_if(geometry.begin(),geometry.end(),[&](const auto& g){return g.key==contact.key;});if(target==geometry.end())continue;
+   PracticeHit seed{t.id,t.generation,sourceSerial,sourceSlot,contact.seconds,id,contact.part,teachingDamage*sourceMultiplier,contact.point,t.serverId,t.serverBattleInstId,t.serverGeneration};
+   delayedHits.Schedule(seed,*rule,*target,sourceLevel,std::clamp(sourceSeconds-contact.seconds,0.f,.25f),0);
+  }
+ }else delayedContact.Suspend();
  practiceDetail=practice.targets.empty()?"20 米内暂无可用怪物":config.practice_target=="dummy"?"本地练习目标；独立模拟血量":"本地模拟中；不修改怪物真实血量";
 }
 void TickProjectiles(float dt){
+ if(presentationPreview)return;
  if(loadedMode=="bow"||loadedMode=="light_bowgun"){
-  if(projectileMotion!=controller.motionSerial){projectileMotion=controller.motionSerial;projectileEventCursor=0;}
+  if(projectileMotion!=controller.motionSerial){projectileMotion=controller.motionSerial;projectileEventCursor=0;activeProjectileRelease={};}
   auto events=projectileEvents.find(controller.slot);
   if(events!=projectileEvents.end())while(projectileEventCursor<events->second.size()&&events->second[projectileEventCursor]<=controller.seconds+1e-6f){
-   ++projectileEventCursor;if(!localMode.ReleaseProjectile())continue;Mat hand;if(!Value(WorldMatrix,actor.bones[loadedMode=="bow"?8:12].transform,hand))continue;
+   const float emittedAt=events->second[projectileEventCursor];const auto window=uint32_t(projectileEventCursor);++projectileEventCursor;
+   Mat hand;if(!Value(WorldMatrix,actor.bones[loadedMode=="bow"?8:12].transform,hand))continue;
    Vec3 origin=hand.point(),forward;
    Mat camera;if(actor.cameraTransform&&Value(WorldMatrix,actor.cameraTransform,camera))forward=Retarget::Sub(camera.point({0,0,50}),origin);
    else{Mat root;if(!Value(WorldMatrix,actor.root,root))continue;forward=Retarget::Sub(root.point({0,0,1}),root.point());}
-   if(localProjectiles.Launch(origin,forward,config.projectile_speed,config.local_practice?config.practice_damage:0,loadedMode=="bow")&&projectileProp.is_object()&&!projectileProp.empty()){
+   ProjectileTier parameters{1,0,100,config.projectile_speed,config.projectile_speed*3,.02f};
+   if(localMode.combatEnabled){
+    if(!activeProjectileRelease.accepted){
+     const auto peek=localMode.PeekProjectile(controller);if(!peek.accepted)continue;
+     if(!localProjectiles.CanLaunch(size_t(peek.parameters.arrows)*events->second.size()))continue;
+     activeProjectileRelease=localMode.ReleaseProjectile(controller);if(!activeProjectileRelease.accepted)continue;
+    }
+    if(!localProjectiles.CanLaunch(size_t(activeProjectileRelease.parameters.arrows)))continue;
+    parameters=activeProjectileRelease.parameters;
+    // Light bowgun shell travel is still a teaching parameter when no source
+    // projectile tier exists; source bow tiers always supply physical values.
+    if(parameters.speed<=0)parameters={1,0,100,config.projectile_speed,config.projectile_speed*3,.02f};
+   }else if(!localMode.ReleaseProjectile())continue;
+   for(int arrow=0;arrow<parameters.arrows;++arrow){
+   if(localProjectiles.Launch(origin,forward,parameters.speed,config.local_practice&&!autoDemo?config.practice_damage*parameters.motionValue/100.f:0,loadedMode=="bow",controller.motionSerial,controller.slot,window,emittedAt,std::clamp(controller.seconds-emittedAt,0.f,dt),parameters.radius,parameters.range)&&projectileProp.is_object()&&!projectileProp.empty()){
     auto free=std::find_if(projectileVisuals.begin(),projectileVisuals.end(),[](const auto& v){return v.id==0;});
     if(free!=projectileVisuals.end()){
      if(!free->mesh){free->mesh=std::make_unique<VisualWeapon::ManagedSourceWeapon>();free->mesh->Bind(api,projectileProp,activeAssetRoot);}
      if(free->mesh->Tick(actor.root,0)){free->id=localProjectiles.active.back().id;free->mesh->SetVisible(true);}
     }
+   }
    }
   }
   localProjectiles.Update(std::clamp(dt,0.f,.1f),practice,[](Vec3 from,Vec3 to,float& fraction){
@@ -1299,8 +1459,9 @@ void UpdateHud(){
  if(!localMode.feedback.empty())snapshot.feedback=localMode.feedback;
  snapshot.aiming=(loadedMode=="bow"||loadedMode=="light_bowgun")&&((GetAsyncKeyState(config.keys.at("aim"))&0x8000)!=0||controller.holding(Command::Charge));
  snapshot.charge=controller.heldSeconds();snapshot.chargeMax=3;snapshot.hits=practice.hits;snapshot.totalDamage=practice.total;snapshot.lastDamage=practice.lastDamage;
- const PracticeTarget* nearest=nullptr;for(const auto&[id,target]:practice.targets)if(!nearest||target.distance<nearest->distance)nearest=&target;
- if(nearest){snapshot.targetValid=true;snapshot.targetName=nearest->name;snapshot.targetHp=nearest->hp;snapshot.targetMaxHp=config.practice_hp;}
+ const PracticeTarget* nearest=nullptr;const auto selected=targetLock.Selected();
+ for(const auto&[id,target]:practice.targets){if(selected&&selected->id==id&&selected->generation==target.generation){nearest=&target;break;}if(!nearest||target.distance<nearest->distance)nearest=&target;}
+ if(nearest){snapshot.targetValid=true;snapshot.targetName=nearest->name;snapshot.targetHp=nearest->hp;snapshot.targetMaxHp=nearest->maximumHP;}
  for(const auto&[bit,command]:controller.inputBindings){auto move=controller.moves.find(command);if(move==controller.moves.end()||move->second.empty())continue;
   const auto slot=move->second.front();const char* key=bit==1?"attack":bit==2?"secondary":bit==4?"spirit":bit==8?"dodge":bit==32?"aim":bit==64?"reload":"sheathe";
   const int vk=config.keys.at(key);std::string label=vk==1?"左键":vk==2?"右键":vk==6?"侧键":vk==32?"空格":vk>=48&&vk<=90?std::string(1,char(vk)):std::to_string(vk);
@@ -1377,7 +1538,12 @@ void TickDemo(float dt) {
  if(demoFinalTail){if(!config.demo_loop){autoDemo=false;demoFinalTail=false;detail="单次演示完成；F9 可再次播放";return;}demoElapsed=0;demoFinalTail=false;}
  demoReturnStarted=false;
  const auto command=demoSequence[demoStep];bool released=false;
- if(demoHeld){released=command==Command::Release;controller.held(demoHeldCommand,false);demoHeld=false;}
+ if(demoHeld){released=command==Command::Release;controller.held(demoHeldCommand,false);demoHeld=false;
+  // A source counter release is a real clip. Let it reach its transition
+  // window before scheduling the next showcase input, or its input buffer
+  // can expire before the held charge action actually starts.
+  if(!released&&!controller.resting()){demoClock=0;demoDelay=DemoDelay(Command::Release,controller.clips.at(controller.slot),demoStep);return;}
+ }
  if(controller.holdPolicies.contains(command)){controller.held(command,true);demoHeld=true;demoHeldCommand=command;}
  else if(!released)controller.input(command);
  demoStep=(demoStep+1)%std::size(demoSequence);demoClock=0;
@@ -1394,9 +1560,23 @@ void TickDemo(float dt) {
   }
  }
 }
+bool ActiveInputAction(const std::string& name){
+ const bool ranged=loadedMode=="bow"||loadedMode=="light_bowgun";
+ return name=="attack"||name=="secondary"||name=="dodge"||name=="sheathe"||
+  (ranged?(name=="aim"||name=="reload"):name=="spirit");
+}
+bool InputAliasAvailable(int key,const std::string& owner){
+ for(const auto&[name,value]:config.keys)if(name!=owner&&ActiveInputAction(name)&&value==key)return false;return true;
+}
+bool KeyClaimsCameraControl(int key){
+ for(const auto&[name,value]:config.keys)if(ActiveInputAction(name)&&value==key)return true;
+ if(key==VK_SHIFT&&InputAliasAvailable(key,"sheathe"))return true;
+ return loadedMode=="longsword"&&key==config.spirit_alt_key&&InputAliasAvailable(key,"spirit");
+}
+template<class IsDown>bool CameraControlDown(int key,IsDown down){return !KeyClaimsCameraControl(key)&&down(key);}
 template<class IsDown>uint32_t KeyBitsFrom(IsDown down) {
  uint32_t bits=0;
- const auto aliasAvailable=[&](int key,const char* action){for(const auto&[name,value]:config.keys)if(name!=action&&value==key)return false;return true;};
+ const auto aliasAvailable=[](int key,const char* action){return InputAliasAvailable(key,action);};
  const bool ranged=loadedMode=="bow"||loadedMode=="light_bowgun";
  if(down(config.keys.at("attack")))bits|=1;if(down(config.keys.at("secondary"))&&(!ranged||config.keys.at("secondary")!=config.keys.at("aim")))bits|=2;
  if(!ranged&&(down(config.keys.at("spirit"))||(loadedMode=="longsword"&&aliasAvailable(config.spirit_alt_key,"spirit")&&down(config.spirit_alt_key))))bits|=4;
@@ -1407,12 +1587,143 @@ template<class IsDown>uint32_t KeyBitsFrom(IsDown down) {
  return bits;
 }
 uint32_t KeyBits(){return KeyBitsFrom([](int k){return k>0&&(GetAsyncKeyState(k)&0x8000)!=0;});}
+void ApplyCombatOutcome(const CombatEvent& event,const CombatOutcome& outcome){
+ if(!outcome.accepted)return;
+ const bool current=controller.active&&event.motionSerial==controller.motionSerial&&event.slot==controller.slot;
+ const bool audible=current&&config.sound_enabled&&config.sound_volume>0&&soundReady;
+ if(outcome.hit)soundTimeline.Condition("hit",audible,EmitSound);
+ if(!outcome.cue.empty())soundTimeline.Condition(outcome.cue,audible,EmitSound);
+ if(!current||!localMode.combatEnabled||!outcome.followupSlot)return;
+ const auto command=outcome.transition==CombatTransition::Counter?Command::Counter:
+  outcome.transition==CombatTransition::PerfectRush?Command::Special:
+  outcome.transition==CombatTransition::WeakFinish?Command::Charge:
+  outcome.transition==CombatTransition::Helm?Command::Helm:Command::Release;
+ if(controller.seconds+1e-6f>=outcome.startSeconds){
+  if(controller.transitionToSlot(outcome.followupSlot,outcome.startSeconds,command))controller.tick(0);
+ }else{combatFollowupSlot=outcome.followupSlot;combatFollowupSeconds=outcome.startSeconds;
+  combatFollowupMotion=controller.motionSerial;combatFollowupCommand=command;}
+}
+CombatEvent EventFromContact(const PracticeHit& hit){
+ CombatEvent event;event.motionSerial=hit.motionSerial;event.slot=hit.slot;event.seconds=hit.seconds;event.damage=hit.damage;
+ event.targetId=hit.targetId;event.generation=hit.generation;event.windowId=hit.windowId;event.partId=hit.partId;
+ event.weakPointKnown=hit.weakPointKnown;event.weakPoint=hit.weakPoint;event.contactSerial=hit.contactSerial;return event;
+}
+void InstallPracticeCallbacks(){
+ practice.contactDamage=[](const PracticeHit& hit){
+  if(!localMode.combatEnabled)return hit.damage;
+  if(hit.motionSerial!=controller.motionSerial||hit.slot!=controller.slot)return 0.f;
+  const auto* rule=localMode.rules.Find(hit.slot);if(!rule)return 0.f;
+  return hit.damage*rule->MotionValue(hit.windowId,localMode.DamageLevel(controller))/100.f*localMode.ContactMultiplier(controller,EventFromContact(hit));
+ };
+ practice.acceptedHit=[](const PracticeHit& hit){
+  if(localMode.combatEnabled)ApplyCombatOutcome(EventFromContact(hit),localMode.Consume(EventFromContact(hit),controller));
+  else{localMode.Hit(controller);soundTimeline.Condition("hit",config.sound_enabled&&config.sound_volume>0&&soundReady,EmitSound);}
+#ifdef MHE_MODULE_EXTENSION_HEADER
+  moduleExtension.OnContact(hit);
+#endif
+ };
+}
+#ifdef MHE_MODULE_EXTENSION_IMPLEMENTATION
+#include MHE_MODULE_EXTENSION_IMPLEMENTATION
+#endif
+void ResetTrainingTransient(){
+ practice.Suspend();delayedHits.Clear();delayedContact.Suspend();localProjectiles.Clear();
+ for(auto& visual:projectileVisuals){if(visual.mesh)visual.mesh->SetVisible(false);visual.id=0;}
+ projectileMotion=std::numeric_limits<uint64_t>::max();projectileEventCursor=0;
+ combatFollowupSlot=0;combatFollowupMotion=0;combatFollowupSeconds=0;pumpedMotionSerial=0;practiceAttackRequest=false;
+ localMode.SuspendCombatTracking();
+}
+bool BeginPresentationPreview(int slot){
+ if(!controller.clips.contains(slot)||controller.clips.at(slot).frames.empty())return false;
+ RestoreStageMotion();RestoreOwned();ResetTrainingTransient();autoDemo=false;demoHeld=false;
+ presentationPreview=true;localMode.combatEnabled=false;controller.specialSheatheSeconds=0;
+ detail="动作预览中；攻击键将从待机开始手动练习";
+ return controller.start(slot);
+}
+bool TakeManualControl(){
+ if(presentationPreview||autoDemo){const bool wasDemo=autoDemo;RestoreStageMotion();RestoreOwned();ResetTrainingTransient();presentationPreview=false;
+  if(wasDemo)localMode.Reset(loadedMode);
+  if(!controller.start(configuredIdleSlot))return false;}
+ autoDemo=false;localMode.combatEnabled=ManualCombatActive();return true;
+}
+void PumpTrainingStep(float dt) {
+ practice.BeginFrame();
+ const auto previousMisses=practice.misses;
+ if(!presentationPreview)localMode.Tick(std::clamp(dt,0.f,.1f),controller);
+ if(localMode.ChargeExhausted(controller)){controller.start(configuredIdleSlot);localMode.SuspendCombatTracking();}
+ soundTimeline.Update(controller.motionSerial,controller.slot,controller.seconds,
+  config.sound_enabled&&config.sound_volume>0&&soundReady,EmitSound);
+ try{TickPractice(dt);}catch(const std::exception& e){practice.Suspend();practice.targets.clear();practiceDetail=std::string("怪物读取暂不可用：")+e.what();}
+ TickTargetCamera(dt);
+ TickProjectiles(dt);
+ if(localMode.combatEnabled){
+  const auto pulses=delayedHits.Update(std::clamp(dt,0.f,.25f),practice.Geometry(),SceneBlocked);
+  for(const auto& pulse:pulses){CombatContact contact;contact.key={pulse.hit.targetId,pulse.hit.generation};contact.part=pulse.hit.partId;contact.strike=uint64_t(pulse.hit.windowId)+1;
+   contact.seconds=pulse.hit.seconds;contact.point=pulse.hit.point;
+   if(practice.ApplyContact(contact,pulse.hit.motionSerial,pulse.hit.slot,pulse.hit.damage))localMode.CreditDelayedHelmPulse(pulse.hit.slot,pulse.hit.windowId,pulse.originalLevel);
+  }
+ }else delayedHits.Clear();
+ const bool audible=config.sound_enabled&&config.sound_volume>0&&soundReady;
+ bool dummyNearby=false;for(const auto&[id,target]:practice.targets)if(target.hp>0&&target.distance<=6)dummyNearby=true;
+ if(!presentationPreview&&config.local_practice&&config.practice_target=="dummy"){
+  CombatEvent event;const auto outcome=localMode.DummyAttackOutcome(std::clamp(dt,0.f,.1f),controller,dummyNearby,event);ApplyCombatOutcome(event,outcome);
+ }
+ if(practiceAttackRequest){practiceAttackRequest=false;
+  if(localMode.combatEnabled&&config.practice_target=="dummy"&&dummyNearby){
+   CombatEvent event;event.kind=CombatEventKind::IncomingAttack;event.motionSerial=controller.motionSerial;event.slot=controller.slot;event.seconds=controller.seconds;
+   event.targetId=0xfffffffe;event.attackSerial=++practiceAttackSerial;event.fromFront=practiceAttackFromFront;event.guardable=practiceAttackGuardable;
+   const auto outcome=localMode.Consume(event,controller);ApplyCombatOutcome(event,outcome);
+  }
+ }
+ if(autoDemo){soundTimeline.Condition("counter",audible,EmitSound);soundTimeline.Condition("guard",audible,EmitSound);}
+ if(localMode.combatEnabled&&practice.misses>previousMisses&&practice.events.empty())localMode.feedback="本次挥击未命中";
+ TickThemeSounds(std::clamp(dt,0.f,.1f));
+}
+void ApplyPendingCombatFollowup(){
+ if(!combatFollowupSlot)return;
+ if(!localMode.combatEnabled||controller.motionSerial!=combatFollowupMotion)combatFollowupSlot=0;
+ else if(controller.seconds+1e-6f>=combatFollowupSeconds){controller.transitionToSlot(combatFollowupSlot,combatFollowupSeconds,combatFollowupCommand);controller.tick(0);combatFollowupSlot=0;}
+}
+bool AdvanceShowcaseFrame(float dt){
+ const float step=std::clamp(dt,0.f,.1f)*config.speed;
+ if(localMode.combatEnabled){
+  float remaining=step;
+  do {
+   if(pumpedMotionSerial!=controller.motionSerial){
+    controller.tick(0);actor.visualFrameSeconds=0;RestoreStageMotion();
+#ifdef MHE_MODULE_EXTENSION_HEADER
+    moduleExtension.Frame(0);
+#endif
+    if(!ApplyPose())return false;const auto source=controller.motionSerial;PumpTrainingStep(0);pumpedMotionSerial=source;
+   }
+   if(remaining<=1e-7f)break;
+   const float sub=std::min(remaining,1.f/60);controller.tick(sub);ApplyPendingCombatFollowup();
+   actor.entrySeconds+=sub;actor.visualFrameSeconds=sub/std::max(.25f,config.speed);RestoreStageMotion();
+#ifdef MHE_MODULE_EXTENSION_HEADER
+   moduleExtension.Frame(sub/std::max(.25f,config.speed));
+#endif
+   if(!controller.active||!ApplyPose())return false;
+   const auto source=controller.motionSerial;PumpTrainingStep(sub);pumpedMotionSerial=source;
+   remaining-=sub;
+  } while(remaining>1e-7f);
+ }else{
+  float remaining=step;while(remaining>0){const float sub=std::min(remaining,1.f/120);TickDemo(sub);controller.tick(sub);remaining-=sub;}
+  actor.entrySeconds+=step;actor.visualFrameSeconds=std::clamp(dt,0.f,.25f);
+  if(!controller.active||!ApplyPose())return false;PumpTrainingStep(std::clamp(dt,0.f,.1f));pumpedMotionSerial=controller.motionSerial;
+ }
+ return true;
+}
 void Frame(float dt) {
  if(unityThread&&unityThread!=GetCurrentThreadId())return;unityThread=GetCurrentThreadId();
  int frame=-1;if(Value(FrameCount,nullptr,frame)&&frame==lastFrame)return;lastFrame=frame;
  soundPlayer.Poll();
  if(cleanupPending){Cleanup();ResetKeys();}
  if(!initialized||!ready)return;
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ moduleExtension.ObservePolicy();
+ {std::string extensionReason;
+  if(moduleExtension.RebindRequested(extensionReason)){Cleanup();detail=std::move(extensionReason);return;}}
+#endif
  if(!pendingMode.empty()){
   const auto next=pendingMode;pendingMode.clear();if(actor.model)Cleanup();
   try{ReadMode(next);detail="武器模式已切换，请开始演示";appliedConfigRevision=configRevision;}
@@ -1424,46 +1735,48 @@ void Frame(float dt) {
  bool f8=(GetAsyncKeyState(config.toggle_key)&0x8000)!=0;
  bool escape=(GetAsyncKeyState(VK_ESCAPE)&0x8000)!=0;
  bool f9=(GetAsyncKeyState(VK_F9)&0x8000)!=0;
- if(resyncFocusKeys){previousToggle=f8;previousEscape=escape;previousDemo=f9;previousBits=KeyBits();resyncFocusKeys=false;}
+ if(resyncFocusKeys){previousToggle=f8;previousEscape=escape;previousDemo=f9;previousBits=KeyBits();
+  previousLock=(GetAsyncKeyState(config.lock_key)&0x8000)!=0;previousFocus=(GetAsyncKeyState(config.focus_key)&0x8000)!=0;previousCycle=(GetAsyncKeyState(config.cycle_key)&0x8000)!=0;resyncFocusKeys=false;}
  if(f8&&!previousToggle)toggleRequest=true;if(escape&&!previousEscape)stopRequest=true;
  if(f9&&!previousDemo)demoRequest=true;
  previousToggle=f8;previousEscape=escape;previousDemo=f9;
  if(stopRequest){stopRequest=false;toggleRequest=demoRequest=false;commands.clear();previewRequest=-1;Cleanup();return;}
  if(toggleRequest){toggleRequest=false;if(actor.model){Cleanup();return;}if(!Bind())return;previousBits=KeyBits();}
  if(demoRequest){demoRequest=false;
+  const bool startDemo=!autoDemo;
+  if((presentationPreview||autoDemo)&&!TakeManualControl()){Cleanup();return;}
   if(!actor.model){if(!Bind())return;previousBits=KeyBits();}
-  autoDemo=!autoDemo;demoStep=0;demoClock=0;demoDelay=.6f;demoChargeLevel=0;demoElapsed=0;demoFinalTail=false;
+  if(startDemo){ResetTrainingTransient();localMode.combatEnabled=false;}
+  autoDemo=startDemo;demoStep=0;demoClock=0;demoDelay=.6f;demoChargeLevel=0;demoElapsed=0;demoFinalTail=false;
   if(demoHeld){controller.held(demoHeldCommand,false);demoHeld=false;}
   if(autoDemo&&controller.idleSlot!=configuredIdleSlot)controller.start(configuredIdleSlot);
-  detail=autoDemo?"自动演示中；攻击键切回手动，F8/Esc 结束":"已切回手动演示";
+  detail=autoDemo?"自动演示中；攻击键切回手动，"+(config.toggle_key>=VK_F1&&config.toggle_key<=VK_F24?"F"+std::to_string(config.toggle_key-VK_F1+1):"快捷键 "+std::to_string(config.toggle_key))+"/Esc 结束":"已切回手动演示";
  }
  if(!actor.model)return;
  auto current=Call(MainCharacter);
  if(!ActorIdentityIsCurrent(current)){Cleanup();detail="角色切换或模型替换，演示已退出";return;}
+ if(targetReleaseRequest||!config.target_lock){targetReleaseRequest=false;targetLock.Release();RestoreTargetCamera();lockRequest=focusRequest=cycleRequest=false;}
  if(paused||hudEditing){previousBits=KeyBits();commands.clear();previewRequest=-1;actor.visualFrameSeconds=0;
   if(!ApplyPose()){Cleanup();detail="暂停期间姿势失效，已退出";}UpdateHud();return;}
- if(previewRequest>=0){autoDemo=false;controller.start(previewRequest);previewRequest=-1;}
+ if(previewRequest>=0){const auto slot=previewRequest;previewRequest=-1;if(!BeginPresentationPreview(slot)){Cleanup();return;}}
+ const auto controlDown=[](int key){return CameraControlDown(key,[](int value){return (GetAsyncKeyState(value)&0x8000)!=0;});};
+ const bool lockDown=controlDown(config.lock_key),focusDown=controlDown(config.focus_key),cycleDown=controlDown(config.cycle_key);
+ if(lockDown&&!previousLock)lockRequest=true;if(focusDown&&!previousFocus)focusRequest=true;if(cycleDown&&!previousCycle)cycleRequest=true;
+ previousLock=lockDown;previousFocus=focusDown;previousCycle=cycleDown;
  auto bits=KeyBits();const auto edges=bits&~previousBits;
- if(edges||!commands.empty()){autoDemo=false;if(demoHeld){controller.held(demoHeldCommand,false);demoHeld=false;}detail="手动演示中，F9 可切换自动演示";}
+ if(edges||!commands.empty()){if(!TakeManualControl()){Cleanup();return;}if(demoHeld){controller.held(demoHeldCommand,false);demoHeld=false;}detail="手动演示中，F9 可切换自动演示";}
+ localMode.combatEnabled=ManualCombatActive();
+ controller.specialSheatheSeconds=loadedMode=="longsword"&&!autoDemo&&!presentationPreview&&config.combat_rules?localMode.rules.specialSheatheSeconds:0;
  if(!autoDemo)controller.hardwareInput(edges,bits);previousBits=bits;
  for(auto c:commands)controller.input(c);commands.clear();
- auto step=std::clamp(dt,0.f,.1f)*config.speed;float remaining=step;
- while(remaining>0){float sub=std::min(remaining,1.f/120);TickDemo(sub);controller.tick(sub);remaining-=sub;}
- actor.entrySeconds+=step;actor.visualFrameSeconds=std::clamp(dt,0.f,.25f);
- if(!controller.active){Cleanup();return;}
- if(!ApplyPose()){Cleanup();detail="姿势绑定失效，已恢复原生控制";return;}
- const auto previousHits=practice.hits;
- localMode.Tick(std::clamp(dt,0.f,.1f),controller);
- try{TickPractice(dt);}catch(const std::exception& e){practice.Suspend();practice.targets.clear();practiceDetail=std::string("怪物读取暂不可用：")+e.what();}
- TickProjectiles(dt);
- soundTimeline.Update(controller.motionSerial,controller.slot,controller.seconds,
-  config.sound_enabled&&config.sound_volume>0&&soundReady,EmitSound);
- const bool audible=config.sound_enabled&&config.sound_volume>0&&soundReady;
- if(practice.hits>previousHits){localMode.Hit(controller);soundTimeline.Condition("hit",audible,EmitSound);}
- const auto simulated=config.local_practice&&config.practice_target=="dummy"?localMode.DummyAttack(std::clamp(dt,0.f,.1f),controller,!practice.targets.empty()):std::string{};
- if(!simulated.empty())soundTimeline.Condition(simulated,audible,EmitSound);
- if(autoDemo){soundTimeline.Condition("counter",audible,EmitSound);soundTimeline.Condition("guard",audible,EmitSound);}
- TickThemeSounds(std::clamp(dt,0.f,.1f));
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ moduleExtension.ObservePolicy();
+#endif
+ if(!AdvanceShowcaseFrame(dt)){Cleanup();detail="姿势绑定失效，已恢复原生控制";return;}
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ {std::string extensionReason;
+  if(moduleExtension.RebindRequested(extensionReason)){Cleanup();detail=std::move(extensionReason);return;}}
+#endif
  UpdateHud();
  if(resumeSoundLoops){resumeSoundLoops=false;soundTimeline.ResumeLoops(config.sound_enabled&&config.sound_volume>0&&soundReady,EmitSound);themeTimeline.ResumeLoops(config.sound_enabled&&config.sound_volume>0&&soundReady,EmitSound);}
 }
@@ -1562,6 +1875,9 @@ bool Resolve() {
  if(!ok){detail="游戏接口未全部匹配，查看诊断信息";return false;}
  if(!frameHooked){frameHooked=api->create_hook(api->context,FrameOwner,methods[Tail].r.method_pointer,reinterpret_cast<void*>(TailDetour),reinterpret_cast<void**>(&nextTail))==BE_Result_Ok;}
  if(!inputHooked){inputHooked=api->create_hook(api->context,ID,methods[CheckInput].r.method_pointer,reinterpret_cast<void*>(InputDetour),reinterpret_cast<void**>(&nextInput))==BE_Result_Ok;}
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ moduleExtension.Install();
+#endif
  return frameHooked&&inputHooked&&InstallShields(std::make_index_sequence<std::size(shields)>{});
 }
 float DemoDuration() {
@@ -1591,7 +1907,7 @@ Json PracticeTargets(){
  std::vector<const PracticeTarget*> sorted;for(const auto& [id,t]:practice.targets)sorted.push_back(&t);
  std::sort(sorted.begin(),sorted.end(),[](const auto* a,const auto* b){return a->distance==b->distance?a->id<b->id:a->distance<b->distance;});
  Json targets=Json::array();for(const auto* t:sorted){if(targets.size()>=12)break;
-  targets.push_back({{"id",t->id},{"name",t->name},{"hp",t->hp},{"max_hp",config.practice_hp}});}
+  targets.push_back({{"id",t->id},{"generation",t->generation},{"name",t->name},{"hp",t->hp},{"max_hp",t->maximumHP},{"approximate_geometry",t->approximateGeometry}});}
  return targets;
 }
 Json Status() {
@@ -1603,10 +1919,12 @@ Json Status() {
   derivations.push_back({{"name",name},{"label",motionLabels.contains(slot)?motionLabels.at(slot):name},{"available",controller.available(command)},{"buffered",controller.buffered(command)}});}
  const bool aimed=controller.isHeld(Command::Aim)||controller.holding(Command::Charge);
  const auto modeLabel=modeDefinitions.contains(loadedMode)?modeDefinitions.at(loadedMode).value("label",loadedMode):loadedMode;
- return Json{{"runtime_ready",ready},{"active",controller.active},{"slot",controller.slot},{"character",actor.character},{"detail",detail},{"phase",phase},{"auto_demo",autoDemo},{"demo_step",demoStep},{"demo_seconds",DemoDuration()},{"weapon_mode",visualWeapon.Visible()?config.visual_weapon:(actor.weaponHeld?"equipped":(actor.prop?"fallback":"none"))},{"sound_ready",soundReady},{"sound_enabled",config.sound_enabled},{"sound_detail",!config.sound_enabled?"音效已关闭":(config.sound_volume==0?"音量为零":soundDetail)},
+ const auto selected=targetLock.Selected();bool approximate=false;for(const auto& target:targetSnapshot)if(selected&&target.key==*selected)approximate=target.approximateGeometry;
+ const bool controlConflict=KeyClaimsCameraControl(config.lock_key)||KeyClaimsCameraControl(config.focus_key)||KeyClaimsCameraControl(config.cycle_key);
+ auto state=Json{{"runtime_ready",ready},{"active",controller.active},{"slot",controller.slot},{"character",actor.character},{"detail",detail},{"phase",phase},{"auto_demo",autoDemo},{"demo_step",demoStep},{"demo_seconds",DemoDuration()},{"weapon_mode",visualWeapon.Visible()?config.visual_weapon:(actor.weaponHeld?"equipped":(actor.prop?"fallback":"none"))},{"sound_ready",soundReady},{"sound_enabled",config.sound_enabled},{"sound_detail",!config.sound_enabled?"音效已关闭":(config.sound_volume==0?"音量为零":soundDetail)},
   {"last_sound",lastSound},{"last_sound_label",soundLabels.contains(lastSound)?soundLabels.at(lastSound):""},{"sound_cues",soundCueCount},{"ground_detail",actor.groundDetail},{"ground_correction",actor.groundCorrection},
   {"practice",{{"enabled",config.local_practice},{"ready",practiceReady},{"detail",practiceDetail},{"targets",targets},
-   {"hits",practice.hits},{"total",practice.total},{"last_damage",practice.lastDamage},{"last_target",practice.lastTarget},{"summary",!controller.active}}},
+   {"hits",practice.hits},{"attempts",practice.attempts},{"misses",practice.misses},{"total",practice.total},{"last_damage",practice.lastDamage},{"last_target",practice.lastTarget},{"summary",!controller.active}}},
   {"grip_ready",actor.gripAvailable},{"grip_detail",actor.gripAvailable?"辅助握刀可用":"辅助握刀不可用，已保留基础重定向"},
   {"blade_calibrated",visualWeapon.Visible()||actor.bladeCalibrated},{"weapon_pose_detail",actor.weaponPoseDetail},
   {"visual_weapon_ready",visualWeapon.Ready()},{"visual_weapon_visible",visualWeapon.Visible()},{"visual_weapon_detail",actor.visualReason.empty()?visualWeapon.Status():actor.visualReason},{"laevatain_blade",config.laevatain_blade},
@@ -1616,12 +1934,18 @@ Json Status() {
   {"paused",paused},{"hud_editing",hudEditing},{"config_revision",configRevision},{"applied_config_revision",appliedConfigRevision},
   {"demo_sequence",config.demo_sequence},{"demo_loop",config.demo_loop},{"keyboard_preset",config.keyboard_preset},{"demo_elapsed",demoElapsed/std::max(.25f,config.speed)},{"demo_progress",std::clamp(demoElapsed/std::max(.001f,DemoDuration()*config.speed),0.f,1.f)},{"demo_sequences",{"full","basic","signature"}},
   {"hud_layout_changed",hudLayoutChanged},{"hud",{{"anchor_x",config.hud_anchor_x},{"anchor_y",config.hud_anchor_y},{"scale",config.hud_scale},{"layout",config.hud_layout},{"theme",config.theme}}},
-  {"capabilities",{{"modes",modes},{"commands",actions},{"pause",true},{"hud_edit",true},{"local_practice",true}}},
+  {"capabilities",{{"modes",modes},{"commands",actions},{"pause",true},{"hud_edit",true},{"local_practice",true},{"targeting",true}}},
+  {"targeting",{{"enabled",config.target_lock},{"mode",config.target_camera},{"selected_id",selected?selected->id:0},{"selected_generation",selected?selected->generation:0},{"detail",controlConflict?"镜头快捷键与动作键冲突；动作优先，仍可使用网页按钮":targetingDetail},{"approximate_geometry",approximate},{"scene_query_available",actor.terrainMask!=0}}},
+  {"combat",{{"enabled",localMode.combatEnabled},{"numeric_scope",localMode.rules.numericScope},{"followup_pending",combatFollowupSlot!=0},{"delayed_pending",delayedHits.Active()},{"delayed_pulses",delayedHits.pulses},{"delayed_anchor_scope","local_target_contact_anchor"}}},
   {"resource",{{"label",localMode.Label()},{"value",localMode.Value()},{"max",localMode.Maximum()},{"level",localMode.level},{"local_only",true},{"blocks",localMode.blocks},{"feedback",localMode.feedback}}},
   {"aim",{{"active",aimed},{"charge",controller.heldSeconds()},{"max_charge",3}}},
   {"derivations",derivations},{"catalog",productCatalog},
   {"projectiles",localProjectiles.active.size()},{"projectile_markers",projectileEvents.size()},
   {"palm_aligned_left",actor.palmAligned[0]},{"palm_aligned_right",actor.palmAligned[1]}};
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ moduleExtension.WriteStatus(state);
+#endif
+ return state;
 }
 void Configure(const char* raw) {
  if(!raw||std::strlen(raw)>65536)throw std::runtime_error("Invalid configuration size");
@@ -1644,9 +1968,12 @@ void Configure(const char* raw) {
  c.enabled=j.value("enabled",true);c.root_motion=j.value("root_motion",true);c.show_prop=j.value("show_prop",true);
  c.sound_enabled=j.value("sound_enabled",true);
  c.local_practice=j.value("local_practice",false);c.laevatain_blade=j.value("laevatain_blade",true);
+ c.target_lock=j.value("target_lock",true);c.combat_rules=j.value("combat_rules",true);
+ c.target_camera=j.value("target_camera",std::string("focus"));if(c.target_camera!="focus"&&c.target_camera!="target")throw std::runtime_error("Unknown target camera mode");
  auto key=[&](const char* name,int defaultKey){auto k=j.value(name,defaultKey);if(k<1||k>255)throw std::runtime_error(name);return k;};
  const int unique=c.keyboard_preset=="mouse3"?VK_MBUTTON:VK_XBUTTON2;
- c.toggle_key=key("toggle_key",VK_F8);c.spirit_key=key("spirit_key",unique);c.spirit_alt_key=key("spirit_alt_key",c.spirit_key);
+ c.toggle_key=key("toggle_key",ToggleDefault);c.spirit_key=key("spirit_key",unique);c.spirit_alt_key=key("spirit_alt_key",c.spirit_key);
+ if(c.toggle_key==VK_ESCAPE||c.toggle_key==VK_F9)throw std::runtime_error("Toggle key conflicts with exit or automatic demonstration");
  c.keys["reload"]=c.keyboard_preset=="mouse3"?'R':VK_XBUTTON1;
  if(c.mode=="bow"||c.mode=="light_bowgun")c.keys["secondary"]=unique;
  c.keys["spirit"]=c.spirit_key;if(j.contains("keys")){if(!j["keys"].is_object())throw std::runtime_error("Invalid key bindings");
@@ -1658,6 +1985,12 @@ void Configure(const char* raw) {
     if(value<1||value>255||value==VK_ESCAPE||value==c.toggle_key||value==VK_F9)throw std::runtime_error("Reserved mode key");keys[keyIt.key()]=value;}c.mode_keys[it.key()]=std::move(keys);}
   if(!j.contains("keys")&&c.mode_keys.contains(c.mode))c.keys=c.mode_keys.at(c.mode);
  }c.mode_keys[c.mode]=c.keys;
+ const auto reservedInput=[&](int value){return value<1||value>254||value==VK_ESCAPE||value==VK_F9||value==c.toggle_key;};
+ for(const auto&[name,value]:c.keys)if(reservedInput(value))throw std::runtime_error("Reserved input binding");
+ if(reservedInput(c.spirit_key)||reservedInput(c.spirit_alt_key))throw std::runtime_error("Reserved alternate spirit binding");
+ c.lock_key=key("lock_key",'Q');c.focus_key=key("focus_key",VK_CONTROL);c.cycle_key=key("cycle_key",VK_TAB);
+ std::set<int> cameraKeys;for(int control:{c.lock_key,c.focus_key,c.cycle_key})
+  if(control==VK_ESCAPE||control==VK_F8||control==VK_F9||control==c.toggle_key||!cameraKeys.insert(control).second)throw std::runtime_error("Reserved or duplicate camera key");
  auto number=[&](const char* name,float defaultValue,float min,float max){float n=j.value(name,defaultValue);if(!std::isfinite(n)||n<min||n>max)throw std::runtime_error(name);return n;};
  c.speed=number("speed",1,.25f,2);c.blend_seconds=number("blend_seconds",.12f,.02f,.5f);c.buffer_seconds=number("buffer_seconds",.3f,.08f,1);
  c.sound_volume=number("sound_volume",.65f,0,1);
@@ -1666,6 +1999,7 @@ void Configure(const char* raw) {
  c.practice_radius=number("practice_radius",.65f,.05f,3);c.practice_height=number("practice_height",.9f,0,5);
  c.practice_blade_length=number("practice_blade_length",1.25f,.1f,3);
  c.projectile_speed=number("projectile_speed",30,1,120);
+ c.target_range=number("target_range",30,5,80);
  c.hud_scale=number("hud_scale",1,.75f,2);c.hud_anchor_x=number("hud_anchor_x",.02f,0,1);c.hud_anchor_y=number("hud_anchor_y",.05f,0,1);c.hud_margin=number("hud_margin",16,0,128);
  if(j.contains("volumes")){if(!j["volumes"].is_object())throw std::runtime_error("Invalid sound groups");for(auto it=j["volumes"].begin();it!=j["volumes"].end();++it){
   if(!c.volumes.contains(it.key()))throw std::runtime_error("Unknown sound group");const float value=it.value().get<float>();if(!std::isfinite(value)||value<0||value>1)throw std::runtime_error("Invalid sound group volume");c.volumes[it.key()]=value;}}
@@ -1879,8 +2213,9 @@ void ReadMotionAssets(const std::filesystem::path& assets) {
  if(!controller.clips.contains(controller.idleSlot))throw std::runtime_error("Required idle motion missing");
  motionLabels.clear();if(moves.contains("labels"))for(auto it=moves["labels"].begin();it!=moves["labels"].end();++it)motionLabels[std::stoi(it.key())]=it.value().get<std::string>();
  controller.holdPolicies.clear();if(moves.contains("hold_commands"))for(auto it=moves["hold_commands"].begin();it!=moves["hold_commands"].end();++it){
-  const auto command=ParseCommand(it.key());HoldPolicy policy;policy.frame=it.value().value("frame",-1);policy.loop=it.value().value("loop",false);
+  const auto command=ParseCommand(it.key());HoldPolicy policy;policy.frame=it.value().value("frame",-1);policy.loop=it.value().value("loop",false);policy.loopFrame=it.value().value("loop_frame",0);
   if(!controller.moves.contains(command)||policy.frame< -1)throw std::runtime_error("Invalid hold command");
+  for(int slot:controller.moves.at(command))if(policy.loopFrame<0||policy.loopFrame>=int(controller.clips.at(slot).frames.size())-1||policy.frame>=int(controller.clips.at(slot).frames.size()))throw std::runtime_error("Invalid hold loop frame");
   float previous=-1;for(const auto& r:it.value().value("releases",Json::array())){HoldRelease release{r.at("seconds").get<float>(),r.at("slot").get<int>()};
    if(!std::isfinite(release.seconds)||release.seconds<0||release.seconds<previous||!controller.clips.contains(release.slot))throw std::runtime_error("Invalid charge release");
    policy.releases.push_back(release);previous=release.seconds;}controller.holdPolicies[command]=std::move(policy);}
@@ -1904,7 +2239,8 @@ void ReadMotionAssets(const std::filesystem::path& assets) {
   for(const auto& row:it.value()){HoldVariant variant;variant.slot=row.at("slot").get<int>();variant.fromSlots=row.at("from_slots").get<std::set<int>>();
    if(!controller.clips.contains(variant.slot)||variant.fromSlots.empty())throw std::runtime_error("Invalid contextual hold slot");
    for(int from:variant.fromSlots)if(!controller.clips.contains(from))throw std::runtime_error("Unknown charge prerequisite");
-   variant.policy.frame=row.value("frame",-1);variant.policy.loop=row.value("loop",false);
+   variant.policy.frame=row.value("frame",-1);variant.policy.loop=row.value("loop",false);variant.policy.loopFrame=row.value("loop_frame",0);
+   if(variant.policy.loopFrame<0||variant.policy.loopFrame>=int(controller.clips.at(variant.slot).frames.size())-1)throw std::runtime_error("Invalid contextual hold loop frame");
    if(variant.policy.frame< -1||variant.policy.frame>=int(controller.clips.at(variant.slot).frames.size()))throw std::runtime_error("Invalid contextual hold frame");
    float previous=-1;for(const auto& release:row.at("releases")){HoldRelease value{release.at("seconds").get<float>(),release.at("slot").get<int>()};
     if(!std::isfinite(value.seconds)||value.seconds<0||value.seconds<previous||!controller.clips.contains(value.slot))throw std::runtime_error("Invalid contextual charge release");
@@ -1953,7 +2289,8 @@ void ReadMode(const std::string& id){
  // A failed switch restores the entire previous loaded set, including source
  // anatomy and audio; it never mixes a new pose with an old weapon track.
  auto oldController=std::move(controller);auto oldGrip=std::move(gripTracks);auto oldGround=std::move(groundTracks);auto oldGeometryContacts=std::move(geometryContactMasks);auto oldSupportGround=std::move(supportGroundTracks);
- auto oldWeapons=std::move(sourceWeaponTracks);auto oldWindows=std::move(practice.windows);auto oldFingers=std::move(fingerTracks);auto oldFingerBones=std::move(sourceFingerBones);
+ auto oldWeapons=std::move(sourceWeaponTracks);auto oldWindows=std::move(practice.windows);auto oldAuthoredWindows=std::move(practice.authoredWindows);auto oldFingers=std::move(fingerTracks);auto oldFingerBones=std::move(sourceFingerBones);
+ auto oldDelayedWindows=std::move(delayedContactWindows);auto oldDelayedRules=std::move(delayedRules);
  auto oldSounds=std::move(soundClips);auto oldSoundLabels=std::move(soundLabels);auto oldTimeline=std::move(soundTimeline);
  auto oldThemeTimeline=std::move(themeTimeline);const auto oldThemes=themeDefinitions;
  const auto oldRest=sourceRestPositions;const auto oldRestRotations=sourceRestRotations;const auto oldSoleHeight=sourceSoleHeight;const auto oldPalms=sourcePalmFrames;const bool oldRestReady=sourceRestReady,oldPalmsReady=sourcePalmsReady,oldSoundReady=soundReady;
@@ -1983,10 +2320,26 @@ void ReadMode(const std::string& id){
     if(!config.keys.contains(it.key())||key<1||key>255||key==VK_ESCAPE||key==config.toggle_key||key==VK_F9)throw std::runtime_error("Invalid default binding");config.keys[it.key()]=key;}
    config.mode_keys[id]=config.keys;
   }
-  localResource=0;localAmmo=6;localMode.Reset(id);lastSound.clear();soundCueCount=0;config.mode=id;
+  std::ifstream combatInput(activeAssetRoot/L"combat_rules.json");Json combatDocument;if(!combatInput)throw std::runtime_error("Source combat manifest missing");combatInput>>combatDocument;
+  auto combat=ReadCombatAssets(combatDocument,id,controller.clips);practice.authoredWindows=std::move(combat.windows);delayedContactWindows=std::move(combat.delayedWindows);delayedRules=std::move(combat.delayedRules);delayedHits.Clear();delayedContact.Suspend();localMode.Configure(std::move(combat.rules));
+  controller.specialSheatheSeconds=id=="longsword"?localMode.rules.specialSheatheSeconds:0;controller.specialSheatheReadySeconds=localMode.rules.specialSheatheReadySeconds;
+  practice.collision.settings.maximumFrameGap=.25f;practice.collision.settings.teleportDistance=5.f;
+  controller.combatAllowed=[](Command command,const Controller& c){return !localMode.combatEnabled||localMode.Allows(command,c);};
+  controller.combatSelectSlot=[](Command command,int proposed,const Controller& c){return localMode.SelectSlot(command,proposed,c);};
+  controller.combatCaptureInput=[](Command command,const Controller& c){localMode.CaptureInput(command,c);};
+  controller.combatSelectRelease=[](Command command,int proposed,float seconds,const Controller& c){return localMode.SelectRelease(command,proposed,seconds,c);};
+  controller.combatCanTransition=[](Command command,const Controller& c)->std::optional<bool>{
+   const auto* rule=localMode.rules.Find(c.slot);if(!localMode.combatEnabled||!rule)return std::nullopt;
+   for(const auto& branch:rule->timedInputs)if(branch.command==CommandName(command))return localMode.CanTransition(command,c);
+   return std::nullopt;
+  };
+  controller.combatSelectCompletion=[](const Controller& c){const auto* rule=localMode.rules.Find(c.slot);return localMode.combatEnabled&&rule?rule->completionFollowupSlot:0;};
+  InstallPracticeCallbacks();
+  localResource=0;localAmmo=6;localMode.Reset(id);localMode.combatEnabled=false;lastSound.clear();soundCueCount=0;config.mode=id;
  }catch(...){
+  delayedContactWindows=std::move(oldDelayedWindows);delayedRules=std::move(oldDelayedRules);delayedHits.Clear();delayedContact.Suspend();
   controller=std::move(oldController);gripTracks=std::move(oldGrip);groundTracks=std::move(oldGround);sourceWeaponTracks=std::move(oldWeapons);geometryContactMasks=std::move(oldGeometryContacts);supportGroundTracks=std::move(oldSupportGround);
-  practice.windows=std::move(oldWindows);fingerTracks=std::move(oldFingers);sourceFingerBones=std::move(oldFingerBones);soundClips=std::move(oldSounds);soundLabels=std::move(oldSoundLabels);soundTimeline=std::move(oldTimeline);themeTimeline=std::move(oldThemeTimeline);themeDefinitions=oldThemes;
+  practice.windows=std::move(oldWindows);practice.authoredWindows=std::move(oldAuthoredWindows);fingerTracks=std::move(oldFingers);sourceFingerBones=std::move(oldFingerBones);soundClips=std::move(oldSounds);soundLabels=std::move(oldSoundLabels);soundTimeline=std::move(oldTimeline);themeTimeline=std::move(oldThemeTimeline);themeDefinitions=oldThemes;
   sourceRestPositions=oldRest;sourceRestRotations=oldRestRotations;sourceSoleHeight=oldSoleHeight;sourcePalmFrames=oldPalms;sourceRestReady=oldRestReady;sourcePalmsReady=oldPalmsReady;soundReady=oldSoundReady;
   activeAssetRoot=oldRoot;activeAudioRoot=oldAudioRoot;loadedMode=oldMode;configuredIdleSlot=oldIdle;config.keys=oldKeys;config.mode_keys=oldModeKeys;localMode=oldLocalMode;skinGeometry=std::move(oldSkinGeometry);skinMotions=std::move(oldSkinMotions);demoSequence=std::move(oldDemo);fullDemoSequence=std::move(oldFullDemo);motionLabels=std::move(oldLabels);projectileEvents=std::move(oldProjectiles);modeProps=std::move(oldProps);projectileProp=oldProjectileProp;soundDetail=oldSoundDetail;throw;
  }
@@ -2022,11 +2375,20 @@ BE_Result BE_CALL Initialize(const BE_ThirdPartyHostV1* host,const char* raw) {
  try {bridge=*host;packageRoot=std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(host->package_root)));Configure(raw);ReadAssets();}
  catch(const std::exception& e){if(host->log)host->log(host->context,e.what());bridge={};return BE_Result_InvalidArgument;}
  initialized=true;exitBootstrap=false;ready=false;phase="waiting";detail="等待游戏运行时";ResetKeys();resyncFocusKeys=true;
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ moduleExtension.Configure();
+#endif
  practiceHud.Start();
  bootstrap=std::thread([]{unsigned attempts=0;while(!exitBootstrap){
   {std::lock_guard lock(gate);if(!initialized)return;
    if(!api)api=bridge.runtime?bridge.runtime:(bridge.get_runtime?bridge.get_runtime(bridge.context):nullptr);
-   if(api){ready=Resolve();if(ready){phase="ready";detail="女管理员动作演示就绪，按 F8 开始";Log(detail);return;}
+   if(api){ready=Resolve();if(ready){phase="ready";
+#ifdef MHE_MODULE_EXTENSION_HEADER
+    detail=ModuleExtension::ReadyPrompt();
+#else
+    detail="女管理员动作演示就绪，按 F8 开始";
+#endif
+    Log(detail);return;}
     if(++attempts==1){for(int i=0;i<MethodCount;++i)if(methods[i].required&&!methods[i].r.method_info)Log(std::string("Missing contract: ")+methods[i].d.class_name+"."+methods[i].d.method_name);}}}
   for(int n=0;n<10&&!exitBootstrap;++n)std::this_thread::sleep_for(std::chrono::milliseconds(100));
  }});return BE_Result_Ok;
@@ -2047,6 +2409,14 @@ BE_Result BE_CALL Message(const char* request,const char* raw) {
      ++configRevision;if(actor.model)pendingMode=next;else{ReadMode(next);appliedConfigRevision=configRevision;}}
     catch(...){config=previous;configRevision=revision;appliedConfigRevision=applied;pendingMode=pending;throw;}}}
   else if(!ready)result=BE_Result_NotReady;
+  else if(action=="target_select")lockRequest=true;
+  else if(action=="target_focus")focusRequest=true;
+  else if(action=="target_cycle")cycleRequest=true;
+  else if(action=="target_release")targetReleaseRequest=true;
+  else if(action=="practice_attack"){
+   if(!controller.active||!config.local_practice||config.practice_target!="dummy"||autoDemo)result=BE_Result_NotReady;
+   else{practiceAttackRequest=true;practiceAttackFromFront=j.value("from_front",true);practiceAttackGuardable=j.value("guardable",true);}
+  }
   else if(action=="pause"){if(!controller.active)result=BE_Result_NotReady;else{paused=true;soundPlayer.Stop();commands.clear();detail="演示已暂停";}}
   else if(action=="resume"){if(!controller.active)result=BE_Result_NotReady;else{paused=false;hudEditing=false;resumeSoundLoops=true;previousBits=KeyBits();detail="演示继续";}}
   else if(action=="hud_edit"){hudEditing=j.value("enabled",!hudEditing);if(hudEditing){paused=true;soundPlayer.Stop();commands.clear();}else{paused=false;resumeSoundLoops=true;previousBits=KeyBits();}}
@@ -2060,10 +2430,16 @@ BE_Result BE_CALL Message(const char* request,const char* raw) {
  }catch(const std::exception& e){auto body=Json{{"error",e.what()}}.dump();return bridge.reply(bridge.context,request,BE_Result_InvalidArgument,body.c_str());}
 }
 void BE_CALL Shutdown() {
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ moduleExtension.Deactivate();
+#endif
  exitBootstrap=true;
  {std::lock_guard lock(gate);suppressInput=false;initialized=false;ready=false;toggleRequest=stopRequest=demoRequest=false;autoDemo=false;
   soundPlayer.Stop();soundTimeline.Reset();practiceHud.Update(false,"");
-  commands.clear();previewRequest=-1;controller.stop();cleanupPending=actor.model!=nullptr;phase="stopped";}
+  commands.clear();previewRequest=-1;controller.stop();cleanupPending=actor.model!=nullptr;
+  // A retired module retains its lease until its resident Unity frame has
+  // restored owned transforms. Releasing earlier could overlap another DLL.
+  if(!cleanupPending)poseLease.Release();phase="stopped";}
  if(bootstrap.joinable())bootstrap.join();practiceHud.Stop();
  std::lock_guard lock(gate);
  // The resident frame node restores transforms on the next Unity frame, even when

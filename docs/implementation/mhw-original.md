@@ -1,6 +1,6 @@
 # 原版太刀素材、源姿势与实验组合（2026-10-13）
 
-本轮开发与工具、资源、预览均在 `G:/Monster Hunter Endfield`。没有运行 MOD 插件、启动怪猎、修改终末地真实伤害或发送战斗消息，没有计算产物哈希。
+日期：2026-10-13。原版太刀烘焙的历史记录；当前六模式版本见 [combat-rc2](combat-rc2.md)。没有运行 MOD 插件、启动怪猎、修改终末地真实伤害或发送战斗消息，没有计算产物哈希。
 
 ## 已完成
 
@@ -57,14 +57,16 @@
 - 小居合：`12607224.wav`（1）；白刃居合：`111614630.wav`（6）。
 - 收刀：`858105059.wav`（19）。
 
-MHW `wp_swo_cmn` / `wp_swo_bs_001` 普通刀身 bank 也已提取，但本轮未将无法确认用途的片段随意标成普通斩。普通挥刀由另一个任务从终末地的确知事件与媒体提取，最后进入同一 PCM 链路；其来源、ID 和 cue 合并由主代理记录。
+MHW `wp_swo_cmn` / `wp_swo_bs_001` 普通刀身 bank 也已提取，但该版本未将无法确认用途的片段随意标成普通斩。普通挥刀从终末地的确知事件与媒体提取，进入同一 PCM 链路；来源、ID 和 cue 保存在合并清单。
 
 ## 验证与审阅文件
 
-原版骨架/四元数/手脚派生均由真实解析数据生成。159 个 LSM、22 个 PCM、16 个初始特技 cue，尺寸、文件长度、归一化旋转、有限值、全部引用和时间边界检查通过；普通挥刀合并后由主代理再做整包验证。游戏内握刀、衣物、地面和声音仍需实机验收。
+以下图片、影片和报告是本地研究材料，不随源码仓库分发。
 
-- [源阶段联系图](../../research/mhw-original/source-combo-contact.png)
-- [源阶段 GIF](../../research/mhw-original/source-combo-review.gif)
+原版骨架/四元数/手脚派生均由真实解析数据生成。159 个 LSM、22 个 PCM、16 个初始特技 cue，尺寸、文件长度、归一化旋转、有限值、全部引用和时间边界检查通过；普通挥刀合并后另做整包验证。游戏内握刀、衣物、地面和声音仍需实机验收。
+
+- 源阶段联系图：`research/mhw-original/source-combo-contact.png`（本地材料）
+- 源阶段 GIF：`research/mhw-original/source-combo-review.gif`（本地材料）
 - `research/mhw-original/source-original-air172-candidate-mount.blend` 与 `source-air172-candidate-*.png`：原猎人、原刀、未验证的 attachment 候选。
 - `merged-index.json`：13 容器覆盖与有效路径。
 - `original-bake-audit.json`：154 支持条目、10 NeedsParent、原控制记录。
@@ -79,6 +81,6 @@ MHW `wp_swo_cmn` / `wp_swo_bs_001` 普通刀身 bank 也已提取，但本轮未
 2. 背景 Blender 执行 `tools/mhw_bake_original.py`，仅写研究 staging。
 3. `tools/mhw_publish_baseline.py`：有证据的原样求值、明确的本地下降和腿连接，发布运行数据及 UI JSON。
 4. `tools/mhw_bake_audio.py`：解码原声并按组合阶段生成 cue；之后合并确知终末地普通挥刀 cue。不要在合并后重跑并丢掉额外来源。
-5. 根构建、runtime 初始化、资源验证、EML 包检查由主代理完成。
+5. 执行根目录构建、runtime 初始化、资源验证与 EML 包检查。
 
 第三方下载只在本地工具目录。ooz 研究 DLL 不链接到模组；作者许可与仓库来源保留，不随模组发布原版 raw chunk、MOD3、LMT、FSM、工具 ZIP 或 .blend。

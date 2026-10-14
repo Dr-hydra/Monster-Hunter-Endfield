@@ -88,3 +88,14 @@ config.local.*
 *.lsk
 *.rgba
 *.pcm
+
+# Original game control, collision, shell and parameter payloads
+*.shlp
+*.shll
+*.col
+*.mbd
+*.fsm
+*.gmd
+*.tex
+*.w[0-9][0-9]p
+*.prm

@@ -1,6 +1,6 @@
 # 莱万汀火焰长刀与提弗洛斯弓：定向资源调查
 
-日期：2026-10-13。所有工作目录与游戏输入均在 G 盘。只读检查本机当前客户端 `G:\Arknights Endfield`；未启动游戏、Unity、服务器或安装模组。使用 endfield-resource-manifests 的当前覆盖层原则：StreamingAssets → Persistent。没有全量解包，没有计算产物哈希。
+日期：2026-10-13。此记录从本机客户端 `<ENDFIELD_ROOT>` 定向提取并离线检查，按 StreamingAssets → Persistent 读取有效覆盖层，没有全量解包或游戏内验收。后续进展见 [项目计划](../../docs/PROJECT_PLAN.md)。
 
 ## 结论
 
@@ -8,11 +8,11 @@
 
 这里确证的是当前模型、骨骼、材质与贴图引用可被离线读取。挂到其他角色并正常显示是由结构支持的实现推断，尚未实机验证。火焰生成/消失、完整粒子与材质状态控制、弓臂变形/弓弦拉动，以及动画中挂点移动仍须单独接管，不能宣称加载 prefab 即完整还原。
 
-用户所称“提夫罗斯”在本地已验证角色目录中为 **提弗洛斯 / Typhoea / `chr_0034_typhoea`**。莱万汀为 `chr_0016_laevat`。
+项目别名“提夫罗斯”对应已验证角色目录中的 **提弗洛斯 / Typhoea / `chr_0034_typhoea`**。莱万汀为 `chr_0016_laevat`。
 
 ## 当前资源证据
 
-当前 manifest：`2954fa80-23c1-1579-2b22-4ecfd6d70418`，从本机 G 盘当前 VFS 提取。历史 BE 研究记录仅用于找线索，下列两把武器又以当前 VFS 复核。
+当日 manifest：`2954fa80-23c1-1579-2b22-4ecfd6d70418`，从本机有效 VFS 提取。历史 BE 研究记录仅用于查找线索，下列两把武器均以当日 VFS 复核。
 
 | 对象 | 独立 prefab | LOD0 网格 | 顶点 / 索引 | 类型 / 骨骼 |
 | --- | --- | --- | --- | --- |
@@ -47,7 +47,7 @@
 
 NativeAssetReader 将 shader 当元数据读取，没有解析 shader 字节码；图谱中 shader 引用的 `resolved` 可为 false，但路径可辨。不能把网格、骨骼、材质和纹理的离线引用完整报告扩展成“全部 shader 和完整 VFX 已验证渲染”。
 
-## 对“是否只能原角色”的判断
+## 跨角色可用性与边界
 
 - **已证实：** 这两把模型是独立武器资源，内部蒙皮 palette 只引用武器自己的骨骼，不要求莱万汀或提弗洛斯的人体蒙皮 palette。
 - **有实现依据的推断：** 保留其武器根、网格、材质和子骨架，可以在展示模式加载为纯视觉对象并按任意角色的手挂点驱动。现有 BE 的模型克隆工具可作为接入起点，但本轮没有克隆技能实体验证生命周期。
@@ -64,4 +64,4 @@ NativeAssetReader 将 shader 当元数据读取，没有解析 shader 字节码�
 - 自动图谱解析器对首批三个效果 prefab 的大小写 `P_` / `p_` 有 missing_resources 区分误报；原始图谱与 TypeTree 已证明根存在，属于空 Renderer 控制器，不是 bundle 缺失。
 - 本轮输出均在此目录。`special-weapons-evidence.json` 是小型精简证据；`special-weapon-model-parsed.json` / `laevat-weapon-parsed.json` 是当前武器引用图谱；`special-weapon-config-trees/` 是控制配置 TypeTree。大型当前原始图谱和少量 bundle 仅留本机研究目录，不加入模组发布包。
 
-线索来源：`G:\Better Endfield\research\custom_model\1.5.3\Windows\weapon-ultimate-bem\weapon-conversion\README.md` 中的弓身份证据；当前复核工具 `tools/CustomModel/extract_native_bundles.py`、`tools/CustomModel/NativeAssetReader/Program.cs` 与 `tools/CustomModel/parse_native_models.py`。
+线索来源：`<BE_ROOT>/research/custom_model/1.5.3/Windows/weapon-ultimate-bem/weapon-conversion/README.md` 中的弓身份证据；复核工具为 Better Endfield 的 `tools/CustomModel/extract_native_bundles.py`、`tools/CustomModel/NativeAssetReader/Program.cs` 与 `tools/CustomModel/parse_native_models.py`。

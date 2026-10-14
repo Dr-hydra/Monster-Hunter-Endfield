@@ -1,12 +1,13 @@
-# 工作约定
+# Contributor and agent guidance
 
-- 本项目开发根目录为 G:/Monster Hunter Endfield。命令显式使用此工作目录；用户另有指示前不使用 E 盘工作副本。
-- 默认不计算产物哈希。迁移验证使用目录清单、大小及直接字节比较；Git 自身对象管理正常使用。
-- 长日志、JSON、搜索结果等在 Headroom MCP 可用时优先压缩，缺信息再 retrieve；工具不可用时保存原始输出并只返回有界摘要。不要压缩凭据或需要精确引用的短内容。
-- 先读 docs/PROJECT_PLAN.md 和 docs/BASELINE_AUDIT.md。历史 README 中测试通过不代表当前工作副本可构建。
-- 当前是 Windows C++ EML format 1 / ABI 1 模组，不自行改成 Unity C# 项目，也不在迁移时更换 endfield.longsword.showcase 模块 ID。
-- 原版动画和装配关系必须有资源或实机证据。不要凭估计扭转手腕或剑尖，也不将离线骨架预览称为游戏内验收。
-- 角色骨架与展示武器分别适配。按主蒙皮与完整路径识别骨骼，避免分身/子骨架同名冲突。
-- 音效离线提取后走统一 PCM 链路；本地练习使用独立模拟血量，不新增真实战斗伤害、服务器写入或战斗发包调用。
-- 游戏资源、解包/烘焙数据及大生成产物保持本地，不强制加入 Git。素材源和第三方许可保留来源记录。
-- 只运行适合当前改动的验证。用户要求实施之前，本迁移阶段不生成假配置、占位头文件或虚假的可构建结果。
+- Work from this repository root. Keep machine-specific paths, credentials, local extensions, game resources and generated packages outside Git. Respect the user's workspace selection.
+- Read README.md, docs/PROJECT_PLAN.md and docs/DEVELOPMENT.md before changing project structure. Historical validation records do not prove a modified checkout passes.
+- The runtime is a Windows x64 C++ module for E Mod Loader format 1 / Native ABI 1. Keep the module ID `endfield.longsword.showcase` compatible with existing configurations.
+- The public module displays actions and maintains simulated practice state. Do not add gameplay damage, reward, save writes or combat network traffic to the public build.
+- Animation, attachment and control changes require source-resource or observed runtime evidence. Clearly identify approximations; offline previews do not constitute in-game validation.
+- Bind character skeletons and display weapons separately. Resolve the main skin and full transform paths to avoid duplicate bone-name collisions.
+- Decode sound assets offline and use the shared PCM playback path. Preserve third-party license notices; the source license does not grant game-asset redistribution rights.
+- Game resources and derivatives stay local. Do not force-add ignored files or introduce placeholder assets to make missing-input validation appear successful.
+- Run checks appropriate to the change. Distinguish tests that need locally prepared game data from tests usable with a clean clone. Do not launch the game without authorization.
+- Do not compute artifact hashes unless explicitly requested. Normal Git object management is unaffected.
+- Use Headroom MCP compression for long logs and multi-file results when available. If unavailable, save full logs in ignored output/ and return bounded summaries. Do not compress credentials or short content where exact wording matters.

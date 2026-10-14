@@ -6,8 +6,10 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <limits>
 #include <map>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -111,7 +113,7 @@ inline Command CommandFromName(const std::string& name){auto found=CommandNames(
     if(found==CommandNames().end())throw std::runtime_error("Unknown command: "+name);return found->second;}
 inline std::string CommandName(Command command){for(const auto&[name,value]:CommandNames())if(value==command)return name;return "unknown";}
 struct HoldRelease{float seconds=0;int slot=0;};
-struct HoldPolicy{int frame=-1;bool loop=false;std::vector<HoldRelease> releases;};
+struct HoldPolicy{int frame=-1;bool loop=false;std::vector<HoldRelease> releases;int loopFrame=0;};
 struct HoldVariant{int slot=0;std::set<int> fromSlots;HoldPolicy policy;};
 struct TapHoldBinding{Command command;float seconds=.35f;};
 enum InputBit : uint32_t { SlashBit=1,ThrustBit=2,SpiritBit=4,DodgeBit=8,SheatheBit=16,AimBit=32,ReloadBit=64 };
@@ -125,7 +127,16 @@ public:
     bool active=false; int slot=1; float seconds=0; Pose output;
     uint64_t motionSerial=0;
     int idleSlot=1,sheatheHoldFrame=80;
+    float specialSheatheSeconds=0,specialSheatheReadySeconds=73.f/60;
     bool longswordRules=true;
+    // Optional combat gates are attached by local practice. Presentation and
+    // offline source tours leave them empty, preserving the authored poses.
+    std::function<bool(Command,const Controller&)> combatAllowed;
+    std::function<int(Command,int,const Controller&)> combatSelectSlot;
+    std::function<void(Command,const Controller&)> combatCaptureInput;
+    std::function<int(Command,int,float,const Controller&)> combatSelectRelease;
+    std::function<std::optional<bool>(Command,const Controller&)> combatCanTransition;
+    std::function<int(const Controller&)> combatSelectCompletion;
     std::map<Command,HoldPolicy> holdPolicies;
     std::map<Command,std::vector<HoldVariant>> holdVariants;
     std::map<int,std::map<uint32_t,Command>> hardwareRoutes;
@@ -138,11 +149,12 @@ public:
     bool start(int idle=1) {
         stop();idleSlot=idle;
         auto found=clips.find(idle); if(found==clips.end()||found->second.frames.empty())return false;
-        active=true;slot=idle;seconds=0;++motionSerial;output=found->second.sample(0);return true;
+        active=true;slot=idle;seconds=0;motionCommand_=Command::Draw;++motionSerial;output=found->second.sample(0);return true;
     }
     void stop() {active=false;seconds=0;pending_=false;edgeBits_=0;clock_=0;blendElapsed_=transitionSeconds;blendFrom_={};rootOffset_={};heldCommands_.clear();holdTime_=0;holding_=false;returning_=false;normalSheathing_=false;activeHoldPolicy_={};tapHoldSince_.clear();tapHoldCancelled_.clear();}
     bool sheathed() const {if(!longswordRules)return false;auto it=moves.find(Command::Sheathe);return it!=moves.end()&&!it->second.empty()&&slot==it->second.front();}
-    bool available(Command command)const{return active&&moves.contains(command)&&!moves.at(command).empty()&&canTransition()&&
+    bool available(Command command)const{return active&&moves.contains(command)&&!moves.at(command).empty()&&canTransition(command)&&
+        (!combatAllowed||combatAllowed(command,*this))&&
         !(longswordRules&&resting()&&(command==Command::Sheathe||command==Command::Foresight));}
     bool buffered()const{return pending_||edgeBits_!=0;}
     bool buffered(Command command)const{return pending_&&pendingCommand_==command;}
@@ -153,6 +165,16 @@ public:
     bool isHeld(Command command)const{return heldCommands_.contains(command);}
     bool normalSheathed()const{const auto* clip=current();return active&&normalSheathing_&&clip&&seconds+1e-5f>=clip->duration();}
     bool resting()const{return slot==idleSlot||normalSheathed();}
+    Command motionCommand()const{return motionCommand_;}
+    bool transitionToSlot(int next,float startSeconds=0,Command command=Command::Release){
+        auto clip=clips.find(next);
+        if(!active||clip==clips.end()||clip->second.frames.empty()||!std::isfinite(startSeconds)||startSeconds<0||startSeconds>clip->second.duration()||
+           (!output.rotations.empty()&&output.rotations.size()!=clip->second.frames.front().rotations.size()))return false;
+        transition(next);seconds=startSeconds;motionCommand_=command;pending_=false;edgeBits_=0;
+        const auto initial=clip->second.sample(startSeconds).hip;
+        rootOffset_.x=output.hip.x-initial.x;rootOffset_.z=output.hip.z-initial.z;
+        return true;
+    }
     void returnToOrigin(float duration=.5f){if(!std::isfinite(duration)||duration<=0)return;
         returnFrom_=rootOffset_;returnDuration_=duration;returnElapsed_=0;returning_=true;}
     void held(Command command,bool down,bool activate=true){
@@ -162,6 +184,7 @@ public:
         if(holding_&&holdCommand_==command){
             const auto& rule=activeHoldPolicy_;int release=idleSlot;
             for(const auto& level:rule.releases)if(holdTime_+1e-6f>=level.seconds)release=level.slot;
+            if(combatSelectRelease)release=combatSelectRelease(command,release,holdTime_,*this);
             holding_=false;holdTime_=0;pending_=false;
             if(clips.contains(release))transition(release);
         }else if(pending_&&pendingCommand_==command)pending_=false;
@@ -202,7 +225,9 @@ public:
     void input(Command command) {
         if(command==Command::Stop){stop();return;} if(!active)return;
         if(sheathed()){if(command==Command::Slash)command=Command::Iai;else if(command==Command::Spirit)command=Command::IaiSpirit;}
-        if(canTransition()&&play(command)){pending_=false;return;}
+        if(combatAllowed&&!combatAllowed(command,*this))return;
+        if(combatCaptureInput)combatCaptureInput(command,*this);
+        if(canTransition(command)&&play(command)){pending_=false;return;}
         pending_=true;pendingCommand_=command;pendingUntil_=clock_+std::max(0.f,bufferSeconds);
     }
     void inputBits(uint32_t edges,uint32_t held) {
@@ -256,25 +281,30 @@ private:
     std::map<uint32_t,double> tapHoldSince_;std::set<uint32_t> tapHoldCancelled_;
     bool returning_=false;float returnElapsed_=0,returnDuration_=0;Vec3 returnFrom_{};
     bool normalSheathing_=false;
+    Command motionCommand_=Command::Draw;
     const Clip* current()const {auto it=clips.find(slot);return it==clips.end()?nullptr:&it->second;}
-    bool canTransition()const {
+    bool canTransition(Command command=Command::Draw)const {
         const Clip* clip=current();if(!clip)return false;
+        if(combatCanTransition){const auto permit=combatCanTransition(command,*this);if(permit)return *permit;}
         if(slot==idleSlot)return true;
         if(normalSheathing_)return normalSheathed();
         if(holding_)return true;
-        if(sheathed())return seconds>=std::min(clip->duration(),float(std::max(0,sheatheHoldFrame))/clip->fps);
+        if(sheathed())return seconds>=std::min(clip->duration(),specialSheatheSeconds>0?specialSheatheReadySeconds:float(std::max(0,sheatheHoldFrame))/clip->fps);
         return seconds>=clip->duration()*std::clamp(transitionFraction,0.f,1.f);
     }
     bool play(Command command) {
+        if(combatAllowed&&!combatAllowed(command,*this))return false;
         auto it=moves.find(command);if(it==moves.end()||it->second.empty())return false;
         const auto& sequence=it->second;auto at=std::find(sequence.begin(),sequence.end(),slot);
         int next=sequence.front();if(at!=sequence.end()&&std::next(at)!=sequence.end())next=*std::next(at);
         const HoldPolicy* policy=holdPolicies.contains(command)?&holdPolicies.at(command):nullptr;
         if(auto variants=holdVariants.find(command);variants!=holdVariants.end())for(const auto& variant:variants->second)
             if(variant.fromSlots.contains(slot)){next=variant.slot;policy=&variant.policy;break;}
+        if(combatSelectSlot)next=combatSelectSlot(command,next,*this);
         auto clip=clips.find(next);if(clip==clips.end()||clip->second.frames.empty())return false;
         if(!output.rotations.empty()&&output.rotations.size()!=clip->second.frames.front().rotations.size())return false;
         transition(next);
+        motionCommand_=command;
         normalSheathing_=command==Command::NormalSheathe;
         if(policy&&heldCommands_.contains(command)){activeHoldPolicy_=*policy;holding_=true;holdCommand_=command;holdTime_=0;}
         return true;
@@ -302,16 +332,26 @@ private:
         seconds+=dt;
         if(holding_)holdTime_+=dt;
         if(pending_&&clock_>pendingUntil_+1e-7)pending_=false;
-        if(pending_&&canTransition()) {Command command=pendingCommand_;pending_=false;if(play(command))clip=current();}
+        if(pending_&&canTransition(pendingCommand_)) {Command command=pendingCommand_;pending_=false;if(play(command))clip=current();}
         if(holding_){const auto& rule=activeHoldPolicy_;
-            if(rule.loop&&clip->duration()>0)seconds=std::fmod(seconds,clip->duration());
+            if(rule.loop&&clip->duration()>0){const float begin=float(std::max(0,rule.loopFrame))/clip->fps;
+                if(seconds>=clip->duration())seconds=begin+std::fmod(seconds-begin,clip->duration()-begin);}
             else seconds=std::min(seconds,rule.frame<0?clip->duration():std::min(clip->duration(),float(rule.frame)/clip->fps));}
         else if(normalSheathing_)seconds=std::min(seconds,clip->duration());
         else if(sheathed())seconds=std::min(seconds,std::min(clip->duration(),float(std::max(0,sheatheHoldFrame))/clip->fps));
         else if(slot==idleSlot) {if(clip->duration()>0)seconds=std::fmod(seconds,clip->duration());else seconds=0;}
         else if(seconds>=clip->duration()) {
-            auto idle=clips.find(idleSlot);if(idle==clips.end()||idle->second.frames.empty()){stop();return;}
-            transition(idleSlot);clip=&idle->second;
+            const int followup=combatSelectCompletion?combatSelectCompletion(*this):0;
+            const int destination=followup>0?followup:idleSlot;
+            auto next=clips.find(destination);if(next==clips.end()||next->second.frames.empty()){stop();return;}
+            transition(destination);clip=&next->second;
+        }
+        if(sheathed()&&std::isfinite(specialSheatheSeconds)&&specialSheatheSeconds>0&&
+           std::isfinite(specialSheatheReadySeconds)&&specialSheatheReadySeconds>=0&&blendElapsed_+dt>=specialSheatheReadySeconds+specialSheatheSeconds){
+            auto normal=moves.find(Command::NormalSheathe);
+            if(normal!=moves.end()&&!normal->second.empty()&&clips.contains(normal->second.front())){
+                transition(normal->second.front());normalSheathing_=true;motionCommand_=Command::NormalSheathe;pending_=false;edgeBits_=0;clip=current();
+            }
         }
         if(returning_&&resting()){returnElapsed_+=dt;const float t=std::clamp(returnElapsed_/returnDuration_,0.f,1.f);
             const float eased=t*t*(3-2*t);rootOffset_.x=returnFrom_.x*(1-eased);rootOffset_.z=returnFrom_.z*(1-eased);if(t>=1)returning_=false;}

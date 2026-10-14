@@ -18,12 +18,35 @@ void HardwareControls(const std::string& mode){
    }
   }
  }else if(mode=="sword_shield"){
-  controller.start(configuredIdleSlot);controller.input(Command::Backstep);ready();
-  for(int slot:{10344,10345,10346,10341,10342}){
-   controller.hardwareInput(SlashBit,SlashBit);require(controller.slot==slot,"physical attack skipped Perfect Rush continuation");
-   controller.hardwareInput(0,0);ready();
+  const bool soundEnabled=config.sound_enabled;config.sound_enabled=false;
+  localMode.Reset(mode);localMode.combatEnabled=true;
+  const auto rush=[&](bool timed){
+   controller.start(configuredIdleSlot);controller.input(Command::Backstep);ready();
+   controller.hardwareInput(SlashBit,SlashBit);require(controller.slot==10344,"physical attack did not enter Perfect Rush");controller.hardwareInput(0,0);
+   for(int stage=0;stage<3;++stage){
+    const auto* rule=localMode.rules.Find(controller.slot);require(rule&&!rule->timedInputs.empty(),"source Perfect Rush phase lacks an input branch");
+    const auto branch=rule->timedInputs.front();const auto seconds=(timed?branch.window.begin:branch.inputGateBegin)+.001f;
+    controller.tick(std::max(0.f,seconds-controller.seconds));controller.hardwareInput(SlashBit,SlashBit);
+    require(controller.slot==(timed?branch.timedSlot:branch.normalSlot),"physical input did not select the source normal/Just branch");controller.hardwareInput(0,0);
+   }
+   require(controller.slot==(timed?10341:10319),"Perfect Rush did not select the source final thrust");
+  };
+  for(bool timed:{false,true}){
+   rush(timed);const int thrust=controller.slot;
+   controller.tick(controller.clips.at(thrust).duration()+.001f);
+   require(controller.resting(),"missed Perfect Rush final thrust incorrectly attaches its finisher");
+   rush(timed);const auto* rule=localMode.rules.Find(controller.slot);const auto& windows=practice.authoredWindows.at(controller.slot);
+   const auto weapon=std::find_if(windows.begin(),windows.end(),[](const auto& window){return window.lane==0;});require(weapon!=windows.end(),"Perfect Rush final thrust has no source weapon window");
+   const int attachment=rule->hitFollowupSlot;CombatEvent hit;hit.motionSerial=controller.motionSerial;hit.slot=controller.slot;hit.seconds=(weapon->begin+weapon->end)*.5f;
+   hit.windowId=size_t(weapon->strike-1);hit.targetId=17;hit.generation=1;hit.damage=10;
+   controller.tick(std::max(0.f,hit.seconds-controller.seconds));const auto outcome=localMode.Consume(hit,controller);
+   require(outcome.hit&&outcome.followupSlot==attachment,"valid source final thrust contact did not attach Perfect Rush");ApplyCombatOutcome(hit,outcome);
+   require(controller.slot==attachment,"source attachment outcome did not reach the real Controller");
+   const int finish=localMode.rules.Find(attachment)->completionFollowupSlot;controller.tick(controller.clips.at(attachment).duration()+.001f);
+   require(finish>0&&controller.slot==finish,"attached Perfect Rush omitted its source completion finisher");ready();
+   controller.hardwareInput(SlashBit,SlashBit);require(controller.slot==10101,"Perfect Rush completion incorrectly loops into its entry");
   }
-  controller.hardwareInput(SlashBit,SlashBit);require(controller.slot==10101,"Perfect Rush finisher incorrectly loops into its entry");
+  localMode.Reset(mode);localMode.combatEnabled=false;config.sound_enabled=soundEnabled;
  }else if(mode=="light_bowgun"){
   controller.start(configuredIdleSlot);controller.hardwareInput(ReloadBit,ReloadBit);controller.tick(.1f);controller.hardwareInput(0,0);
   require(controller.slot==40102&&!controller.holding(Command::Spirit),"short reload press incorrectly enters held reload");

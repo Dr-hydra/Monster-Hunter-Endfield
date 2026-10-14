@@ -4,9 +4,12 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <EMLProjectRoot Condition="'$(EMLProjectRoot)' == ''">G:/Endfield Mod Loader</EMLProjectRoot>
+    <EMLProjectRoot Condition="'$(EMLProjectRoot)' == ''">$(MSBuildThisFileDirectory)../../../Endfield Mod Loader</EMLProjectRoot>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(EMLProjectRoot)/src/EModLoader.Core/EModLoader.Core.csproj" />
   </ItemGroup>
+  <Target Name="ValidateEMLProjectRoot" BeforeTargets="ResolveProjectReferences">
+    <Error Condition="!Exists('$(EMLProjectRoot)/src/EModLoader.Core/EModLoader.Core.csproj')" Text="E Mod Loader source checkout not found. Set -p:EMLProjectRoot=&quot;path/to/Endfield Mod Loader&quot;." />
+  </Target>
 </Project>

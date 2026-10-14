@@ -1,12 +1,12 @@
 # 终末地武器与角色通用适配调查
 
-日期：2026-10-13。仅研究，没有修改运行模组、启动游戏或服务器、安装资源或计算产物哈希。
+日期：2026-10-13。此记录是离线研究快照，没有游戏内验收；后续进展见 [项目计划](../../docs/PROJECT_PLAN.md)。
 
 ## 结论
 
 **适合做共享动作系统，再自动读取角色骨架并叠加少量角色/武器配置。没有证据表明每个角色必须重写一整套太刀、大剑或弓系统；也不能用女管理员的一组静止矩阵和握刀偏移直接覆盖所有人。**
 
-本轮读取了 G 盘现存的 32 位角色离线资源对象图。全部有目前太刀演示用的 21 根主骨，主骨之间的祖先拓扑全部与女管理员一致；全部有双手用于手掌映射的食指、中指、小指根，以及 `wep_R`、`wep_L`、`wep_M`、`IK_Weapon_R_001`、`IK_Weapon_L_001`。共用的是主骨语义和处理算法，不是固定骨长、绑定矩阵或当前运行对象引用。
+32 位角色的既有离线资源对象图全部有太刀演示使用的 21 根主骨，主骨之间的祖先拓扑全部与女管理员一致；全部有双手用于手掌映射的食指、中指、小指根，以及 `wep_R`、`wep_L`、`wep_M`、`IK_Weapon_R_001`、`IK_Weapon_L_001`。共用的是主骨语义和处理算法，不是固定骨长、绑定矩阵或当前运行对象引用。
 
 数值方面，21 骨的序列化位置/旋转/缩放以 1e-5 舍入比较有 **24 组**；右上臂与前臂的长度以米、4 位小数比较有 **7 组**，对应主要体型。24 组不能解释为 24 种动画算法，也不能当作全部角色最终运行时静止姿势的认证。
 
@@ -17,9 +17,9 @@
 - 已复验：读取现存 `inputs/1.5.3/Windows/tables/Table/CharacterTable.json`、`WeaponBasicTable.json`、`TextTable.json`、`I18nTextTable_CN.json`；读取 32 个 `sweep-identities/chr_*.json`，解析 GameObject/Transform/SMR/Mesh 引用；读取当前可用的 `native/module.cpp`。
 - 缓存来源：表格 `source-metadata.json` 标注 2026-09-29、`persistent+base`；角色图 `snapshot.manifest_version` 为 `2954fa80-23c1-1579-2b22-4ecfd6d70418`，与现存角色目录/动作清单同版。这是既有 VFS 提取缓存，不是此次对当前客户端全量或定向重提取。
 - 未验证：当前已安装客户端与缓存的逐项一致性；全部角色的实际运动、武器方向、衣物碰撞、运行时换装/技能形态；骨骼全树是否完全一致。21 主骨拓扑相同并不意味着全骨架、辅助扭转骨、脸部、衣服、尾巴或特效节点相同。
-- 当前项目限制：`native/module.cpp`、`native/core.h` 和大量 `.lsm` 仍可读取，但当前项目根的旧 `profiles/`、`dist/`、部分头文件和历史 `research/` 并不存在。README 中 0.5.6 历史说明不能作为缺失文件已经复验的证据，本轮不恢复源码。
+- 初查时的项目限制：`native/module.cpp`、`native/core.h` 和大量 `.lsm` 可读取，但旧 `profiles/`、`dist/`、部分头文件和历史 `research/` 缺失。0.5.6 历史 README 不能证明当时缺失文件已经复验；此快照不代表后续恢复状态。
 
-本轮按已读取的 `endfield-resource-manifests` 技能辨认缓存与有效 VFS 的边界；没有运行其重建工作流，也没有改清单。技能位置为 `C:/Users/28377/.codex/skills/endfield-resource-manifests/SKILL.md`。
+有效 VFS 按 StreamingAssets → Persistent 覆盖读取。此调查使用既有缓存，没有重建清单；缓存版本相同不自动证明其与当日客户端逐项一致。
 
 ## 本地表确定的武器类别
 
@@ -106,4 +106,4 @@
 2. 固化怪猎源武器的装配关系与完整动作取样，人体/武器坐标用可验证的源数据，不再按“让剑尖向下”推导手腕。
 3. 每个武器模式先验证一个角色、一个模型，再扩展同体型；既有自动 bindpose 与骨长代码应减少人工配置，而不是每个角色导出一套重复动画。
 
-复现脚本：`scout_endfield_adaptation.py`。详细证据：`endfield-adaptation-evidence.json`。两者只读取 G 盘缓存，输出也位于本目录。无新战斗调用或网络发送。
+复现脚本：`scout_endfield_adaptation.py`，读取本机既有角色缓存。详细证据保存在本地的 `endfield-adaptation-evidence.json`，不纳入 Git。检查范围不包含战斗调用或网络发送。

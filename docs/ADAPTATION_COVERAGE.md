@@ -1,6 +1,6 @@
 # 成品覆盖与验收表
 
-更新：2026-10-14。配套 [成品计划](PROJECT_PLAN.md)。六模式、33 角色 profile、80 普通装备记录和两把特殊武器已实施；本轮完成离线矩阵与宿主检查，按用户要求暂不运行游戏。数值、真实网格、接触候选和实际运行分别记录，不能把离线通过写成实机验收。
+更新：2026-10-14。配套 [成品计划](PROJECT_PLAN.md)。六模式、33 角色 profile、80 普通装备记录和两把特殊武器已实施；该版本完成离线矩阵与宿主检查，尚未进行游戏内验证。数值、真实网格、接触候选和实际运行分别记录，不能把离线通过写成实机验收。
 
 ## 1. 覆盖口径
 
@@ -54,7 +54,7 @@
 | 诀 | `chr_0032_lizhiyan` | 施术单元／弓 | 离线图/网格/profile | 比例、拉弦 |
 | 提夫罗斯（表名提弗洛斯） | `chr_0034_typhoea` | 施术单元／弓 | 离线图/网格/profile | **P0 小体型、原弓、弦/箭/声音** |
 
-专项为待检查方向，不表示已发现对应缺陷。依据：[角色研究](../research/expansion-20261013/ENDFIELD_ADAPTATION.md) 及同目录 `endfield-adaptation-evidence.json`。
+专项为待检查方向，不表示已发现对应缺陷。依据：角色研究（本地记录：`research/expansion-20261013/ENDFIELD_ADAPTATION.md`） 及同目录 `endfield-adaptation-evidence.json`。
 
 ## 3. 装备与特殊模型
 
@@ -84,17 +84,19 @@
 
 工具导出成功、数值有限、骨架能动只是前置检查；实际网格姿态、附属表现、HUD/声音反馈与清理单列。原生 shader 或衣物动态未运行验证时明示，正式版不得存在未解释的缺图、核心动作缺项或未完成 P0。
 
-## 5. 本轮离线证据与边界
+## 5. 当前离线证据与边界
+
+以下研究报告包含本地游戏派生数据，保存在忽略目录，不随源码仓库分发。
 
 最终冻结结果见 [网格验收](implementation/offline-mesh-final.md)：198普通＋66特殊组合全部通过当前来源门禁；普通423885源帧/74707实际网格采样，特殊24699采样。新增大剑强/真持姿33角色、5511源帧/1003网格样本已独立验收。198行旧核心418374帧与最新native oracle精确相同；安塔尔旧尺度漂移已重新求值和重扫。发行LSW/LGB与原native输入、派生挂点和握持逐bit相同，存储调整未减少动作或改变姿势计算。
 
-- [198 个角色×模式记录](../research/character-coverage/coverage.json)：实际 indexed target skin、手指、源武器自身 LSK 蒙皮、源/目标实际鞋顶点和独立附属根。莱万汀、提夫罗斯、大潘按全部核心帧扫描，其他角色每 12 帧及动作边界扫描实际网格；全部源 FK 帧另作有限性检查。每行保存非哈希输入语义签名，断点历史结果须与本次 oracle/ground/basis 对应后才能复用。
-- [66 个特殊武器×角色记录](../research/character-coverage/special-cross-coverage.json)：火刀与弓的实际网格、自有 palette 和三视图。弓使用原 CharacterData point84 → `IK_Weapon_L_001`，弦接触位置取实际 `R_Finger22`；火刀使用 MHW attachment47 和经几何测量确认的坐标适配，不能称为已复现莱万汀原技能 GEN 动态挂载。
-- [实际鞋探针修正](../research/character-coverage/sole-refinement.json)：狼卫、昼雪、大潘增补了遗漏的真实 footwear indexed vertices，最多 32 个 native probes。源旋转、根轨迹和登龙下降曲线没有为掩盖穿模而被改写。
-- [双手接触诊断](../research/character-coverage/contact-coverage.json)：双手接触权重是源手腕距离形成的几何候选，不能称为原作 authored IK flag。候选目标超出臂长时，把主手最少移动到双臂可达域，再求固定长度双臂。保留原源 offset、手腕世界旋转与原肘极向；大潘/噗切娜大剑的原 23/14 cm 不可达残差已由同源 helper 消除。
-- [最终耦合手臂网格回归](../research/character-coverage/final-coupled-contact-mesh-regression.json)：按最终 native 可达域 epsilon 和左右肘极向，补验莱万汀、大潘、提夫罗斯、噗切娜曾触发耦合求解的帧及其相邻帧，共 64 个真实网格样本，无数值错误或超门限脚底穿地。该增量检查单独记录，不将少量复验写成再次跑完整旧核心。
-- [太刀特殊刀的接触候选 gate](../research/character-coverage/longsword-contact-candidate-gate.json)：原 source hand→hilt 几何关系重建的 mask，与实际 native hilt 逐帧核对。它是几何证据，不是怪猎原作 authored IK flag；不同展示模型必须分别 gate，不能将三名重点角色的通过推广给全名单。
-- [太刀源刀的独立 gate](../research/character-coverage/longsword-source-contact-candidate-gate.json)：两把实际展示刀均完成 33 角色的柄面候选测试，分别发布模型、角色、槽位 mask；接触权重只在通过的连续区间内渐入渐出，不篡改 source flag 或手腕旋转。
-- [大潘片手实际手掌地面验证](../research/character-coverage/final-hand-body-ground.json)：翻滚 `10011` 全 75 帧和蓄力释放 `10112` 全 129 帧，以实际全权重手/鞋蒙皮验证。左手最低值分别为 −13.9 mm、−3.5 mm，鞋底最低 −22.8 mm，均在记录的 30 mm 离线门限内。source 手支撑翻滚采用显示根高度；脚已落地的 source 近地手姿态采用固定骨长手臂 IK；同两段动作中额外的 target 手掌穿地采用独立 target guard。三种来源分开保留，target guard 不冒充 source authored 接触，也不抬高脚已着地的角色根。
+- 198 个角色×模式记录（本地记录：`research/character-coverage/coverage.json`）：实际 indexed target skin、手指、源武器自身 LSK 蒙皮、源/目标实际鞋顶点和独立附属根。莱万汀、提夫罗斯、大潘按全部核心帧扫描，其他角色每 12 帧及动作边界扫描实际网格；全部源 FK 帧另作有限性检查。每行保存非哈希输入语义签名，断点历史结果须与该记录 oracle/ground/basis 对应后才能复用。
+- 66 个特殊武器×角色记录（本地记录：`research/character-coverage/special-cross-coverage.json`）：火刀与弓的实际网格、自有 palette 和三视图。弓使用原 CharacterData point84 → `IK_Weapon_L_001`，弦接触位置取实际 `R_Finger22`；火刀使用 MHW attachment47 和经几何测量确认的坐标适配，不能称为已复现莱万汀原技能 GEN 动态挂载。
+- 实际鞋探针修正（本地记录：`research/character-coverage/sole-refinement.json`）：狼卫、昼雪、大潘增补了遗漏的真实 footwear indexed vertices，最多 32 个 native probes。源旋转、根轨迹和登龙下降曲线没有为掩盖穿模而被改写。
+- 双手接触诊断（本地记录：`research/character-coverage/contact-coverage.json`）：双手接触权重是源手腕距离形成的几何候选，不能称为原作 authored IK flag。候选目标超出臂长时，把主手最少移动到双臂可达域，再求固定长度双臂。保留原源 offset、手腕世界旋转与原肘极向；大潘/噗切娜大剑的原 23/14 cm 不可达残差已由同源 helper 消除。
+- 最终耦合手臂网格回归（本地记录：`research/character-coverage/final-coupled-contact-mesh-regression.json`）：按最终 native 可达域 epsilon 和左右肘极向，补验莱万汀、大潘、提夫罗斯、噗切娜曾触发耦合求解的帧及其相邻帧，共 64 个真实网格样本，无数值错误或超门限脚底穿地。该增量检查单独记录，不将少量复验写成再次跑完整旧核心。
+- 太刀特殊刀的接触候选 gate（本地记录：`research/character-coverage/longsword-contact-candidate-gate.json`）：原 source hand→hilt 几何关系重建的 mask，与实际 native hilt 逐帧核对。它是几何证据，不是怪猎原作 authored IK flag；不同展示模型必须分别 gate，不能将三名重点角色的通过推广给全名单。
+- 太刀源刀的独立 gate（本地记录：`research/character-coverage/longsword-source-contact-candidate-gate.json`）：两把实际展示刀均完成 33 角色的柄面候选测试，分别发布模型、角色、槽位 mask；接触权重只在通过的连续区间内渐入渐出，不篡改 source flag 或手腕旋转。
+- 大潘片手实际手掌地面验证（本地记录：`research/character-coverage/final-hand-body-ground.json`）：翻滚 `10011` 全 75 帧和蓄力释放 `10112` 全 129 帧，以实际全权重手/鞋蒙皮验证。左手最低值分别为 −13.9 mm、−3.5 mm，鞋底最低 −22.8 mm，均在记录的 30 mm 离线门限内。source 手支撑翻滚采用显示根高度；脚已落地的 source 近地手姿态采用固定骨长手臂 IK；同两段动作中额外的 target 手掌穿地采用独立 target guard。三种来源分开保留，target guard 不冒充 source authored 接触，也不抬高脚已着地的角色根。
 
 离线衣物保留 authored 相对骨与明确的独立根输运，不模拟游戏 cloth、spring、shader、VFX 的实际执行。衣摆/链条穿地样本与身体/鞋底错误分开记录，源登龙的展示下降仍有明确出处边界。场景碰撞、遮挡、原生材质效果和实际音画同步保留为后续实机检查项。

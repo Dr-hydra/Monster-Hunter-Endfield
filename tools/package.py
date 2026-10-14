@@ -368,6 +368,10 @@ def validate_controls(moves, motions, mode):
         frame = policy.get('frame', -1)
         if type(frame) is not int or frame < -1 or any(frame >= motions[slot]['frames'] for slot in slots) or not isinstance(policy.get('loop', False), bool):
             raise ValueError(f'Hold points beyond playable source in {mode}/{command}')
+        if 'loop_frame' in policy or policy.get('loop',False):
+            loop_frame=policy.get('loop_frame',0)
+            if type(loop_frame) is not int or loop_frame<0 or not policy.get('loop',False) or any(loop_frame>=motions[slot]['frames']-1 for slot in slots):
+                raise ValueError(f'Hold loop must have a nonzero source interval in {mode}/{command}')
         previous = -1
         for release in policy.get('releases', []):
             seconds = release.get('seconds', -1)
@@ -490,6 +494,140 @@ def validate_packed_grip(entries, data_root, manifest, motions):
     return len(tracks)
 
 
+def validate_combat(document, mode, motions):
+    """Reject broken combat references before distributing an otherwise valid bank."""
+    if document.get('schema_version') != 1 or document.get('mode') != mode:
+        raise ValueError('Invalid combat manifest: ' + mode)
+    rows, authored = document.get('motions'), document.get('authored_windows')
+    if not isinstance(rows, dict) or not rows or len(rows) > 4096 or not isinstance(authored, dict):
+        raise ValueError('Invalid combat motion table: ' + mode)
+
+    def number(value, low=0):
+        return type(value) in (int, float) and math.isfinite(value) and value >= low
+
+    parameters = document.get('parameters', {})
+    for name in ('stamina_max', 'stamina_regen', 'charge_drain', 'guard_hit_cost',
+                 'bow_shot_cost', 'bow_dodge_cost', 'gauge_auto_seconds', 'bow_chain_seconds'):
+        if not number(parameters.get(name)) or parameters[name] == 0:
+            raise ValueError('Invalid combat parameter: ' + name)
+    for name in ('gauge_decay', 'gauge_auto_gain'):
+        if not number(parameters.get(name)):
+            raise ValueError('Invalid combat parameter: ' + name)
+    if type(parameters.get('ammo_capacity')) is not int or not 1 <= parameters['ammo_capacity'] <= 1000:
+        raise ValueError('Invalid combat ammo capacity')
+    if 'bow_charge_seconds' in document:
+        charge=document['bow_charge_seconds']
+        if not isinstance(charge,list) or len(charge)!=4 or any(not number(v) for v in charge) or any(a>=b for a,b in zip(charge,charge[1:])):
+            raise ValueError('Invalid source bow charge thresholds')
+    for key, row in rows.items():
+        if not key.isdecimal() or int(key) not in motions or not isinstance(row, dict):
+            raise ValueError('Combat slot absent from source clips: ' + key)
+        duration = motions[int(key)]['duration']
+        for field in ('outgoing', 'defensive'):
+            windows = row.get(field)
+            if not isinstance(windows, list) or len(windows) > 128:
+                raise ValueError('Invalid combat windows: ' + key)
+            for window in windows:
+                if not isinstance(window, list) or len(window) != 2 or not all(number(v) for v in window) or not window[0] < window[1] <= duration + 1e-4:
+                    raise ValueError('Combat window exceeds source clip: ' + key)
+        gains = row.get('gauge_gain_by_window')
+        if not isinstance(gains, list) or len(gains) != len(row['outgoing']) or not all(number(v) for v in gains):
+            raise ValueError('Combat gauge window mismatch: ' + key)
+        if not number(row.get('gauge_gain')) or not number(row.get('gauge_cost')) or not number(row.get('reload_at'), -1) or row['reload_at'] > duration + 1e-4:
+            raise ValueError('Invalid combat resource marker: ' + key)
+        values=row.get('motion_value_by_window')
+        if not isinstance(values,list) or len(values)!=len(row['outgoing']) or any(not number(v) for v in values):
+            raise ValueError('Combat motion value window mismatch: '+key)
+        if 'motion_value_by_level_by_window' in row:
+            levels=row['motion_value_by_level_by_window']
+            if not isinstance(levels,list) or len(levels)!=len(row['outgoing']) or any(not isinstance(v,list) or len(v)!=4 or any(not number(x) for x in v) for v in levels):
+                raise ValueError('Combat source level motion values mismatch: '+key)
+        if 'motion_value_scope_by_window' in row:
+            scopes=row['motion_value_scope_by_window']
+            if not isinstance(scopes,list) or len(scopes)!=len(values) or any(not isinstance(v,str) or not v for v in scopes):
+                raise ValueError('Combat motion value scope mismatch: '+key)
+        for name in ('counter_short_slot','counter_full_slot','completion_followup_slot','hit_followup_slot'):
+            value=row.get(name,0)
+            if type(value) is not int or value<0 or value and value not in motions:
+                raise ValueError('Combat source followup absent: '+key+'/'+name)
+        short,full=row.get('counter_short_slot',0),row.get('counter_full_slot',0)
+        if bool(short)!=bool(full) or (short and row.get('lance_counter') is not True) or not number(row.get('counter_full_seconds',0)):
+            raise ValueError('Invalid source counter release policy: '+key)
+        if type(row.get('true_charge',False)) is not bool:
+            raise ValueError('Invalid true charge role: '+key)
+        if row.get('true_charge',False):
+            first,last=row.get('true_charge_first_window'),row.get('true_charge_final_window')
+            if type(first) is not int or type(last) is not int or first==last or not 0<=first<len(values) or not 0<=last<len(values):
+                raise ValueError('Invalid true charge source windows: '+key)
+        if not number(row.get('weak_finish_multiplier',1)) or row.get('weak_finish_multiplier',1)==0 or row.get('weak_finish_scope','unknown') not in ('unknown','motion_has_weakpoint_first_hit'):
+            raise ValueError('Invalid true charge weak finish: '+key)
+        branches=row.get('timed_inputs',[])
+        if not isinstance(branches,list) or len(branches)>128:
+            raise ValueError('Invalid source timed input list: '+key)
+        for branch in branches:
+            if not isinstance(branch,dict) or not isinstance(branch.get('command'),str) or not branch['command']:
+                raise ValueError('Invalid source timed input command: '+key)
+            begin,end,gate_begin,gate_end=[branch.get(name) for name in ('begin','end','input_gate_begin','input_gate_end')]
+            if not all(number(v) for v in (begin,end,gate_begin,gate_end)) or not gate_begin<=begin<end<=gate_end<=duration+1e-4:
+                raise ValueError('Invalid source timed input window or gate: '+key)
+            for field in ('normal_slot','timed_slot'):
+                target=branch.get(field)
+                if type(target) is not int or target<=0 or target not in motions:
+                    raise ValueError('Unknown source timed input branch: '+key+'/'+field)
+        tiers=row.get('projectile_tiers',[])
+        markers=row.get('projectile_markers',[])
+        if not isinstance(tiers,list) or len(tiers)>64 or not isinstance(markers,list) or len(markers)>128:
+            raise ValueError('Invalid source projectile table: '+key)
+        if (tiers or markers) and row.get('projectile') is not True:
+            raise ValueError('Source projectile table lacks projectile role: '+key)
+        for tier in tiers:
+            if not isinstance(tier,dict) or type(tier.get('arrows')) is not int or not 1<=tier['arrows']<=64 or type(tier.get('shell_id')) is not int or tier['shell_id']<0 or any(not number(tier.get(field)) for field in ('motion_value','speed','range','radius')):
+                raise ValueError('Invalid source projectile tier: '+key)
+        if len(markers)>len(values) or any(not number(v) or v>duration+1e-4 for v in markers) or any(a>=b for a,b in zip(markers,markers[1:])):
+            raise ValueError('Invalid source projectile marker: '+key)
+    for key, contacts in authored.items():
+        if key not in rows or not isinstance(contacts, list) or len(contacts) > 128:
+            raise ValueError('Unknown authored combat slot: ' + key)
+        seen = set()
+        for contact in contacts:
+            identity = contact.get('window_id')
+            if type(identity) is not int or identity in seen or not 0 <= identity < len(rows[key]['outgoing']):
+                raise ValueError('Invalid authored combat identity: ' + key)
+            seen.add(identity)
+            if contact.get('contact_role') not in ('weapon', 'shield', 'body', 'ally_only', 'delayed_effect','constraint_attack') or any(
+                    not number(contact.get(field)) or abs(contact[field] - rows[key]['outgoing'][identity][i]) > 1e-4
+                    for i, field in enumerate(('begin', 'end'))):
+                raise ValueError('Authored combat window mismatch: ' + key)
+            if contact.get('contact_role')=='constraint_attack':
+                source=contact.get('source_move',{})
+                if mode!='sword_shield' or type(contact.get('bank')) is not int or contact['bank']!=3 or contact.get('native_bone_binding_known') is not False or not isinstance(source,dict) or type(source.get('Attack_Type')) is not int or source['Attack_Type']!=1 or not number(source.get('Motion_Value')) or abs(rows[key]['motion_value_by_window'][identity]-source['Motion_Value'])>1e-4:
+                    raise ValueError('Invalid source SnS constraint attack: '+key)
+    if mode == 'longsword':
+        followup = document.get('helm_followup', {})
+        if followup.get('slot') not in motions or not number(followup.get('start_seconds')) or followup['start_seconds'] >= motions[followup['slot']]['duration']:
+            raise ValueError('Invalid combat Helm followup')
+        delay = document.get('delayed_hit', {})
+        count = delay.get('hit_limit')
+        if type(count) is not int or not 1 <= count <= 32 or not number(delay.get('first_delay')) or any(
+                not number(delay.get(name)) or delay[name] <= 0 for name in ('between_delay', 'last_delay')):
+            raise ValueError('Invalid delayed combat timing')
+        for key, triggers in delay.get('triggers', {}).items():
+            if key not in rows or not rows[key].get('helm_finish') or not isinstance(triggers, list):
+                raise ValueError('Invalid delayed combat source')
+            for trigger in triggers:
+                identity, pulses, offsets = trigger.get('window_id'), trigger.get('pulse_window_ids'), trigger.get('pulse_offsets')
+                if type(identity) is not int or not 0 <= identity < len(rows[key]['outgoing']) or not isinstance(pulses, list) or len(pulses) != count or len(set(pulses)) != count or not isinstance(offsets, list) or len(offsets) != count:
+                    raise ValueError('Invalid delayed combat identities')
+                if any(not number(trigger.get(field)) or abs(trigger[field] - rows[key]['outgoing'][identity][i]) > 1e-4 for i, field in enumerate(('begin', 'end'))):
+                    raise ValueError('Delayed trigger mismatch')
+                for i, pulse in enumerate(pulses):
+                    expected = delay['first_delay'] + i * delay['between_delay'] + (delay['last_delay'] - delay['between_delay'] if i + 1 == count else 0)
+                    if type(pulse) is not int or pulse == identity or not 0 <= pulse < len(rows[key]['outgoing']) or not number(offsets[i]) or abs(offsets[i] - expected) > 1e-4 or abs(rows[key]['outgoing'][pulse][0] - (trigger['begin'] + expected)) > 1e-4:
+                        raise ValueError('Delayed pulse mismatch')
+                    if 'motion_value_by_level_by_window' not in rows[key]:
+                        raise ValueError('Delayed source pulse lacks gauge-level motion values')
+
+
 def validate_mode(root, entries, entry):
     mode, data_root, audio_root = entry['id'], str(safe_relative(entry['data_root'])), str(safe_relative(entry['audio_root']))
     motions = read(required(entries, data_root + '/catalog.json', '.json'))
@@ -508,6 +646,7 @@ def validate_mode(root, entries, entry):
         if not motion.get('source') or not isinstance(motion.get('source_slot', slot), int):
             raise ValueError(f'Missing source provenance in {mode}/{slot}')
         by_slot[slot] = {**motion, 'duration': duration, 'fps': fps}
+    validate_combat(read(required(entries, data_root + '/combat_rules.json', '.json')), mode, by_slot)
     for filename in ('source_rig.json', 'ground_tracks.json', 'grip_tracks.json', 'source_weapon_tracks.json'):
         required(entries, data_root + '/' + filename, '.json')
     moves = read(required(entries, data_root + '/moves.json', '.json'))

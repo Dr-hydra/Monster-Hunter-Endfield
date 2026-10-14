@@ -116,9 +116,24 @@ void ModeControlsTest(){
     c.stop();CHECK(c.start());c.hardwareInput(0,SpiritBit);CHECK(c.slot==c.idleSlot); // no stale held-key start
     CHECK(CommandFromName("reload")==Command::Reload);CHECK(CommandName(Command::Counter)=="counter");CHECK(Throws([]{CommandFromName("missing");}));
 }
+void CombatCallbacksTest(){
+    using namespace LS;auto c=MakeController();bool allowed=false;
+    c.combatAllowed=[&](Command,const Controller&){return allowed;};
+    CHECK(c.start());c.input(Command::Slash);CHECK(c.slot==1&&!c.buffered()&&!c.available(Command::Slash));
+    allowed=true;c.input(Command::Slash);CHECK(c.slot==101);c.tick(.95f);c.input(Command::Spirit);CHECK(c.buffered(Command::Spirit));
+    allowed=false;c.tick(.2f);CHECK(c.slot==101&&!c.buffered()); // Buffered commands recheck their resource gate.
+    allowed=true;c.combatSelectSlot=[](Command command,int suggested,const Controller&){return command==Command::Spirit?107:suggested;};
+    c.input(Command::Spirit);CHECK(c.slot==107&&c.motionCommand()==Command::Spirit);
+    const auto serial=c.motionSerial;CHECK(c.transitionToSlot(160,1.5f,Command::Helm));CHECK(c.slot==160&&Near(c.seconds,1.5f)&&c.motionSerial==serial+1);
+    CHECK(!c.transitionToSlot(160,-1)&&!c.transitionToSlot(999,0)&&!c.transitionToSlot(160,3));
+    c.tick(.001f);CHECK(Finite(c.output.hip));
+    auto timeout=MakeController();timeout.specialSheatheSeconds=.5f;timeout.specialSheatheReadySeconds=80.f/60;
+    CHECK(timeout.start());timeout.input(Command::Sheathe);timeout.tick(1.82f);CHECK(timeout.sheathed());
+    timeout.tick(.025f);CHECK(timeout.slot==3&&!timeout.sheathed()&&timeout.motionCommand()==Command::NormalSheathe);
+}
 }
 int main(int argc,char** argv){
-    try{MathTest();ControllerTest();ReaderTest();ModeControlsTest();
+    try{MathTest();ControllerTest();ReaderTest();ModeControlsTest();CombatCallbacksTest();
         if(argc>1){size_t count=0;for(const auto& entry:std::filesystem::directory_iterator(argv[1]))if(entry.path().extension()==".lsm"){
             auto clip=LS::ReadClip(entry.path());auto pose=clip.sample(clip.duration()*.4321f);
             CHECK(pose.rotations.size()==21&&LS::Finite(pose.hip));for(auto q:pose.rotations)CHECK(LS::Finite(q)&&Near(LS::Dot(q,q),1,.0001f));++count;}

@@ -1,8 +1,8 @@
 # Runtime integration review
 
-2026-10-13, `G:/Monster Hunter Endfield`. This is a bounded code and
+2026-10-13. This historical note records a bounded code and
 simulated-host review of the two-character/independent-blade integration,
-not a game test. The reviewer changed only regression tests and this note;
+not a game test. The regression checks cover the integration behavior;
 the root agent made the production changes in `native/module.cpp`.
 
 ## Findings addressed

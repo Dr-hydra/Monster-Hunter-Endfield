@@ -4,11 +4,24 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 
 static void Require(bool value,string message){if(!value)throw new InvalidOperationException(message);}
+static string? FindProjectRoot(string start){
+ for(var directory=new DirectoryInfo(start);directory is not null;directory=directory.Parent){
+  if(File.Exists(Path.Combine(directory.FullName,"module.json"))&&
+     File.Exists(Path.Combine(directory.FullName,"CMakeLists.txt"))&&
+     File.Exists(Path.Combine(directory.FullName,"tools","eml_verification","EmlVerification.csproj")))return directory.FullName;
+ }
+ return null;
+}
 if(args.Length is not (3 or 4))throw new ArgumentException("EmlVerification <final-package.zip> <offline-host.exe> <new-run-directory> [legacy-package.zip]");
 var archive=Path.GetFullPath(args[0]);var executable=Path.GetFullPath(args[1]);var run=Path.GetFullPath(args[2]);
-var allowed=Path.GetFullPath("G:/Monster Hunter Endfield/local/verification")+Path.DirectorySeparatorChar;
+var projectRoot=FindProjectRoot(Path.GetDirectoryName(archive)!)??FindProjectRoot(AppContext.BaseDirectory)
+ ??throw new InvalidOperationException("Cannot locate the project checkout; keep the package or this tool inside the project tree");
+var allowed=Path.Combine(projectRoot,"local","verification")+Path.DirectorySeparatorChar;
 Require(run.StartsWith(allowed,StringComparison.OrdinalIgnoreCase),"Verification output must stay in the project local/verification directory");
-Require(!Directory.Exists(run),"Use a new verification run directory; do not replace an existing module library");
+Require(!Directory.Exists(run)&&!File.Exists(run),"Use a new verification run directory; do not replace an existing module library");
+for(var directory=new DirectoryInfo(Path.GetDirectoryName(run)!);directory is not null&&!directory.FullName.Equals(projectRoot,StringComparison.OrdinalIgnoreCase);directory=directory.Parent){
+ Require(!directory.Exists||(directory.Attributes&FileAttributes.ReparsePoint)==0,"Verification output must not traverse a symbolic link or junction");
+}
 Directory.CreateDirectory(run);var log=new List<string>();var result=new JsonObject{["archive"]=archive,["offline_host"]=executable,["run_directory"]=run,["runtime_validation"]=false,["gameplay_validation"]=false};
 try{
  var store=new ModuleStore(Path.Combine(run,"isolated-library"));await store.EnsureAsync();

@@ -1,6 +1,6 @@
 # 完整 MHW 资源作为扩展素材来源：初查
 
-日期：2026-10-13。范围是少量只读检查与工具路线确认；未全量解包、未修改模组或动画、未计算产物哈希。所有研究产物位于 G 盘。
+日期：2026-10-13。此记录是容器结构与工具路线的离线初查，没有全量解包；后续提取与适配进展见 [项目计划](../../docs/PROJECT_PLAN.md)。研究输入与输出仅本地保留。
 
 ## 结论
 
@@ -10,13 +10,13 @@
 
 ## 本轮实际验证
 
-- 安装目录：`G:\SteamLibrary\steamapps\common\Monster Hunter World`，EXE 与 `chunk/` 可读。
+- 本机安装 `<MHW_ROOT>` 的 EXE 与 `chunk/` 可读。
 - 13 个 `chunkG*.bin`，共 **54,895,522,591 字节**。13 个包均为 `CMP\0` 头，各自压缩子块表可完整读取。仅检查头和表，不代表整包所有资源已验证或游戏下载完整性已验证。
 - 记录见 `mhw_archive_headers.json`。没有解包约 55 GB 的完整数据。
-- `G:\Better Endfield\research\actions\mhw-longsword\20261012\tooling` 仍有 MHW Anim Tools 与 MHW Model Editor。当前 MOD LMT 可以用纯 Python reader 和 pose-curve 编译器读取。
+- `<BE_ROOT>/research/actions/mhw-longsword/20261012/tooling` 保留 MHW Anim Tools 与 MHW Model Editor。MOD LMT 可以用纯 Python reader 和 pose-curve 编译器读取。
 - 当前 `tools/bake_actions.py` 的源仍为 **Rise Style 太刀 MOD**，骨架仍为 ZXC 外观 MOD 的 `m_body043_0000.mod3`；当前模组并没有因为安装了完整游戏就自动改成原版素材。
 - 历史检查记录：Rise 主 LMT 有 164 个非空条目，Valor 有 177 个；解码轨道未报错。这些是 MOD 数据，不是本轮原版全武器检查结果。
-- 在上述限定 G 盘项目/研究目录内，没有找到现成的 WorldChunkTool / MHWNoChunk 程序或可直接使用的 `oo2core_8_win64.dll`。本轮没有安装、下载运行解包程序或外部 DLL。
+- 初查范围内的项目/研究目录没有可用的 WorldChunkTool / MHWNoChunk 程序或 `oo2core_8_win64.dll`，因此原版提取路线尚未执行。
 
 ## 提取路线与边界
 
@@ -63,7 +63,7 @@ FSM/动作配置决定派生、持续时间、输入窗口和状态；动作根/
 
 1. 先用选取提取获取原版太刀与片手，另外抽取大剑和弓，逐一验证 LMT 版本、人体编号覆盖与附属骨骼差异。
 2. 原版太刀必须同时带源武器装配证据，在猎人骨架/模型上先验证下劈，再重定向到终末地；避免一边修人体、一边凭视频估计剑向。
-3. 音频仍按用户要求离线解码后进入统一 PCM 链路；本轮不额外调用游戏音效。
+3. 音频离线解码后进入统一 PCM 链路，不依赖调用游戏音效事件。
 4. 在资源提取与对照完成之前，不宣布 14 套武器已适配、不批量修改动作，也不扩大当前模拟伤害/网络逻辑。
 
-附带文件状态：当前 G 盘独立项目的 README 引用 `profiles/`、多个 `native/*.h` 与历史 `research/`，检查时这些目录/文件部分不存在（如 `native/weapon_pose.h`）。本轮未恢复或改写源码；后续实施前需核对实际完整工作副本，不能仅按 README 判断可立即重建。
+初查时 README 引用的 `profiles/`、部分 `native/*.h` 与历史 `research/` 缺失（如 `native/weapon_pose.h`），不能仅凭历史 README 判定当时可立即重建。此项不代表后续恢复状态；当前基线以项目计划和实施记录为准。

@@ -47,7 +47,12 @@ def main():
         for path in sorted(source.glob('*.col')):
             suffix=path.stem.removeprefix('wp'+num)
             if suffix and not suffix.startswith('_'):continue
-            bank=int(suffix[1:]) if suffix else 0;banks[bank]=read_col(path)
+            bank=int(suffix[1:]) if suffix else 0
+            # Native uWp01 loader explicitly installs wp01_02 in collision bank
+            # 3 (14211dfdf), not the filename suffix 2. It is the Rush constraint
+            # attack resource, not a shield/hurt lane or an absent COL bank.
+            if mode=='sword_shield' and path.stem=='wp01_02':bank=3
+            banks[bank]=read_col(path)
         timl=json.loads((ROOT/f'research/multiweapon/{mode}/timeline-decoded.json').read_text())['actions'];actions={}
         for slot,doc in timl.items():
             hits=[]

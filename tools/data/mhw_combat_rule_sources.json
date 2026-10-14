@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "basis": "Original Monster Hunter World: Iceborne weaponTutorial.gmd, source COL/TIML and traced composite source maps",
+  "notes_source": "research/keyboard-defaults/decoded-text/six-weapon-control-facts.json",
+  "logical_rules": {
+    "longsword": [
+      "tachi1",
+      "tachi3",
+      "tachi24",
+      "S_tachi_TEXT1",
+      "S_tachi_TEXT3",
+      "S_tachi_TEXT4"
+    ],
+    "sword_shield": [
+      "katate1",
+      "S_katate_TEXT2"
+    ],
+    "greatsword": [
+      "taiken1",
+      "taiken2",
+      "S_taiken_TEXT2"
+    ],
+    "lance": [
+      "ransu1",
+      "ransu3",
+      "S_ransu_TEXT2"
+    ],
+    "light_bowgun": [
+      "lgun1",
+      "lgun2",
+      "S_lgun_TEXT2"
+    ],
+    "bow": [
+      "bow1",
+      "bow2"
+    ]
+  },
+  "numeric_scope": "local_teaching_parameters",
+  "parameters": {
+    "stamina_max": 100,
+    "stamina_regen": 18,
+    "charge_drain": 12,
+    "guard_hit_cost": 15,
+    "bow_shot_cost": 10,
+    "bow_dodge_cost": 15,
+    "gauge_decay": 0.4,
+    "gauge_auto_gain": 5,
+    "gauge_auto_seconds": 15,
+    "ammo_capacity": 6,
+    "bow_chain_seconds": 1.5,
+    "normal_gauge_gain": 10,
+    "spirit_blade_cost": 15
+  },
+  "teaching_windows": {
+    "foresight": [
+      0,
+      0.75
+    ],
+    "iai_spirit": [
+      0,
+      0.15
+    ],
+    "iai": [
+      0,
+      0.15
+    ],
+    "lance_counter_start": [
+      0,
+      0.25
+    ]
+  },
+  "defensive_timing_scope": "local_simulation",
+  "limitations": [
+    "Hunter's Notes certify logical conditions, not original numeric resource values or defensive frame windows.",
+    "TIML bit names are not independently sufficient to identify invulnerability, guard angles or exact counter timing.",
+    "The current source shell controller is not replayed; delayed-effect COL triggers are not seven guaranteed sword contacts.",
+    "Power Guard entry/pose remains unverified. Dragon Piercer shortcut and coating pose remain presentation exceptions.",
+    "Local base teaching damage multiplied by source MV / 100 is a normalization, not the complete native attack/HZV/sharpness/critical/skill/element/status calculation.",
+    "Longsword source duration and level multipliers are decoded. Gauge decay/regeneration execution cadence and HZV/sharpness energy-generation adjustments remain teaching values.",
+    "Ordinary Iai timing only marks longer gauge regeneration eligibility; it does not grant full damage immunity.",
+    "Delayed SHLP sound slots are empty; no arbitrary seven-hit audio request is inferred from an existing animation cue.",
+    "Native controller class/constructor and source TIML bit27/28 proofs are recorded separately. Lance phase-3 release threshold and local defense eligibility remain an explicit host controller adaptation."
+  ],
+  "controller_evidence": "docs/implementation/combat-source-closure.md"
+}

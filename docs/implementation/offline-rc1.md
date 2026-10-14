@@ -1,6 +1,6 @@
 # 1.0.0-offline-rc1 离线交付记录
 
-本次完成用户授权的离线实现、验证与 E Mod Loader 打包。未启动终末地、怪猎或游戏服务端，没有计算产物哈希。项目位于 `G:/Monster Hunter Endfield`，游戏资源及派生媒体留本机。模块 ID 保留 `endfield.longsword.showcase`，版本 `1.0.0-offline-rc1`。
+日期：2026-10-14。历史 `1.0.0-offline-rc1` 离线实现、验证与 EML 打包记录，未进行游戏内验证。模块 ID 保留 `endfield.longsword.showcase`。资源、媒体及 ZIP 留在本地；当前版本见 [combat-rc2](combat-rc2.md)。
 
 ## 实现与覆盖
 
@@ -43,8 +43,8 @@ EML方法与实际结果见 [宿主验收](eml-verification.md)。最终包内�
 
 物理键位已按官方5键／3键鼠标表核证。各招派生另据Hunter's Notes、COL与源姿势；长按阈值、自动松开时机和本地条件属于模组政策。长枪Power Guard源入口、弓装瓶完整姿势和龙之矢官方硬组合仍有明确未知项，未拿替身动作冒充。详见 [键位核对](keyboard-controls.md)、[大剑来源](greatsword-charge-source.md)。
 
-原生shader／VFX、布料与链条、真实场景碰撞分层、动态换装／镜头、实际输入音画同步和玩家观感仍待后续实机。离线门禁不保证所有衣物或武器相交消失，`runtime_verified`与`visual_quality_certified`保持false。本次交付是离线候选，不宣布未经实机验收的正式1.0。通信范围见 [本地练习边界](local-practice-boundary.md)。
+原生shader／VFX、布料与链条、真实场景碰撞分层、动态换装／镜头、实际输入音画同步和玩家观感仍待后续实机。离线门禁不保证所有衣物或武器相交消失，`runtime_verified`与`visual_quality_certified`保持false。该记录交付是离线候选，不宣布未经实机验收的正式1.0。通信范围见 [本地练习边界](local-practice-boundary.md)。
 
 ## 最终实物验收
 
-最终ZIP已验证：3052个条目，解包210856210字节，ZIP141405867字节。其3025个运行库／配置／资源／UI条目与已验收审查包逐字节相同；没有计算哈希。最终ZIP再次通过真实EML的旧版升级、六模式、配置、停用／重装／移除与退出；实际包内网页116项通过，覆盖196PCM、六MP4、两套键位、106预览和413依赖。桌面与390px页面已查看，自有浏览器、HTTP预览和OfflineHost均已结束。源码／文档／profiles已同步私有远端，资源、媒体和ZIP仅保留本机。
+最终ZIP已验证：3052个条目，解包210856210字节，ZIP141405867字节。其3025个运行库／配置／资源／UI条目与已验收审查包逐字节相同；没有计算哈希。最终ZIP再次通过真实EML的旧版升级、六模式、配置、停用／重装／移除与退出；实际包内网页116项通过，覆盖196PCM、六MP4、两套键位、106预览和413依赖。桌面与390px页面已查看，自有浏览器、HTTP预览和OfflineHost均已结束。源码、文档和适配配置保存在仓库；资源、媒体和 ZIP 仅保留本地。
