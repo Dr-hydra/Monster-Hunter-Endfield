@@ -5,7 +5,8 @@ async page => {
  await page.goto(address.href);
  await page.waitForFunction(()=>document.getElementById('catalog-state').textContent==='资源目录已载入');
  const catalogs=await page.evaluate(async()=>({product:await(await fetch('../assets/product_catalog.json')).json(),audio:await(await fetch('../assets/audio_catalog.json')).json()}));
- ensure(catalogs.product.version==='1.0.0-offline-rc1','release version in actual product catalog');
+ const manifest=await page.evaluate(async()=> (await(await fetch('../module.json')).json()));
+ ensure(catalogs.product.version===manifest.version,'release version in actual product catalog matches manifest');
  await page.locator('[data-page="start"]').click();
  for(const value of ['full','basic','signature']){await page.locator('#demo-sequence').selectOption(value);ensure(await page.locator('#demo-sequence').inputValue()===value,'offline sequence choice: '+value);}
  await page.locator('#demo-loop').uncheck();await page.locator('#save-config').click();

@@ -3,7 +3,7 @@
   "id": "endfield.longsword.showcase",
   "name": "Monster Hunter Endfield",
   "author": "Better Endfield contributors",
-  "version": "1.0.0-combat-rc2",
+  "version": "1.0.0-compat-1.6.3-rc1",
   "abi": 1,
   "libraries": {
     "windows-x64": "native/windows-x64/endfield.longsword.showcase.dll"

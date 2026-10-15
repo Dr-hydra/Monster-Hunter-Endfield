@@ -7,6 +7,7 @@ struct FakeTransform{bool alive=true;LS::Quat rotation{};LS::Vec3 position{};boo
 FakeTransform* equipmentGo=nullptr;
 FakeTransform* currentModel=nullptr;
 unsigned freedPins=0,rendererWrites=0,nextPin=10;
+unsigned terrainCalls=0;
 Mat Identity(){Mat value;for(int i=0;i<4;++i)value.at(i,i)=1;return value;}
 BE_Result BE_CALL FakeResolve(void*,const BE_MethodDescriptorV1* descriptor,BE_ResolvedMethodV1* result){
  if(std::string(descriptor->class_name)=="GameObject"&&std::string(descriptor->method_name)=="get_transform"){*result={};result->method_info=reinterpret_cast<const void*>(0xf00d);return BE_Result_Ok;}return BE_Result_NotFound;
@@ -32,12 +33,27 @@ void* BE_CALL FakeInvoke(void*,const void* token,void* object,void** args,void**
   case Parent:return transform->parent;
   case WeaponViewPart:{static bool found=true;*static_cast<void**>(args[1])=equipmentGo;return &found;}
   case WeaponModel:return equipmentGo;
+  case TerrainRaycast:{++terrainCalls;auto* payload=static_cast<unsigned char*>(args[2]);
+   const Vec3 point{1,2,3},normal{0,1,0};const float distance=.5f;static bool found=true;
+   std::memcpy(payload+8,&point,sizeof(point));std::memcpy(payload+24,&normal,sizeof(normal));std::memcpy(payload+52,&distance,sizeof(distance));return &found;}
   default:*exception=reinterpret_cast<void*>(1);return nullptr;
  }
 }
 BE_Result BE_CALL Reply(void*,const char*,BE_Result result,const char* body){CHECK(nlohmann::json::parse(body).is_object());return result;}
 }
 int main(int argc,char** argv){try{
+ RaycastHitLayout layout;
+ CHECK(layout.Configure(64,16,16,28,44)&&layout.point==0&&layout.normal==12&&layout.distance==28);
+ CHECK(layout.Configure(80,24,32,48,76)&&layout.point==8&&layout.normal==24&&layout.distance==52);
+ CHECK(!layout.Configure(129,16,16,28,44)&&!layout);
+ CHECK(!layout.Configure(64,16,16,24,44)&&!layout); // overlapping vector fields
+ CHECK(!layout.Configure(64,16,16,28,78)&&!layout); // misaligned/out of bounds
+ CHECK(!layout.Configure(32,16,16,28,48)&&!layout);
+ CHECK(!layout.Configure(64,16,-1,28,44)&&!layout);
+ CHECK(NativeHookFlagsMatch(0x40,false)&&!NativeHookFlagsMatch(0x10,false));
+ CHECK(NativeHookFlagsMatch(0x10,true)&&!NativeHookFlagsMatch(0x400,false));
+ for(const auto* raw:{"{\"schema_version\":0}","{\"schema_version\":-1}","{\"schema_version\":1.5}","{\"schema_version\":4294967297}",
+  "{\"toggle_key\":119.5}","{\"toggle_key\":27}","{\"toggle_key\":120}","{\"toggle_key\":255}","{\"toggle_key\":4294967415}"})CHECK(Throws([&]{Configure(raw);}));
  CHECK(argc==2);CHECK(std::filesystem::exists(std::filesystem::path(argv[1])/"native/module.cpp"));
  // Repeated early shutdown checks the overlay's message queue creation.
  for(int i=0;i<4;++i){PracticeHud hud;hud.Start();hud.Update(false,"local simulation");hud.Stop();}
@@ -46,6 +62,9 @@ int main(int argc,char** argv){try{
  CHECK(Close(matrix.inverse().point(matrix.point({1,2,3})),LS::Vec3{1,2,3}));CHECK(Near(LS::Rotate(matrix.rotation(),{1,0,0}).y,1));CHECK(Throws([]{Mat{}.inverse();}));
  BE_HostApiV1 mock{};mock.runtime_invoke=FakeInvoke;mock.object_unbox=FakeUnbox;mock.resolve_method=FakeResolve;mock.gchandle_free=FakeFree;mock.gchandle_new=FakePin;api=&mock;
  for(size_t i=0;i<std::size(methods);++i)methods[i].r.method_info=reinterpret_cast<const void*>(i+1);
+ actor.terrainMask=1;CHECK(terrainHitLayout.Configure(80,24,32,48,76));TerrainHit terrain;
+ CHECK(TerrainQuery({0,3,0},{0,-1,0},1,0,terrain)&&Close(terrain.point,Vec3{1,2,3})&&Close(terrain.normal,Vec3{0,1,0})&&Near(terrain.distance,.5f)&&terrainCalls==1);
+ CHECK(!terrainHitLayout.Configure(256,24,32,48,76));CHECK(!TerrainQuery({0,3,0},{0,-1,0},1,0,terrain)&&terrainCalls==1);actor={};
  FakeTransform entity,model,replacement;actor.entity=&entity;actor.model=&model;currentModel=&model;
  CHECK(ActorIdentityIsCurrent(&entity));currentModel=&replacement;
  CHECK(!ActorIdentityIsCurrent(&entity)); // old pooled GO can still be alive

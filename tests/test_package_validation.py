@@ -14,6 +14,69 @@ SPEC.loader.exec_module(PACKAGE)
 
 
 class PackageBoundaryTests(unittest.TestCase):
+    def test_profile_version_label_alone_is_not_current_source_evidence(self):
+        for character in (False, True):
+            evidence = {'current_vfs_verified': True,
+                        ('game_version' if character else 'source_game_version'): '1.6.3'}
+            profile = {'evidence': evidence} if character else evidence
+            PACKAGE.validate_profile_source(profile, '1.6.3', character)
+            with self.assertRaises(ValueError):
+                PACKAGE.validate_profile_source(profile, '1.5.3', character)
+            evidence.pop('current_vfs_verified')
+            with self.assertRaises(ValueError):
+                PACKAGE.validate_profile_source(profile, '1.6.3', character)
+
+    def test_native_build_identity_rejects_wrong_module_and_stale_version(self):
+        identity = b'MZfixture:MHE_BUILD_V1|endfield.longsword.showcase|1.0.0-test|abi=1|\0'
+        PACKAGE.validate_native_identity(identity, 'endfield.longsword.showcase', '1.0.0-test')
+        for module_id, version in [('different.module', '1.0.0-test'),
+                                   ('endfield.longsword.showcase', '1.0.0-next')]:
+            with self.subTest(module_id=module_id, version=version), self.assertRaises(ValueError):
+                PACKAGE.validate_native_identity(identity, module_id, version)
+        with self.assertRaises(ValueError):
+            PACKAGE.validate_native_identity(b'MZold-dll', 'endfield.longsword.showcase', '1.0.0-test')
+
+    def test_version_update_rosters_allow_growth_but_reject_stale_catalogs(self):
+        characters = {'characters': [{'character_id': f'chr_{i}'} for i in range(34)]}
+        equipment = {'equipment': [{'weapon_id': f'wpn_{i}'} for i in range(84)]}
+        weapons = {'weapons': [{'id': row['weapon_id'], 'profile': row['weapon_id'] + '.json'}
+                               for row in equipment['equipment']] + [
+                                   {'id': name, 'profile': name + '.json'}
+                                   for name in ('laevatain_blade', 'typhoea_bow')]}
+        product = {'characters': [{'id': row['character_id']} for row in characters['characters']],
+                   'weapons': [{'id': row['id'], 'model_profile': 'profiles/weapons/' + row['profile']}
+                               for row in weapons['weapons']]}
+        with self.assertRaises(ValueError):
+            PACKAGE.validate_rosters(characters, weapons, equipment, product)
+        characters['current_source'] = {
+            'game_version': '1.6.3', 'overlay_order': ['StreamingAssets', 'Persistent'],
+            'character_ids': [row['character_id'] for row in characters['characters']],
+            'equipment_ids': [row['weapon_id'] for row in equipment['equipment']]}
+        PACKAGE.validate_rosters(characters, weapons, equipment, product)
+        # Even jointly stale registries/catalogs cannot silently omit a current-source row.
+        characters['current_source']['character_ids'].append('chr_missing')
+        with self.assertRaises(ValueError):
+            PACKAGE.validate_rosters(characters, weapons, equipment, product)
+        characters['current_source']['character_ids'].pop()
+        # An old catalog can have valid unique entries and still omit the new character.
+        for field in ('characters', 'weapons'):
+            stale = copy.deepcopy(product)
+            stale[field].pop()
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                PACKAGE.validate_rosters(characters, weapons, equipment, stale)
+        wrong_profile = copy.deepcopy(product)
+        wrong_profile['weapons'][0]['model_profile'] = 'profiles/weapons/unrelated.json'
+        with self.assertRaises(ValueError):
+            PACKAGE.validate_rosters(characters, weapons, equipment, wrong_profile)
+        for registry, key in ((characters, 'characters'), (weapons, 'weapons'), (equipment, 'equipment')):
+            registry[key].append(copy.deepcopy(registry[key][0]))
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                PACKAGE.validate_rosters(characters, weapons, equipment, product)
+            registry[key].pop()
+        weapons['weapons'].pop()
+        with self.assertRaises(ValueError):
+            PACKAGE.validate_rosters(characters, weapons, equipment, product)
+
     def test_combat_package_rejects_stale_or_unmapped_source_windows(self):
         row = {'outgoing': [[0.1, 0.2]], 'defensive': [], 'gauge_gain_by_window': [1],
                'gauge_gain': 1, 'gauge_cost': 0, 'reload_at': -1, 'motion_value_by_window': [22]}

@@ -437,7 +437,10 @@
         "animation_tracks": 312,
         "animation_frames": 311,
         "original_animation_acl_verified": true
-      }
+      },
+      "source_game_version": "1.6.3",
+      "current_vfs_verified": true,
+      "current_vfs_evidence": "research/client-update-1.6.3/special-comparison.json"
     },
     "bow": {
       "schema": 2,
@@ -514,12 +517,15 @@
       },
       "vfx_status": "native string/flow material retained; index draw point is anatomical candidate; native limb charge curves unresolved",
       "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
-      "runtime_verified": false
+      "runtime_verified": false,
+      "source_game_version": "1.6.3",
+      "current_vfs_verified": true,
+      "current_vfs_evidence": "research/client-update-1.6.3/special-comparison.json"
     }
   },
   "evidence": {
     "source": "current local tables + reference-preserving native postmodel graph",
-    "source_graph": "G:\\Better Endfield\\research\\custom_model\\1.5.3\\shared\\postmodel-native-parser-history\\sweep-identities\\chr_0027_tangtang.json",
+    "source_graph": "research\\character-coverage\\chr_0027_tangtang.json",
     "manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
     "main_bones": 21,
     "main_palette_bone_count": 288,
@@ -527,7 +533,18 @@
     "runtime_verified": false,
     "primary_skin_palette_verified": true,
     "secondary_rig_excluded": true,
-    "runtime_rest_policy": "derive from actual renderer bindposes, never apply cached serialized matrices as live rest"
+    "runtime_rest_policy": "derive from actual renderer bindposes, never apply cached serialized matrices as live rest",
+    "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+    "game_version": "1.6.3",
+    "current_vfs_verified": true,
+    "overlay_order": [
+      "StreamingAssets",
+      "Persistent"
+    ],
+    "verification_report": "research\\client-update-1.6.3\\current-inputs\\summary.json",
+    "geometry_validation": "six modes rescanned with current geometry; longsword rescanned after current contact masks",
+    "geometry_comparison_report": "research/client-update-1.6.3/geometry-comparison.json",
+    "rig_comparison_report": "research/client-update-1.6.3/rig-comparison.json"
   },
   "ground_foot_probes": [
     {
@@ -1236,6 +1253,7 @@
     }
   ],
   "ground_foot_mesh_rest_min_y": -0.0019694878719747066,
+  "secondary_skin_roots": [],
   "rest_local_transforms": {
     "Bip001_Pelvis": {
       "position": [
@@ -3349,39 +3367,39 @@
       1.0
     ],
     "Bip001_Neck": [
-      -6.178174224866923e-07,
-      -0.9964084836790664,
-      -0.08467578642763204,
+      -6.178174432521896e-07,
+      -0.9964084811479113,
+      -0.08467580021252534,
       0.0,
-      -7.5565437673883905e-06,
-      -0.08467577888729517,
-      0.9964082839830026,
+      -7.5565422736675635e-06,
+      -0.08467579467218919,
+      0.9964082814518488,
       0.0,
       -0.9999999999443071,
-      1.2554551681524067e-06,
-      -7.477091754172717e-06,
+      1.2554551664273615e-06,
+      -7.477090343006174e-06,
       0.0,
-      4.158253486168894e-07,
-      1.3768011136032703,
-      -0.011283626945029454,
+      4.1582533725967194e-07,
+      1.3768011138442993,
+      -0.011283627649224092,
       1.0
     ],
     "Bip001_Head": [
-      -3.3818070276563454e-07,
-      -1.000000100000019,
-      3.1707925883277086e-07,
+      -3.401187727656335e-07,
+      -1.0000001000000192,
+      3.1707925738782175e-07,
       0.0,
-      -9.146650316780204e-07,
-      3.1707948040279e-07,
-      0.9999998999992237,
+      -9.153635316081692e-07,
+      3.170794821877035e-07,
+      0.9999998999992225,
       0.0,
-      -0.9999999999993336,
-      3.3818041168892666e-07,
-      -9.146651962040011e-07,
+      -0.9999999999993328,
+      3.4011852146747694e-07,
+      -9.153635966788545e-07,
       0.0,
-      5.018473825269076e-07,
+      5.018474553430097e-07,
       1.4699235874373384,
-      -0.0033700070253535937,
+      -0.0033700061253536615,
       1.0
     ],
     "Bip001_L_Clavicle": [
@@ -4847,21 +4865,21 @@
     },
     "chr_0027_tangtang_postmodel/Mesh_all/lod1/S_actor_tangtang_hair_01_lod1": {
       "matrix": [
-        1.000000099999994,
-        -7.729961208905387e-07,
-        5.249781777945845e-07,
+        1.000000099999995,
+        -7.719188507901198e-07,
+        5.247454182593502e-07,
         0.0,
-        5.249787033019163e-07,
-        5.506379010273126e-07,
-        -1.0000001000000294,
+        5.247458431734952e-07,
+        5.506379010973369e-07,
+        -1.0000001000000296,
         0.0,
-        7.729958818627207e-07,
-        0.9999999999996614,
-        5.506382971495755e-07,
+        7.71918611890481e-07,
+        0.9999999999996616,
+        5.506382957239652e-07,
         0.0,
-        -8.017207666306989e-07,
-        -0.00019465414033725814,
-        -3.30548498337236e-07,
+        -8.001363216019526e-07,
+        -0.00019465414033592587,
+        -3.343484962403838e-07,
         1.0
       ],
       "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
@@ -5047,32 +5065,31 @@
     },
     "chr_0027_tangtang_postmodel/Shadow_Proxy/SP_Desktop/S_actor_tangtang_hair_01_shadowProxyDesktop": {
       "matrix": [
-        1.000000099999994,
-        -7.729961208905387e-07,
-        5.249781777945845e-07,
+        1.000000099999995,
+        -7.719188507901198e-07,
+        5.247454182593501e-07,
         0.0,
-        5.249786111536222e-07,
-        4.314286110273495e-07,
-        -1.0000001000000878,
+        5.247457511536219e-07,
+        4.314286110973738e-07,
+        -1.000000100000088,
         0.0,
-        7.729959444450537e-07,
-        0.9999999999997198,
-        4.314289952286395e-07,
+        7.719186744450549e-07,
+        0.9999999999997201,
+        4.314289938030292e-07,
         0.0,
-        -8.017207666306989e-07,
-        -0.0001946541403370361,
-        -3.30548498337236e-07,
+        -8.001363216019526e-07,
+        -0.00019465414033592587,
+        -3.343484962403838e-07,
         1.0
       ],
       "operation": "registeredModelRest = F_model * (rendererInModel * inverse(rawBindpose))",
       "anchor_bone": "Bip001_Head",
       "mesh_id": "cab-02cfe093d5d5ea333d4c6f8b8f9209e1:8128977132195414041",
       "renderer_path": "chr_0027_tangtang_postmodel/Shadow_Proxy/SP_Desktop/S_actor_tangtang_hair_01_shadowProxyDesktop",
-      "max_main_position_error_m": 2.220462989844635e-16
+      "max_main_position_error_m": 2.2204502844110104e-16
     }
   },
   "bind_registration_max_position_error_m": 0.012321485679270511,
   "bind_registration_policy": "offline raw native bindpose frame -> authored model frame; runtime apply only if actual bindposes still use that raw frame, never twice",
-  "rest_matrix_policy": "prefer live actual renderer bindposes; missing parent from palette child plus authored static local chain; offline matrices are client-version-qualified fallback",
-  "secondary_skin_roots": []
+  "rest_matrix_policy": "prefer live actual renderer bindposes; missing parent from palette child plus authored static local chain; offline matrices are client-version-qualified fallback"
 }

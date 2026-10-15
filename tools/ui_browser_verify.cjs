@@ -5,7 +5,7 @@ async (page) => {
  ensure(await page.locator('#demo').isDisabled(),'offline runtime controls disabled');
  await page.locator('[data-page="loadout"]').click();
  ensure(await page.locator('.mode-card').count()===6,'six mode cards');
- ensure(await page.locator('#character-select option').count()===33,'33 selectable character records');
+ ensure(await page.locator('#character-select option').count()===(await page.evaluate(async()=> (await (await fetch('../profiles/index.json')).json()).characters.length)),'all current selectable character records');
  await page.locator('[data-mode="lance"]').click();ensure((await page.locator('#move-list').innerText()).includes('突刺'),'lance thrust catalog, no insect glaive');
  await page.locator('#save-config').click();ensure((await page.locator('#save-state').innerText()).includes('离线草稿'),'offline saving does not claim applied');
  await page.locator('[data-page="start"]').click();await page.locator('[data-recommend="typhoea"]').click();

@@ -10,7 +10,8 @@ async page => {
  const embedded=await page.evaluate(()=>({product:window.MHE_PRODUCT_CATALOG,audio:window.MHE_AUDIO_CATALOG,preview:window.LONGSWORD_PREVIEW}));
  const manifest=await page.evaluate(async()=>{const response=await fetch('../module.json');if(!response.ok)throw Error('Package manifest missing');return response.json();});
  ensure(embedded.product?.version===manifest.version,'actual ZIP embeds the same release version as its manifest');
- ensure(embedded.product.modes.length===6&&embedded.product.characters.length===33&&embedded.product.weapons.length===82,'actual ZIP embeds 6 modes / 33 characters / 82 models');
+ const roster=await page.evaluate(async()=>({characters:(await(await fetch('../profiles/index.json')).json()).characters.map(c=>c.character_id),weapons:(await(await fetch('../profiles/weapons/index.json')).json()).weapons.map(w=>w.id)}));
+ ensure(embedded.product.modes.length===6&&JSON.stringify(embedded.product.characters.map(c=>c.id).sort())===JSON.stringify(roster.characters.sort())&&JSON.stringify(embedded.product.weapons.map(w=>w.id).sort())===JSON.stringify(roster.weapons.sort()),'actual ZIP embeds all current modes / characters / models');
  ensure(embedded.preview?.clips.length===embedded.product.preview.clips&&embedded.preview.missing_source_previews.length===0,'actual ZIP embeds all evaluated source clips');
  ensure(embedded.product.characters.every(character=>Object.values(character.modes).every(mode=>mode.runtime_status==='pending')),'package preserves deferred game validation');
  const clips=Object.values(embedded.audio.modes).flatMap(mode=>mode.clips);
@@ -24,7 +25,7 @@ async page => {
  ensure(pcm.length===0,'all 196 packaged WAVs decode through the unified web PCM implementation');
  await page.route('**/assets/*.json',route=>route.abort());await page.reload();
  await page.waitForFunction(()=>document.getElementById('catalog-state').textContent==='资源目录已载入');
- ensure(await page.locator('#character-select option').count()===33,'actual ZIP works with embedded fallback and JSON reads unavailable');
+ ensure(await page.locator('#character-select option').count()===roster.characters.length,'actual ZIP works with embedded fallback and JSON reads unavailable');
  await page.locator('[data-page="loadout"]').click();
  for(const id of embedded.product.modes.map(mode=>mode.id)){
   await page.locator(`[data-mode="${id}"]`).click();await page.locator('[data-page="motion"]').click();

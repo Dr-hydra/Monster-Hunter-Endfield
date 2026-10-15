@@ -10,11 +10,13 @@ Quat MatrixQ(const Json&m){return Retarget::BasisRotation({m[0][0].get<float>(),
 Vec3 MatrixP(const Json&m){return{m[0][3].get<float>(),m[1][3].get<float>(),m[2][3].get<float>()};}
 void U32(std::ofstream&out,uint32_t v){out.write(reinterpret_cast<const char*>(&v),4);}
 int main(int argc,char**argv){try{
- if(argc<3||argc>5)throw std::runtime_error("endfield_retarget_oracle projectRoot outputDirectory [mode] [comma-separated slots]");std::filesystem::path root=argv[1],outRoot=argv[2];
+ if(argc<3||argc>6)throw std::runtime_error("endfield_retarget_oracle projectRoot outputDirectory [mode] [comma-separated slots] [comma-separated characters]");std::filesystem::path root=argv[1],outRoot=argv[2];
  const std::string selectedMode=argc>=4?argv[3]:"";std::set<int>selectedSlots;
- if(argc==5){std::stringstream stream(argv[4]);std::string value;while(std::getline(stream,value,','))selectedSlots.insert(std::stoi(value));}
+ if(argc>=5){std::stringstream stream(argv[4]);std::string value;while(std::getline(stream,value,','))if(!value.empty())selectedSlots.insert(std::stoi(value));}
+ std::set<std::string>selectedCharacters;
+ if(argc==6){std::stringstream stream(argv[5]);std::string value;while(std::getline(stream,value,','))if(!value.empty())selectedCharacters.insert(value);}
  auto index=Read(root/"profiles/index.json"),modeRegistry=Read(root/"assets/modes/index.json");
- for(const auto&entry:index["characters"]){auto cid=entry["character_id"].get<std::string>();auto profile=Read(root/"profiles"/entry["profile"].get<std::string>());auto rig=Read(root/"research/character-coverage"/(cid+"-rig.json"));const auto&rest=rig["registered_model_rest"];
+ for(const auto&entry:index["characters"]){auto cid=entry["character_id"].get<std::string>();if(!selectedCharacters.empty()&&!selectedCharacters.contains(cid))continue;auto profile=Read(root/"profiles"/entry["profile"].get<std::string>());auto rig=Read(root/"research/character-coverage"/(cid+"-rig.json"));const auto&rest=rig["registered_model_rest"];
   for(const auto&modeEntry:index["modes"]){auto mode=modeEntry.get<std::string>();if(!selectedMode.empty()&&mode!=selectedMode)continue;auto assets=root/"assets/modes"/mode;for(const auto&r:modeRegistry["modes"])if(r["id"]==mode)assets=root/r["data_root"].get<std::string>();auto source=Read(assets/"source_rig.json");auto moves=Read(assets/"moves.json");const auto order=source["order"].get<std::vector<std::string>>();
    std::vector<std::string>bonePaths;std::vector<Vec3>positions,sourcePositions;std::vector<Quat>original,aligned;
    for(const auto&semantic:order){auto path=profile["bone_paths"][semantic].get<std::string>();bonePaths.push_back(path);positions.push_back(MatrixP(rest[path]));original.push_back(MatrixQ(rest[path]));sourcePositions.push_back(V(source["bones"][semantic]["position"]));}

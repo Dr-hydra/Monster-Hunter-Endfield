@@ -146,6 +146,24 @@
       "runtime_verified": false
     },
     {
+      "id": "wpn_claym_0018",
+      "profile": "equipment/wpn_claym_0018.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_claym_0019",
+      "profile": "equipment/wpn_claym_0019.json",
+      "modes": [
+        "greatsword"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
       "id": "wpn_funnel_0001",
       "profile": "equipment/wpn_funnel_0001.json",
       "modes": [
@@ -731,6 +749,16 @@
       "runtime_verified": false
     },
     {
+      "id": "wpn_sword_0021_ink",
+      "profile": "equipment/wpn_sword_0021_ink.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
       "id": "wpn_sword_0022",
       "profile": "equipment/wpn_sword_0022.json",
       "modes": [
@@ -743,6 +771,16 @@
     {
       "id": "wpn_sword_0023",
       "profile": "equipment/wpn_sword_0023.json",
+      "modes": [
+        "longsword",
+        "sword_shield"
+      ],
+      "mount_side": "right",
+      "runtime_verified": false
+    },
+    {
+      "id": "wpn_sword_0024",
+      "profile": "equipment/wpn_sword_0024.json",
       "modes": [
         "longsword",
         "sword_shield"

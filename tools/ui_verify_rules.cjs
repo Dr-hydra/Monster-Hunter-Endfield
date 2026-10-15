@@ -1,10 +1,13 @@
 'use strict';
 const assert=require('node:assert/strict');
 const W=require('../ui/workshop.js');
-assert.equal(W.modes.length,6);assert.equal(W.characters.length,33);assert.equal(W.modes.find(m=>m.id==='lance').category,'长柄');
+assert.equal(W.modes.length,6);assert.equal(W.characters.length,34);assert.equal(W.characters.find(c=>c.id==='chr_0036_jsspsi').category,'双手剑');assert.equal(W.modes.find(m=>m.id==='lance').category,'长柄');
 assert.equal(W.configuration({spirit_key:17,speed:1.25}).keys.spirit,17);
 assert.equal(W.configuration({laevatain_blade:false}).visual_weapon,'equipped');
 assert.equal(W.configuration({schema_version:1,laevatain_blade:false}).visual_weapon,'equipped');
+for(const value of [0,-1,1.5,3,'2',null,true])assert.throws(()=>W.configuration({schema_version:value}));
+for(const value of [0,27,120,119.5,255,'119',null,true])assert.throws(()=>W.configuration({toggle_key:value}));
+assert.equal(W.configuration({toggle_key:121}).toggle_key,121);
 assert.equal(W.configuration({}).keyboard_preset,'mouse5');assert.equal(W.configuration({}).keys.spirit,6);
 assert.equal(W.configuration({mode:'bow',keyboard_preset:'mouse3'}).keys.secondary,4);assert.equal(W.configuration({mode:'bow',keyboard_preset:'mouse3'}).keys.reload,82);
 assert.equal(W.configuration({keys:{spirit:17,secondary:2}}).keyboard_preset,'custom');assert.equal(W.configuration({keys:{spirit:17,secondary:2}}).keys.spirit,17);
@@ -24,4 +27,4 @@ assert.equal(W.equivalent({keys:{a:1,b:2},mode:'bow'},{mode:'bow',keys:{b:2,a:1}
 const wav=Buffer.alloc(44+8);wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVE',8);wav.write('fmt ',12);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(24000,24);wav.writeUInt32LE(48000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(8,40);[1000,-1000,2000,-2000].forEach((v,i)=>wav.writeInt16LE(v,44+i*2));
 const pcm=W.pcmWav(wav.buffer.slice(wav.byteOffset,wav.byteOffset+wav.byteLength));assert.equal(pcm.frames,8);assert.equal(pcm.sampleRate,48000);assert.equal(pcm.channels,2);assert.deepEqual(Array.from(pcm.samples),[3000,3000,0,0,-3000,-3000,1500,1500,6000,6000,0,0,-6000,-6000,-6000,-6000]);
 assert.throws(()=>W.pcmWav(new ArrayBuffer(40)));const truncated=Buffer.from(wav);truncated.writeUInt32LE(999999,40);assert.throws(()=>W.pcmWav(truncated.buffer.slice(truncated.byteOffset,truncated.byteOffset+truncated.byteLength)));
-console.log('UI six-mode catalog, 33-character fallback, migration, key conflicts, import validation and PCM parity fixtures passed');
+console.log('UI six-mode catalog, 34-character fallback, migration, key conflicts, import validation and PCM parity fixtures passed');

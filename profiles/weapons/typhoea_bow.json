@@ -73,5 +73,8 @@
   },
   "vfx_status": "native string/flow material retained; index draw point is anatomical candidate; native limb charge curves unresolved",
   "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
-  "runtime_verified": false
+  "runtime_verified": false,
+  "source_game_version": "1.6.3",
+  "current_vfs_verified": true,
+  "current_vfs_evidence": "research/client-update-1.6.3/special-comparison.json"
 }

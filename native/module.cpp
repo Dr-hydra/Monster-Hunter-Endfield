@@ -11,6 +11,7 @@
 #include "contact_mask.h"
 #include "fingers.h"
 #include "grounding.h"
+#include "runtime_contracts.h"
 #include "practice.h"
 #include "target_geometry.h"
 #include "projectiles.h"
@@ -221,6 +222,30 @@ BE_ResolvedClassV1 meshFilterClass{},baseRendererClass{};
 BE_ResolvedClassV1 grounderClass{};
 BE_ResolvedFieldV1 grounderSolver{},groundLayers{};
 BE_ResolvedFieldV1 templateId{};
+RaycastHitLayout terrainHitLayout;
+using MethodFlagsFn=uint32_t(__cdecl*)(const void*,uint32_t*);
+MethodFlagsFn methodFlags=nullptr;
+bool NativeHookContract(const BE_ResolvedMethodV1& method,bool isStatic=false){
+ if(!method.method_info||!method.method_pointer||!methodFlags)return false;
+ uint32_t implementation=0;return NativeHookFlagsMatch(methodFlags(method.method_info,&implementation),isStatic);
+}
+bool GroundDelegateContract(const void* method,const BE_MethodDescriptorV1& expected){
+ const auto module=GetModuleHandleW(L"GameAssembly.dll");
+ using CountFn=uint32_t(__cdecl*)(const void*);using ParamFn=const void*(__cdecl*)(const void*,uint32_t);
+ using ReturnFn=const void*(__cdecl*)(const void*);using NameFn=char*(__cdecl*)(const void*);using FreeFn=void(__cdecl*)(void*);
+ auto count=reinterpret_cast<CountFn>(GetProcAddress(module,"il2cpp_method_get_param_count"));
+ auto param=reinterpret_cast<ParamFn>(GetProcAddress(module,"il2cpp_method_get_param"));
+ auto returns=reinterpret_cast<ReturnFn>(GetProcAddress(module,"il2cpp_method_get_return_type"));
+ auto name=reinterpret_cast<NameFn>(GetProcAddress(module,"il2cpp_type_get_name"));
+ auto freeMemory=reinterpret_cast<FreeFn>(GetProcAddress(module,"il2cpp_free"));
+ uint32_t implementation=0;
+ if(!method||!methodFlags||!count||!param||!returns||!name||!freeMemory||!NativeHookFlagsMatch(methodFlags(method,&implementation),false)||count(method)!=expected.parameter_count)return false;
+ auto typeMatches=[&](const void* type,const std::string& wanted){if(!type)return false;auto actual=name(type);if(!actual)return false;const bool match=wanted==actual;freeMemory(actual);return match;};
+ if(!typeMatches(returns(method),expected.return_type))return false;
+ std::string parameters=expected.parameter_types;size_t start=0;
+ for(uint32_t i=0;i<expected.parameter_count;++i){const auto end=parameters.find('|',start);if(!typeMatches(param(method,i),parameters.substr(start,end==std::string::npos?end:end-start)))return false;start=end==std::string::npos?parameters.size():end+1;}
+ return true;
+}
 int weaponInFight=-1,weaponPerform=-1;
 using TailFn=void(__cdecl*)(void*,float,void*);
 using InputFn=void(__cdecl*)(void*,void*);
@@ -347,7 +372,7 @@ std::string ModelObjectPath(void* transform){std::vector<std::string> parts;auto
  for(int depth=0;at&&depth<96;++depth){parts.push_back(ObjectName(at));if(at==actor.root)break;at=Call(Parent,at);}
  std::reverse(parts.begin(),parts.end());std::string result;for(const auto& part:parts){if(!result.empty())result+='/';result+=part;}return result;}
 void BindGroundQueries(){
- if(!grounderClass.type_object||!grounderSolver.field_info||!groundLayers.field_info)return;
+ if(!terrainHitLayout||!grounderClass.type_object||!grounderSolver.field_info||!groundLayers.field_info)return;
  bool include=true;auto type=grounderClass.type_object;void* args[]{type,&include};
  auto grounders=Call(GetComponents,actor.model,args);
  using FindMethodFn=void*(__cdecl*)(void*,const char*,int);
@@ -363,7 +388,8 @@ void BindGroundQueries(){
   const auto bind=[&](const char* field,int count,void*& receiver,const void*& method){
    auto delegate=ReadObjectField(solver,field);if(!delegate||!find||!objectClass)return;
    auto resolved=find(objectClass(delegate),"Invoke",count);
-   if(resolved&&Pin(delegate)){receiver=delegate;method=resolved;}
+   const auto& expected=methods[count==6?TerrainRaycast:TerrainSphereCast].d;
+   if(resolved&&GroundDelegateContract(resolved,expected)&&Pin(delegate)){receiver=delegate;method=resolved;}
   };
   bind("Raycast",6,actor.groundRaycast,actor.groundRaycastMethod);
   bind("SphereCast",7,actor.groundSphereCast,actor.groundSphereCastMethod);break;
@@ -1024,12 +1050,10 @@ bool LiftGroundedHand(int side,float amount){
  return write(lower,Mul(FromTo(Sub(movedWrist,movedElbow),Sub(solved.hand,movedElbow)),rotation))&&write(hand,orientation);
 }
 bool TerrainQuery(Vec3 origin,Vec3 direction,float distance,float radius,TerrainHit& hit){
- if(!actor.terrainMask||!Finite(origin)||!Finite(direction)||!std::isfinite(distance)||distance<=0)return false;
+ if(!terrainHitLayout||!actor.terrainMask||!Finite(origin)||!Finite(direction)||!std::isfinite(distance)||distance<=0)return false;
  const bool sphere=radius>0;void* receiver=sphere?actor.groundSphereCast:actor.groundRaycast;
  const auto method=sphere?actor.groundSphereCastMethod:actor.groundRaycastMethod;
- // Current game's extended RaycastHit: payload fields are point 0x00, normal
- // 0x0c and distance 0x1c (managed dump offsets exclude the 0x10 box header).
- alignas(16) unsigned char payload[128]{};int ignoreTriggers=1,mask=actor.terrainMask;
+ alignas(16) unsigned char payload[RaycastHitLayout::Capacity]{};int ignoreTriggers=1,mask=actor.terrainMask;
  void* rayArgs[]{&origin,&direction,payload,&distance,&mask,&ignoreTriggers};
  void* sphereArgs[]{&origin,&radius,&direction,payload,&distance,&mask,&ignoreTriggers};
  bool found=false;
@@ -1037,7 +1061,7 @@ bool TerrainQuery(Vec3 origin,Vec3 direction,float distance,float radius,Terrain
   auto raw=!ex&&box?api->object_unbox(api->context,box):nullptr;if(raw)std::memcpy(&found,raw,sizeof(found));}
  else Value(sphere?TerrainSphereCast:TerrainRaycast,nullptr,found,sphere?sphereArgs:rayArgs);
  if(!found)return false;
- std::memcpy(&hit.point,payload,12);std::memcpy(&hit.normal,payload+12,12);std::memcpy(&hit.distance,payload+28,4);
+ std::memcpy(&hit.point,payload+terrainHitLayout.point,sizeof(hit.point));std::memcpy(&hit.normal,payload+terrainHitLayout.normal,sizeof(hit.normal));std::memcpy(&hit.distance,payload+terrainHitLayout.distance,sizeof(hit.distance));
  return Finite(hit.point)&&Finite(hit.normal)&&std::isfinite(hit.distance)&&hit.distance>=0&&hit.distance<=distance+.01f;
 }
 bool GroundAt(Vec3 position,float expectedY,float& floor){
@@ -1821,7 +1845,7 @@ template<size_t N> struct ShieldRead {
  }
  static bool Install() {
   auto& s=shields[N];if(s.installed)return true;
-  if(api->resolve_method(api->context,&s.descriptor,&s.resolved)!=BE_Result_Ok||!s.resolved.method_pointer)return N>=6;
+  if(api->resolve_method(api->context,&s.descriptor,&s.resolved)!=BE_Result_Ok||!NativeHookContract(s.resolved))return N>=6;
   s.installed=api->create_hook(api->context,ID,s.resolved.method_pointer,
    reinterpret_cast<void*>(Detour),reinterpret_cast<void**>(&next))==BE_Result_Ok;
   return s.installed;
@@ -1840,18 +1864,44 @@ void ResolveWeaponConstants() {
  value("WeaponComponent.WeaponState","InFight",weaponInFight);
  value("WeaponComponent.WeaponStatePriority","Perform",weaponPerform);
 }
+bool ResolveTerrainLayout(){
+ terrainHitLayout={};const auto module=GetModuleHandleW(L"GameAssembly.dll");
+ using SizeFn=int32_t(__cdecl*)(const void*,uint32_t*);using ValueTypeFn=bool(__cdecl*)(const void*);using FieldFlagsFn=uint32_t(__cdecl*)(const void*);
+ auto size=reinterpret_cast<SizeFn>(GetProcAddress(module,"il2cpp_class_value_size"));
+ auto isValue=reinterpret_cast<ValueTypeFn>(GetProcAddress(module,"il2cpp_class_is_valuetype"));
+ auto flags=reinterpret_cast<FieldFlagsFn>(GetProcAddress(module,"il2cpp_field_get_flags"));
+ if(!size||!isValue||!flags)return false;
+ BE_ResolvedClassV1 hit{},vector{};
+ constexpr auto physics="UnityEngine.PhysicsModule.dll";
+ if(api->resolve_class(api->context,physics,"UnityEngine","RaycastHit",&hit)!=BE_Result_Ok||!hit.class_info||!isValue(hit.class_info)||
+    api->resolve_class(api->context,Core,"UnityEngine","Vector3",&vector)!=BE_Result_Ok||!vector.class_info||!isValue(vector.class_info))return false;
+ auto boxed=api->object_new(api->context,hit.class_info);if(!boxed)return false;
+ const auto pin=api->gchandle_new(api->context,boxed,1);if(!pin)return false;
+ auto raw=api->object_unbox(api->context,boxed);const auto base=reinterpret_cast<uintptr_t>(boxed),unboxed=reinterpret_cast<uintptr_t>(raw);
+ const size_t header=unboxed>base?unboxed-base:0;api->gchandle_free(api->context,pin);
+ uint32_t alignment=0;const auto bytes=size(hit.class_info,&alignment);
+ if(alignment>16||size(vector.class_info,&alignment)!=sizeof(Vec3)||alignment>16)return false;
+ const auto field=[&](const char* assembly,const char* type,const char* name,const char* value,int32_t& offset){
+  BE_FieldDescriptorV1 d{assembly,"UnityEngine",type,name,value};BE_ResolvedFieldV1 f{};
+  if(api->resolve_field(api->context,&d,&f)!=BE_Result_Ok||!f.field_info||(flags(f.field_info)&0x10u))return false;offset=f.offset;return true;
+ };
+ int32_t x=0,y=0,z=0,point=0,normal=0,distance=0;
+ if(!field(Core,"Vector3","x","System.Single",x)||!field(Core,"Vector3","y","System.Single",y)||!field(Core,"Vector3","z","System.Single",z)||
+    x!=header||y!=header+4||z!=header+8)return false;
+ return field(physics,"RaycastHit","m_Point","UnityEngine.Vector3",point)&&field(physics,"RaycastHit","m_Normal","UnityEngine.Vector3",normal)&&
+  field(physics,"RaycastHit","m_Distance","System.Single",distance)&&terrainHitLayout.Configure(bytes,header,point,normal,distance);
+}
 bool Resolve() {
  if(!api||!api->resolve_method||!api->resolve_class||!api->runtime_invoke||!api->object_unbox||
  !api->resolve_field||!api->field_get_value_object||!api->copy_managed_string||!api->gchandle_new||
  !api->gchandle_free||!api->object_new||!api->string_new||!api->create_hook)return false;
- bool ok=true;for(int i=0;i<MethodCount;++i){methods[i].required=i<ObjectDestroy||i==FrameCount;
+ bool ok=true;for(int i=0;i<MethodCount;++i){methods[i].required=i<ObjectDestroy||i==FrameCount;methods[i].r={};
   auto result=api->resolve_method(api->context,&methods[i].d,&methods[i].r);
   if(result!=BE_Result_Ok||!methods[i].r.method_info||!methods[i].r.method_pointer){if(methods[i].required)ok=false;}}
- // TailLateTick descriptors in BE use a wildcard parameter type on some builds.
- if(!methods[Tail].r.method_pointer){auto d=methods[Tail].d;d.parameter_types=nullptr;
-  if(api->resolve_method(api->context,&d,&methods[Tail].r)==BE_Result_Ok) {
-   ok=true;for(int i=0;i<ObjectDestroy;++i)if(!methods[i].r.method_info||!methods[i].r.method_pointer)ok=false;
-  }}
+ // Native detours require the exact signature and instance/static ABI. A
+ // same-name, same-arity wildcard could silently accept a changed argument.
+ methodFlags=reinterpret_cast<MethodFlagsFn>(GetProcAddress(GetModuleHandleW(L"GameAssembly.dll"),"il2cpp_method_get_flags"));
+ if(!NativeHookContract(methods[Tail].r)||!NativeHookContract(methods[CheckInput].r))ok=false;
  BE_FieldDescriptorV1 field{Game,"Beyond.Gameplay","GameDataWithId","id","System.String"};
  if(api->resolve_field(api->context,&field,&templateId)!=BE_Result_Ok)ok=false;
  if(api->resolve_class(api->context,Core,"UnityEngine","SkinnedMeshRenderer",&rendererClass)!=BE_Result_Ok||!rendererClass.type_object)ok=false;
@@ -1864,6 +1914,7 @@ bool Resolve() {
  BE_FieldDescriptorV1 solverField{"RootMotion.dll","RootMotion.FinalIK","Grounder","solver","RootMotion.FinalIK.Grounding"};
  BE_FieldDescriptorV1 layerField{"RootMotion.dll","RootMotion.FinalIK","Grounding","layers","UnityEngine.LayerMask"};
  api->resolve_field(api->context,&solverField,&grounderSolver);api->resolve_field(api->context,&layerField,&groundLayers);
+ ResolveTerrainLayout();
  ResolveWeaponConstants();
  BE_FieldDescriptorV1 containerField{Game,"Beyond.Gameplay.Core","GameWorld","objectContainer","Beyond.Gameplay.Core.ObjectContainer"};
  api->resolve_field(api->context,&containerField,&worldContainer);
@@ -1922,7 +1973,7 @@ Json Status() {
  const auto selected=targetLock.Selected();bool approximate=false;for(const auto& target:targetSnapshot)if(selected&&target.key==*selected)approximate=target.approximateGeometry;
  const bool controlConflict=KeyClaimsCameraControl(config.lock_key)||KeyClaimsCameraControl(config.focus_key)||KeyClaimsCameraControl(config.cycle_key);
  auto state=Json{{"runtime_ready",ready},{"active",controller.active},{"slot",controller.slot},{"character",actor.character},{"detail",detail},{"phase",phase},{"auto_demo",autoDemo},{"demo_step",demoStep},{"demo_seconds",DemoDuration()},{"weapon_mode",visualWeapon.Visible()?config.visual_weapon:(actor.weaponHeld?"equipped":(actor.prop?"fallback":"none"))},{"sound_ready",soundReady},{"sound_enabled",config.sound_enabled},{"sound_detail",!config.sound_enabled?"音效已关闭":(config.sound_volume==0?"音量为零":soundDetail)},
-  {"last_sound",lastSound},{"last_sound_label",soundLabels.contains(lastSound)?soundLabels.at(lastSound):""},{"sound_cues",soundCueCount},{"ground_detail",actor.groundDetail},{"ground_correction",actor.groundCorrection},
+  {"last_sound",lastSound},{"last_sound_label",soundLabels.contains(lastSound)?soundLabels.at(lastSound):""},{"sound_cues",soundCueCount},{"ground_detail",actor.groundDetail},{"ground_correction",actor.groundCorrection},{"terrain_layout_verified",bool(terrainHitLayout)},
   {"practice",{{"enabled",config.local_practice},{"ready",practiceReady},{"detail",practiceDetail},{"targets",targets},
    {"hits",practice.hits},{"attempts",practice.attempts},{"misses",practice.misses},{"total",practice.total},{"last_damage",practice.lastDamage},{"last_target",practice.lastTarget},{"summary",!controller.active}}},
   {"grip_ready",actor.gripAvailable},{"grip_detail",actor.gripAvailable?"辅助握刀可用":"辅助握刀不可用，已保留基础重定向"},
@@ -1950,7 +2001,8 @@ Json Status() {
 void Configure(const char* raw) {
  if(!raw||std::strlen(raw)>65536)throw std::runtime_error("Invalid configuration size");
  auto j=Json::parse(raw);if(!j.is_object())throw std::runtime_error("Configuration must be object");Configuration c;
- const auto schema=j.value("schema_version",1);if(schema<1||schema>2)throw std::runtime_error("Unsupported configuration version");
+ if(j.contains("schema_version")&&(!j["schema_version"].is_number_integer()||(j["schema_version"]!=1&&j["schema_version"]!=2)))throw std::runtime_error("Unsupported configuration version");
+ const auto schema=j.value("schema_version",1);
  c.mode=j.value("mode",std::string("longsword"));c.visual_weapon=j.value("visual_weapon",std::string("auto"));c.theme=j.value("theme",std::string("auto"));c.hud_layout=j.value("hud_layout",std::string("teaching"));c.effects_quality=j.value("effects_quality",std::string("full"));
  if(schema==1&&!j.contains("visual_weapon")&&!j.value("laevatain_blade",true))c.visual_weapon="equipped";
  c.demo_sequence=j.value("demo_sequence",std::string("full"));c.demo_loop=j.value("demo_loop",true);
@@ -1970,7 +2022,8 @@ void Configure(const char* raw) {
  c.local_practice=j.value("local_practice",false);c.laevatain_blade=j.value("laevatain_blade",true);
  c.target_lock=j.value("target_lock",true);c.combat_rules=j.value("combat_rules",true);
  c.target_camera=j.value("target_camera",std::string("focus"));if(c.target_camera!="focus"&&c.target_camera!="target")throw std::runtime_error("Unknown target camera mode");
- auto key=[&](const char* name,int defaultKey){auto k=j.value(name,defaultKey);if(k<1||k>255)throw std::runtime_error(name);return k;};
+ auto key=[&](const char* name,int defaultKey){if(!j.contains(name))return defaultKey;const auto& value=j[name];
+  if(!value.is_number_integer()||value<1||value>254)throw std::runtime_error(name);return value.get<int>();};
  const int unique=c.keyboard_preset=="mouse3"?VK_MBUTTON:VK_XBUTTON2;
  c.toggle_key=key("toggle_key",ToggleDefault);c.spirit_key=key("spirit_key",unique);c.spirit_alt_key=key("spirit_alt_key",c.spirit_key);
  if(c.toggle_key==VK_ESCAPE||c.toggle_key==VK_F9)throw std::runtime_error("Toggle key conflicts with exit or automatic demonstration");

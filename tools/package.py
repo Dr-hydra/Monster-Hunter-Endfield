@@ -72,6 +72,12 @@ def validate_loader_limits(sizes):
     return total
 
 
+def validate_native_identity(payload, module_id, version):
+    marker = ('MHE_BUILD_V1|' + module_id + '|' + version + '|abi=1|').encode('ascii')
+    if not payload.startswith(b'MZ') or marker + b'\0' not in payload:
+        raise ValueError('Native DLL identity/version differs from the package; rebuild the module')
+
+
 def final_payloads(entries):
     """Minify JSON without rounding; use identical bytes for validation and ZIP."""
     payloads = {}
@@ -735,21 +741,71 @@ def validate_mode(root, entries, entry):
     return len(by_slot), validate_audio(root, entries, mode, audio_root, by_slot)
 
 
+def unique_records(rows, key, label):
+    """Version updates may grow a roster, but may not hide omissions or duplicates."""
+    if not isinstance(rows, list) or not rows:
+        raise ValueError(label + ' must be a nonempty list')
+    result = {}
+    for row in rows:
+        identifier = row.get(key) if isinstance(row, dict) else None
+        if not isinstance(identifier, str) or not identifier.strip() or identifier in result:
+            raise ValueError(label + ' has an invalid or repeated identity')
+        result[identifier] = row
+    return result
+
+
+def validate_rosters(character_index, weapon_index, equipment_index, product=None):
+    characters = unique_records(character_index.get('characters'), 'character_id', 'Character registry')
+    weapons = unique_records(weapon_index.get('weapons'), 'id', 'Weapon registry')
+    equipment = unique_records(equipment_index.get('equipment'), 'weapon_id', 'Equipment registry')
+    special = {'laevatain_blade', 'typhoea_bow'}
+    if special.intersection(equipment) or set(weapons) != set(equipment) | special:
+        raise ValueError('Weapon registry must equal current equipment plus both priority visual weapons')
+    source = character_index.get('current_source')
+    if not isinstance(source, dict) or not isinstance(source.get('game_version'), str) or not source['game_version'].strip() or source.get('overlay_order') != ['StreamingAssets', 'Persistent']:
+        raise ValueError('Current source must identify the game version and effective VFS overlay')
+    for field, records in (('character_ids', characters), ('equipment_ids', equipment)):
+        identifiers = source.get(field)
+        if (not isinstance(identifiers, list) or
+                any(not isinstance(value, str) or not value for value in identifiers) or
+                len(set(identifiers)) != len(identifiers) or set(identifiers) != set(records)):
+            raise ValueError('Profile registry differs from current game source roster: ' + field)
+    if product is not None:
+        catalog_characters = unique_records(product.get('characters'), 'id', 'Product character catalog')
+        catalog_weapons = unique_records(product.get('weapons'), 'id', 'Product weapon catalog')
+        if set(catalog_characters) != set(characters) or set(catalog_weapons) != set(weapons):
+            raise ValueError('Product catalog differs from current character/weapon profile registries')
+        for identifier, row in catalog_weapons.items():
+            if row.get('model_profile') != relative_reference('profiles/weapons', weapons[identifier]['profile']):
+                raise ValueError('Product weapon profile differs from registry: ' + identifier)
+    return characters, weapons, equipment
+
+
+def validate_profile_source(profile, game_version, character=False):
+    evidence = profile.get('evidence', {}) if character else profile
+    version_field = 'game_version' if character else 'source_game_version'
+    if (not isinstance(evidence, dict) or evidence.get('current_vfs_verified') is not True or
+            evidence.get(version_field) != game_version):
+        raise ValueError('Profile lacks current-version effective VFS evidence')
+
+
 def validate_product(entries, manifest):
     product = read(required(entries, 'assets/product_catalog.json', '.json'))
     audio = read(required(entries, 'assets/audio_catalog.json', '.json'))
-    if {mode['id'] for mode in product.get('modes', [])} != MODES or len(product.get('characters', [])) != 33:
-        raise ValueError('Product catalog must cover current six modes and 33 characters')
+    if set(unique_records(product.get('modes'), 'id', 'Product modes')) != MODES:
+        raise ValueError('Product catalog must cover the current six modes')
+    validate_rosters(read(required(entries, 'profiles/index.json', '.json')),
+                     read(required(entries, 'profiles/weapons/index.json', '.json')),
+                     read(required(entries, 'profiles/weapons/equipment-index.json', '.json')), product)
     if product.get('version') != manifest['version']:
         raise ValueError('Regenerate product metadata after changing module version')
     required(entries, relative_reference('assets', product['preview']['file']), '.json')
     provenance = read(required(entries, 'assets/build_provenance.json', '.json'))
     if provenance.get('version') != manifest['version'] or {mode['id'] for mode in provenance.get('modes', [])} != MODES:
         raise ValueError('Build provenance must match this version and all six modes')
-    if len(product.get('weapons', [])) != 82 or len({weapon['id'] for weapon in product['weapons']}) != 82:
-        raise ValueError('Product catalog requires 82 unique equipment/special model records')
-    if len({character['id'] for character in product['characters']}) != 33:
-        raise ValueError('Product catalog has repeated character IDs')
+    current_source = read(entries['profiles/index.json'])['current_source']
+    if provenance.get('current_endfield_source') != current_source or provenance.get('characters_pending_current_vfs_validation') != []:
+        raise ValueError('Build provenance has stale or unverified current game sources')
     source_tours = product.get('source_tours', {})
     tour_index = read(required(entries, relative_reference('assets', source_tours.get('file', '')), '.json'))
     tours = source_tours.get('modes', [])
@@ -800,6 +856,7 @@ def package(root: Path, package_root: Path, output: Path | None, validate_only=F
     dll = package_root.joinpath(*library.parts)
     if not dll.is_file():
         raise FileNotFoundError(f'Build the native module first: {dll}')
+    validate_native_identity(dll.read_bytes(), manifest['id'], manifest['version'])
     entries: dict[str, Path | bytes] = {'module.json': manifest_path, str(library): dll}
     # The root assets/audio tree contains legacy 0.x research copies. Current
     # readers use the six mode roots plus the independent special-model PCM.
@@ -874,27 +931,24 @@ def package(root: Path, package_root: Path, output: Path | None, validate_only=F
     required(entries, manifest['ui'], '.html')
     character_index = read(required(entries, 'profiles/index.json', '.json'))
     characters = character_index.get('characters', [])
-    if len(characters) != 33 or len({item['character_id'] for item in characters}) != 33:
-        raise ValueError('Current release requires 33 unique character profiles')
+    weapon_index = read(required(entries, 'profiles/weapons/index.json', '.json'))
+    equipment_index = read(required(entries, 'profiles/weapons/equipment-index.json', '.json'))
+    validate_rosters(character_index, weapon_index, equipment_index)
+    game_version = character_index['current_source']['game_version']
     for character in characters:
         path = required(entries, relative_reference('profiles', character['profile']), '.json')
         profile = read(path)
+        validate_profile_source(profile, game_version, character=True)
         if profile.get('character_id') != character['character_id'] or set(profile.get('supported_modes', [])) != MODES:
             raise ValueError('Character identity/mode coverage invalid: ' + character['character_id'])
         if len(profile.get('finger_bones', {})) != 30 or not profile.get('ground_foot_probes'):
             raise ValueError('Missing actual finger/sole profile: ' + character['character_id'])
-    weapon_index = read(required(entries, 'profiles/weapons/index.json', '.json'))
     weapon_ids = set()
     for weapon in weapon_index.get('weapons', []):
         if weapon['id'] in weapon_ids:
             raise ValueError('Duplicate weapon profile ' + weapon['id'])
         weapon_ids.add(weapon['id'])
-        read(required(entries, relative_reference('profiles/weapons', weapon['profile']), '.json'))
-    equipment = read(required(entries, 'profiles/weapons/equipment-index.json', '.json')).get('equipment', [])
-    if len(equipment) != 80 or len(weapon_ids) != 82 or not {'laevatain_blade', 'typhoea_bow'} <= weapon_ids:
-        raise ValueError('Current release requires 80 equipment plus both priority visual weapons')
-    if len({item['weapon_id'] for item in equipment}) != 80 or any(item['weapon_id'] not in weapon_ids for item in equipment):
-        raise ValueError('Equipment registry differs from actual model profile registry')
+        validate_profile_source(read(required(entries, relative_reference('profiles/weapons', weapon['profile']), '.json')), game_version)
     registry = read(required(entries, 'assets/modes/index.json', '.json'))
     modes = registry.get('modes', [])
     if len(modes) != 6 or {mode['id'] for mode in modes} != MODES:

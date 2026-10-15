@@ -437,7 +437,10 @@
         "animation_tracks": 312,
         "animation_frames": 311,
         "original_animation_acl_verified": true
-      }
+      },
+      "source_game_version": "1.6.3",
+      "current_vfs_verified": true,
+      "current_vfs_evidence": "research/client-update-1.6.3/special-comparison.json"
     },
     "bow": {
       "schema": 2,
@@ -514,12 +517,15 @@
       },
       "vfx_status": "native string/flow material retained; index draw point is anatomical candidate; native limb charge curves unresolved",
       "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
-      "runtime_verified": false
+      "runtime_verified": false,
+      "source_game_version": "1.6.3",
+      "current_vfs_verified": true,
+      "current_vfs_evidence": "research/client-update-1.6.3/special-comparison.json"
     }
   },
   "evidence": {
     "source": "current local tables + reference-preserving native postmodel graph",
-    "source_graph": "G:\\Better Endfield\\research\\custom_model\\1.5.3\\shared\\postmodel-native-parser-history\\sweep-identities\\chr_0012_avywen.json",
+    "source_graph": "research\\character-coverage\\chr_0012_avywen.json",
     "manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
     "main_bones": 21,
     "main_palette_bone_count": 251,
@@ -527,7 +533,18 @@
     "runtime_verified": false,
     "primary_skin_palette_verified": true,
     "secondary_rig_excluded": true,
-    "runtime_rest_policy": "derive from actual renderer bindposes, never apply cached serialized matrices as live rest"
+    "runtime_rest_policy": "derive from actual renderer bindposes, never apply cached serialized matrices as live rest",
+    "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+    "game_version": "1.6.3",
+    "current_vfs_verified": true,
+    "overlay_order": [
+      "StreamingAssets",
+      "Persistent"
+    ],
+    "verification_report": "research\\client-update-1.6.3\\current-inputs\\summary.json",
+    "geometry_validation": "current graph and actual geometry exactly equal to prior audited inputs",
+    "geometry_comparison_report": "research/client-update-1.6.3/geometry-comparison.json",
+    "rig_comparison_report": "research/client-update-1.6.3/rig-comparison.json"
   },
   "ground_foot_probes": [
     {
@@ -1276,6 +1293,7 @@
     }
   ],
   "ground_foot_mesh_rest_min_y": -9.123794734477997e-05,
+  "secondary_skin_roots": [],
   "rest_local_transforms": {
     "Bip001_Pelvis": {
       "position": [
@@ -4513,6 +4531,5 @@
   },
   "bind_registration_max_position_error_m": 0.00010106986254680677,
   "bind_registration_policy": "offline raw native bindpose frame -> authored model frame; runtime apply only if actual bindposes still use that raw frame, never twice",
-  "rest_matrix_policy": "prefer live actual renderer bindposes; missing parent from palette child plus authored static local chain; offline matrices are client-version-qualified fallback",
-  "secondary_skin_roots": []
+  "rest_matrix_policy": "prefer live actual renderer bindposes; missing parent from palette child plus authored static local chain; offline matrices are client-version-qualified fallback"
 }

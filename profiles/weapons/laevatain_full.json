@@ -129,5 +129,8 @@
     "animation_tracks": 312,
     "animation_frames": 311,
     "original_animation_acl_verified": true
-  }
+  },
+  "source_game_version": "1.6.3",
+  "current_vfs_verified": true,
+  "current_vfs_evidence": "research/client-update-1.6.3/special-comparison.json"
 }

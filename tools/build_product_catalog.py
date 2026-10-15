@@ -331,6 +331,8 @@ def character_product(root, index, audit):
     result = []
     for source in index.get('characters', []):
         identifier = source.get('character_id', source.get('id'))
+        profile = read(within(root, 'profiles/' + source['profile']), {})
+        source_evidence = profile.get('evidence', {})
         default = source.get('default_mode', 'longsword')
         name = source.get('label', source.get('display_name', identifier))
         if identifier == 'chr_0002_endminm':
@@ -362,6 +364,8 @@ def character_product(root, index, audit):
         result.append({'id': identifier, 'name': name, 'category': NAMES.get(default, NAMES['longsword'])[3],
                        'default_mode': default, 'supported_modes': source.get('supported_modes', MODE_ORDER),
                        'profile_status': source.get('status', 'pending'),
+                       'source_game_version': source_evidence.get('game_version', ''),
+                       'current_vfs_verified': source_evidence.get('current_vfs_verified') is True,
                        'source_mesh_available': bool(source.get('source_mesh_available')),
                        'modes': modes, 'runtime_status': 'pending'})
     return result
@@ -509,13 +513,20 @@ def build_provenance(root, registry, character_index, audit, manifest):
                       'original_finger_tracks': len(fingers.get('tracks', {})),
                       'keyboard_defaults_verified': (entry.get('default_bindings') or {}).get('verified') is True,
                       'runtime_verified': False})
-    source_manifests = sorted({read(within(root, 'profiles/' + item['profile']), {}).get('evidence', {}).get('source_manifest', '')
-                              for item in character_index.get('characters', [])} - {''})
+    character_evidence = [read(within(root, 'profiles/' + item['profile']), {}).get('evidence', {})
+                          for item in character_index.get('characters', [])]
+    source_manifests = sorted({item.get('source_manifest') or item.get('manifest', '')
+                              for item in character_evidence} - {''})
     theme_audio = read(root / 'assets/audio/theme_cues.json', {})
     result = {'schema': 1, 'version': manifest.get('version', 'unknown'),
               'verification_scope': 'offline source and target data, browser, isolated EML; game validation deferred',
               'endfield_source_manifest': audit.get('source_manifest', ''),
               'character_source_manifests': source_manifests,
+              'current_endfield_source': character_index.get('current_source', {}),
+              'character_source_game_versions': sorted({item.get('game_version', '') for item in character_evidence} - {''}),
+              'characters_pending_current_vfs_validation': [item['character_id']
+                  for item, evidence in zip(character_index.get('characters', []), character_evidence)
+                  if not evidence.get('current_vfs_verified')],
               'source_reference_policy': 'Source paths identify local extraction evidence, not executable package dependencies.',
               'coordinate_policy': 'Unity Y-up/Z-forward meters; LSM world-rest quaternion deltas; per-renderer target bind registration.',
               'runtime_verified': False, 'modes': modes,

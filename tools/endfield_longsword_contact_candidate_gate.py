@@ -16,7 +16,8 @@ from mhw_source_contact_audit import point_to_triangles,intervals
 
 
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--characters',nargs='+');parser.add_argument('--resume',action='store_true');a=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--characters',nargs='+');parser.add_argument('--resume',action='store_true');parser.add_argument('--replace-existing',action='store_true',help='Recompute selected rows while preserving all other recorded characters; requires --resume');parser.add_argument('--no-gallery',action='store_true');a=parser.parse_args()
+ if a.replace_existing and not a.resume:parser.error('--replace-existing requires --resume')
  characters=a.characters or [c['character_id'] for c in read(ROOT/'profiles/index.json')['characters']]
  candidates=read(ROOT/'research/multiweapon/longsword-contact-candidates.json');data=resources('longsword');tracks=data['weapon']['tracks'];original={slot:[float(f['support_weight']) for f in row['frames']] for slot,row in tracks.items()}
  graph=Graph(read(ROOT/'research/expansion-20261013/laevat-weapon-raw.json'));parts=geometry(graph,ROOT/'research/weapon-coverage/laevat-geometry','wpn_misc_0016');blade=next(p for p in parts if p['name']=='S_wpn_misc_00016_02_lod0')
@@ -29,7 +30,7 @@ def main():
   for slot,candidate in candidates['tracks'].items():
    for f,mask in zip(tracks[slot]['frames'],candidate['candidate_mask']):f['support_weight']=float(mask)
   for cid in characters:
-   if any(r['character_id']==cid for r in rows):
+   if not a.replace_existing and any(r['character_id']==cid for r in rows):
     print(cid,'reused unchanged initial P0 candidate gate',flush=True);continue
    scene=setup(cid,update_profile=False);meta,clips=oracle(cid,'longsword');meta['contact_candidate_scratch']=True;ids=[scene['index'][scene['r']['fingers']['Bip001_L_Finger'+str(n)]] for n in [1,2]]
    index=scene['index'][scene['r']['fingers']['Bip001_L_Finger1']];pinky=scene['index'][scene['r']['fingers']['Bip001_L_Finger4']];tolerance=float(np.linalg.norm(scene['rest'][index,:3,3]-scene['rest'][pinky,:3,3])/2)
@@ -55,10 +56,12 @@ def main():
       passing[frame]=int(settled and not failure and residual<.005 and distance<=tolerance)
       if (distance>tolerance or residual>.005) and len(samples)<8:samples.append({'frame':int(frame),'knuckle_hilt_max_m':distance,'wrist_source_offset_residual_m':residual,'settled':settled,'unreachable':failure})
     row={'slot':clip['slot'],'frames':len(source_mask),'candidate_frames':int(source_mask.sum()),'passing_frames':int(passing.sum()),'pass_mask':passing.tolist(),'pass_intervals':intervals(passing),'max_knuckle_hilt_m':worst,'maximum_wrist_source_offset_residual_m':maximum_residual,'unreachable_frames':unreachable,'rejected_samples':samples};char_rows.append(row)
-    if cid in ['chr_0003_endminf','chr_0016_laevat','chr_0034_typhoea'] and clip['slot'] in [102,307,311,1000] and passing.any():
+    if not a.no_gallery and cid in ['chr_0003_endminf','chr_0016_laevat','chr_0034_typhoea'] and clip['slot'] in [102,307,311,1000] and passing.any():
      frame=int(np.flatnonzero(passing)[len(np.flatnonzero(passing))//2]);sample=np.array([frame]);world=fk(scene,meta,clip,sample);world=ground_pose(scene,meta,clip,sample,world,probe_floor);posed,clones,_=pose_parts(scene,meta,clip,sample,world,graph,parts,'longsword')
      for view in ['rear','side','front']:render(scene['parts']+clones,posed,gallery/f'{cid}-{clip["slot"]}-{frame}-{view}.png',cid+f'\nScratch contact candidate {clip["slot"]}:{frame}\nActual native hilt',view)
-   rows.append({'character_id':cid,'target_palm_half_width_m':tolerance,'tracks':char_rows,'candidate_frames':sum(r['candidate_frames'] for r in char_rows),'passing_frames':sum(r['passing_frames'] for r in char_rows),'runtime_verified':False,'published':False})
+   if {str(row['slot']) for row in char_rows}!=set(candidates['tracks']):raise ValueError('Current oracle does not cover every source contact candidate: '+cid)
+   rows=[row for row in rows if row['character_id']!=cid]
+   rows.append({'character_id':cid,'target_palm_half_width_m':tolerance,'tracks':char_rows,'candidate_frames':sum(r['candidate_frames'] for r in char_rows),'passing_frames':sum(r['passing_frames'] for r in char_rows),'recomputed_from_loaded_geometry':True,'runtime_verified':False,'published':False})
    save()
    print(cid,'candidate frames',rows[-1]['candidate_frames'],'passing',rows[-1]['passing_frames'],'elapsed',round(time.time()-start),flush=True)
  finally:

@@ -18,8 +18,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--characters", nargs="+")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--replace-existing", action="store_true", help="Recompute selected rows while preserving other recorded characters; requires --resume")
     parser.add_argument("--no-gallery", action="store_true")
     args = parser.parse_args()
+    if args.replace_existing and not args.resume:
+        parser.error("--replace-existing requires --resume")
     characters = args.characters or [row["character_id"] for row in read(ROOT / "profiles/index.json")["characters"]]
     candidates = read(ROOT / "research/multiweapon/longsword-contact-candidates.json")
     if candidates["enabled"] or candidates["authored_contact_flag"]:
@@ -52,7 +55,7 @@ def main():
             for frame,mask in zip(tracks[slot]["frames"],candidate["candidate_mask"]):
                 frame["support_weight"] = float(mask)
         for cid in characters:
-            if any(row["character_id"] == cid for row in rows):
+            if not args.replace_existing and any(row["character_id"] == cid for row in rows):
                 print(cid,"reused existing exact source blade gate",flush=True)
                 continue
             scene = setup(cid,update_profile=False)
@@ -112,9 +115,12 @@ def main():
                     for view in ("rear","side","front"):
                         render(scene["parts"]+clones,posed,gallery/f'{cid}-{clip["slot"]}-{frame}-{view}.png',
                                cid+f'\nScratch source contact {clip["slot"]}:{frame}\nActual MHW own-skinned hilt',view)
+            if {str(row["slot"]) for row in char_rows} != set(candidates["tracks"]):
+                raise ValueError("Current oracle does not cover every source contact candidate: " + cid)
+            rows = [row for row in rows if row["character_id"] != cid]
             rows.append(dict(character_id=cid,target_palm_half_width_m=tolerance,tracks=char_rows,
                 candidate_frames=sum(row["candidate_frames"] for row in char_rows),passing_frames=sum(row["passing_frames"] for row in char_rows),
-                runtime_verified=False,published=False))
+                recomputed_from_loaded_geometry=True,runtime_verified=False,published=False))
             save()
             print(cid,"candidate",rows[-1]["candidate_frames"],"passing",rows[-1]["passing_frames"],"elapsed",round(time.monotonic()-start),flush=True)
     finally:

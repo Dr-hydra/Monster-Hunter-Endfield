@@ -33,28 +33,36 @@ def special():
  write(OUT/'special-parts-validation.json',{'schema':1,'parts':parts,'count':len(parts),'runtime_verified':False})
  write(ROOT/'profiles/weapons/index.json',{'schema':1,'weapons':[{'id':'laevatain_blade','profile':'laevatain_full.json','modes':['longsword'],'mount_side':'right','runtime_verified':False},{'id':'typhoea_bow','profile':'typhoea_bow.json','modes':['bow'],'mount_side':'left','runtime_verified':False}], 'default_by_mode':{'longsword':'laevatain_blade','bow':'typhoea_bow'},'source_props':'assets/modes/<mode>/props/index.json','runtime_verified':False})
 
-def equipment(extract):
- index=read(ROOT/'profiles/weapons/equipment-index.json');manifest=read(ROOT/'research/character-coverage/purrche-inputs/Bundles/Windows/manifest.json');assets={a['path'].lower():a for a in manifest['Assets']};required=[]
+def equipment(extract,manifest_path=None,raw_path=None,geometry_path=None,selected=None,game_version=None,overlay_report=None):
+ index=read(ROOT/'profiles/weapons/equipment-index.json');manifest=read(manifest_path or ROOT/'research/character-coverage/purrche-inputs/Bundles/Windows/manifest.json');assets={a['path'].lower():a for a in manifest['Assets']};required=[]
+ if game_version and index.get('current_source',{}).get('game_version')!=game_version:raise ValueError('Equipment roster must match the requested client version')
  for row in index['equipment']:
   asset=assets.get(row['model_path']);row['asset_exists']=bool(asset)
   if not asset:raise ValueError('weapon model missing '+row['model_path'])
   row['asset_path_hash']=str(asset['pathHashHead']);required.append(row['model_path'])
  write(ROOT/'profiles/weapons/equipment-index.json',index)
- if extract or (OUT/'equipment-raw.json').exists():
+ if extract or raw_path or (OUT/'equipment-raw.json').exists():
   env=dict(os.environ);env['PYTHONPATH']=str(BE/'scripts');inputs=OUT/'equipment-inputs';inputs.mkdir(parents=True,exist_ok=True)
   if not (inputs/'extraction.json').exists():
    command=['python',str(BE/'tools/CustomModel/extract_native_bundles.py'),'--game',r'G:\Arknights Endfield','--asset-only','--unpacker',str(BE/'toolchains/EndfieldUnpacker'),'--resconv',str(BE/'toolchains/FkArkEnd/ResConv/bin/Release/net10.0/ResConv.exe'),'--output',str(inputs)]
    for path in required:command+=['--extra-asset',path]
    subprocess.run(command,check=True,env=env)
-  raw=OUT/'equipment-raw.json'
+  raw=raw_path or OUT/'equipment-raw.json'
   if not raw.exists():subprocess.run(['dotnet',str(BE/'toolchains/native-asset-reader/identities/NativeAssetReader.dll'),str(inputs),str(raw)],check=True)
   data=read(raw)
-  supplement=OUT/'equipment-geometry/static-renderers.json'
+  if game_version:
+   if not overlay_report:raise ValueError('Current version generation requires --overlay-report')
+   verified={str(Path(r['snapshot']).resolve()).casefold() for r in read(overlay_report)['snapshots'] if r['current_vfs_verified'] and r.get('current_closure_verified')}
+   if str((Path(data['input_directory'])/'extraction.json').resolve()).casefold() not in verified:raise ValueError('Weapon graph closure is not verified against the current VFS')
+  geometry_root=geometry_path or OUT/'equipment-geometry';supplement=geometry_root/'static-renderers.json'
   if supplement.exists():
    known={x['id'] for x in data['objects']};data['objects'] += [x for x in read(supplement) if x['id'] not in known]
   g=Graph(data);rows=[];registry=read(ROOT/'profiles/weapons/index.json')
-  geometric={r['id']:read(OUT/'equipment-geometry'/r['file']) for r in read(OUT/'equipment-geometry/inspection.json')} if (OUT/'equipment-geometry/inspection.json').exists() else {}
+  geometric={r['id']:read(geometry_root/r['file']) for r in read(geometry_root/'inspection.json')} if (geometry_root/'inspection.json').exists() else {}
+  replacing=set(selected or [r['weapon_id'] for r in index['equipment']])
+  registry['weapons']=[r for r in registry['weapons'] if r['id'] not in replacing]
   for row in index['equipment']:
+   if row['weapon_id'] not in replacing:continue
    root=row['weapon_id'];renderers=[]
    for o in g.objects.values():
     if o['type'] not in ['SkinnedMeshRenderer','MeshRenderer']:continue
@@ -67,6 +75,7 @@ def equipment(extract):
    qualified=bool(renderers) and all(r['renderer_kind']=='static' or len(r['palette_paths'])==r['bindpose_count'] for r in renderers)
    entries=[x for x in renderers if '/lod0/' in '/'+x['path']]
    geometry_ok=all(r['mesh_id'] in geometric for r in entries)
+   if game_version and (not qualified or not entries or not geometry_ok):raise ValueError('Current weapon requires complete native references and actual geometry: '+root)
    rows.append({'weapon_id':root,'native_renderers':renderers,'resource_root_exists':root in g.paths,'own_bone_palettes_complete':qualified,'geometry_exported':geometry_ok,'runtime_verified':False})
    if qualified and entries:
     main=entries[0];axis=np.array([0,1,0]);length=1.25
@@ -78,6 +87,7 @@ def equipment(extract):
      if abs(projection.min())>abs(projection.max()):axis=-axis;projection=-projection
      length=float(np.ptp(projection));
     visual={'schema':2,'id':root,'display_name':root,'resource_id':root,'asset_path':row['model_path'],'asset_path_hash':row['asset_path_hash'],'renderer_path':main['path'],'renderer_paths':[r['path'] for r in entries],'renderer_kinds':{r['path']:r['renderer_kind'] for r in entries},'mount_bone_path':main['palette_paths'][0] if main['palette_paths'] else 'Mesh_all','mount_reference_path':'','mount_position':[0,0,0],'mount_rotation_xyzw':[0,0,0,1],'mount_side':'right','mount_mode':'preserve-native-prefab-root-at-authored-character-socket','mount_runtime_verified':False,'mount_evidence':'Native prefab mesh and original local transforms retained. Equipment source socket is read per character; shape compatibility and semantic grip not yet manually qualified.','blade_root_axis':axis.tolist(),'edge_root_axis':[1,0,0],'blade_length_m':length,'axis_status':'principal geometry axis measured; endpoint semantic assignment not certified','material_policy':'readonly-native-shared-materials','controls':{},'source_manifest':g.data['snapshot']['manifest_version'],'runtime_verified':False}
+    if game_version:visual.update({'source_game_version':game_version,'current_vfs_verified':True,'current_vfs_evidence':str(overlay_report)})
     write(ROOT/'profiles/weapons/equipment'/(root+'.json'),visual);registry['weapons'].append({'id':root,'profile':'equipment/'+root+'.json','modes':row['applicable_modes'],'mount_side':'right','runtime_verified':False})
   write(OUT/'equipment-validation.json',{'schema':1,'equipment_count':len(rows),'equipment':rows,'source_manifest':g.data['snapshot']['manifest_version'],'runtime_verified':False})
   write(ROOT/'profiles/weapons/index.json',registry)
@@ -86,5 +96,7 @@ def equipment(extract):
   if bad:write(OUT/'equipment-exceptions.json',bad)
 
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--extract-equipment',action='store_true');a=p.parse_args();special();equipment(a.extract_equipment)
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--extract-equipment',action='store_true');p.add_argument('--skip-special',action='store_true',help='Compatibility flag; equipment updates always preserve special calibration');p.add_argument('--manifest',type=Path,required=True);p.add_argument('--raw',type=Path,required=True);p.add_argument('--geometry',type=Path,required=True);p.add_argument('--weapons',nargs='+');p.add_argument('--game-version',required=True);p.add_argument('--overlay-report',type=Path,required=True);a=p.parse_args()
+ if a.extract_equipment:p.error('Use refresh_endfield_profile_inputs.py for fresh extraction, then pass its explicit inputs')
+ equipment(a.extract_equipment,a.manifest,a.raw,a.geometry,a.weapons,a.game_version,a.overlay_report)
 if __name__=='__main__':main()

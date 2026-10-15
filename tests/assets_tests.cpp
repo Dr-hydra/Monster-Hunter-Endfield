@@ -77,7 +77,10 @@ int main(int argc,char** argv){
  try{
   if(argc!=2)throw std::runtime_error("Expected actual package source root");
   packageRoot=std::filesystem::path(argv[1]);ReadAssets();
-  if(characterProfiles.size()<33||characterProfiles.contains("chr_9000_endmin"))throw std::runtime_error("Full distinct character registry required");
+  std::ifstream rosterInput(packageRoot/"profiles/index.json");Json roster;rosterInput>>roster;
+  const auto expected=roster.at("current_source").at("character_ids").get<std::set<std::string>>();
+  if(expected.empty()||characterProfiles.size()!=expected.size()||characterProfiles.contains("chr_9000_endmin"))throw std::runtime_error("Full current-source character registry required");
+  for(const auto& id:expected)if(!characterProfiles.contains(id))throw std::runtime_error("Current character profile was not loaded: "+id);
   const std::array<std::string,6> requiredModes{"longsword","sword_shield","greatsword","lance","light_bowgun","bow"};
   size_t totalClips=0,totalSounds=0,totalMotions=0;
   for(const auto& mode:requiredModes){

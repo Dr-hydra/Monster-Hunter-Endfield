@@ -437,7 +437,10 @@
         "animation_tracks": 312,
         "animation_frames": 311,
         "original_animation_acl_verified": true
-      }
+      },
+      "source_game_version": "1.6.3",
+      "current_vfs_verified": true,
+      "current_vfs_evidence": "research/client-update-1.6.3/special-comparison.json"
     },
     "bow": {
       "schema": 2,
@@ -514,12 +517,15 @@
       },
       "vfx_status": "native string/flow material retained; index draw point is anatomical candidate; native limb charge curves unresolved",
       "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
-      "runtime_verified": false
+      "runtime_verified": false,
+      "source_game_version": "1.6.3",
+      "current_vfs_verified": true,
+      "current_vfs_evidence": "research/client-update-1.6.3/special-comparison.json"
     }
   },
   "evidence": {
     "source": "current local tables + reference-preserving native postmodel graph",
-    "source_graph": "G:\\Better Endfield\\research\\custom_model\\1.5.3\\shared\\postmodel-native-parser-history\\sweep-identities\\chr_0006_wolfgd.json",
+    "source_graph": "research\\character-coverage\\chr_0006_wolfgd.json",
     "manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
     "main_bones": 21,
     "main_palette_bone_count": 218,
@@ -527,7 +533,18 @@
     "runtime_verified": false,
     "primary_skin_palette_verified": true,
     "secondary_rig_excluded": true,
-    "runtime_rest_policy": "derive from actual renderer bindposes, never apply cached serialized matrices as live rest"
+    "runtime_rest_policy": "derive from actual renderer bindposes, never apply cached serialized matrices as live rest",
+    "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+    "game_version": "1.6.3",
+    "current_vfs_verified": true,
+    "overlay_order": [
+      "StreamingAssets",
+      "Persistent"
+    ],
+    "verification_report": "research\\client-update-1.6.3\\current-inputs\\summary.json",
+    "geometry_validation": "current graph and actual geometry exactly equal to prior audited inputs",
+    "geometry_comparison_report": "research/client-update-1.6.3/geometry-comparison.json",
+    "rig_comparison_report": "research/client-update-1.6.3/rig-comparison.json"
   },
   "ground_foot_probes": [
     {
@@ -1162,6 +1179,49 @@
     }
   ],
   "ground_foot_mesh_rest_min_y": -0.001620471477508545,
+  "secondary_skin_roots": [],
+  "ground_extra_foot_probe_vertices": [
+    {
+      "mesh_id": "cab-ceaf3e8e72de3d7b9ac2b707a7e25022:5374507462828608341",
+      "vertex": 7647,
+      "side": "right",
+      "evidence": {
+        "mode": "sword_shield",
+        "slot": 10344,
+        "frame": 120,
+        "mesh_id": "cab-ceaf3e8e72de3d7b9ac2b707a7e25022:5374507462828608341",
+        "mesh_name": "S_actor_wolfgd_cloth_02_lod0",
+        "vertex": 7647,
+        "side": "right",
+        "height_m": -0.03151719644665718,
+        "point": [
+          0.45066899061203003,
+          -0.03151719644665718,
+          7.172562599182129
+        ]
+      }
+    },
+    {
+      "mesh_id": "cab-ceaf3e8e72de3d7b9ac2b707a7e25022:5374507462828608341",
+      "vertex": 8306,
+      "side": "left",
+      "evidence": {
+        "mode": "longsword",
+        "slot": 11,
+        "frame": 36,
+        "mesh_id": "cab-ceaf3e8e72de3d7b9ac2b707a7e25022:5374507462828608341",
+        "mesh_name": "S_actor_wolfgd_cloth_02_lod0",
+        "vertex": 8306,
+        "side": "left",
+        "height_m": -0.028464581817388535,
+        "point": [
+          -0.13339395821094513,
+          -0.028464581817388535,
+          4.474928855895996
+        ]
+      }
+    }
+  ],
   "rest_local_transforms": {
     "Bip001_Pelvis": {
       "position": [
@@ -5074,48 +5134,5 @@
   },
   "bind_registration_max_position_error_m": 0.00013230582235445714,
   "bind_registration_policy": "offline raw native bindpose frame -> authored model frame; runtime apply only if actual bindposes still use that raw frame, never twice",
-  "rest_matrix_policy": "prefer live actual renderer bindposes; missing parent from palette child plus authored static local chain; offline matrices are client-version-qualified fallback",
-  "secondary_skin_roots": [],
-  "ground_extra_foot_probe_vertices": [
-    {
-      "mesh_id": "cab-ceaf3e8e72de3d7b9ac2b707a7e25022:5374507462828608341",
-      "vertex": 7647,
-      "side": "right",
-      "evidence": {
-        "mode": "sword_shield",
-        "slot": 10344,
-        "frame": 120,
-        "mesh_id": "cab-ceaf3e8e72de3d7b9ac2b707a7e25022:5374507462828608341",
-        "mesh_name": "S_actor_wolfgd_cloth_02_lod0",
-        "vertex": 7647,
-        "side": "right",
-        "height_m": -0.03151719644665718,
-        "point": [
-          0.45066899061203003,
-          -0.03151719644665718,
-          7.172562599182129
-        ]
-      }
-    },
-    {
-      "mesh_id": "cab-ceaf3e8e72de3d7b9ac2b707a7e25022:5374507462828608341",
-      "vertex": 8306,
-      "side": "left",
-      "evidence": {
-        "mode": "longsword",
-        "slot": 11,
-        "frame": 36,
-        "mesh_id": "cab-ceaf3e8e72de3d7b9ac2b707a7e25022:5374507462828608341",
-        "mesh_name": "S_actor_wolfgd_cloth_02_lod0",
-        "vertex": 8306,
-        "side": "left",
-        "height_m": -0.028464581817388535,
-        "point": [
-          -0.13339395821094513,
-          -0.028464581817388535,
-          4.474928855895996
-        ]
-      }
-    }
-  ]
+  "rest_matrix_policy": "prefer live actual renderer bindposes; missing parent from palette child plus authored static local chain; offline matrices are client-version-qualified fallback"
 }

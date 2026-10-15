@@ -84,6 +84,8 @@ config.local.*
 !/research/weapon-coverage/*.md
 /research/keyboard-defaults/**
 !/research/keyboard-defaults/*.md
+# Client upgrade snapshots, decoded inputs and mesh inspection payloads
+/research/client-update-*/
 *.lsf
 *.lsk
 *.rgba

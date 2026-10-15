@@ -77,8 +77,8 @@ python tools/verify_endfield_weapon_audio.py
 先用 BE 导出器更新匹配 manifest 的角色/武器对象图、蒙皮/网格/材质引用和 CharacterData 的 raw/RefTypes；这些导出不需要进游戏。已具备导出资料时：
 
 ```powershell
-python tools/endfield_profiles.py --export-geometry
-python tools/endfield_weapon_profiles.py --extract-equipment
+python tools/endfield_profiles.py --input-root "<当前版本 Windows 输入目录>" --game-version 1.6.3 --graphs "<当前角色对象图目录>" --overlay-report "<当前 VFS 直接字节核对报告>" --table-report "<当前有效三表核对报告>" --export-geometry
+python tools/endfield_weapon_profiles.py --game-version 1.6.3 --manifest "<当前manifest.json>" --raw "<当前装备对象图>" --geometry "<当前装备几何目录>" --overlay-report "<当前装备提取报告>"
 python tools/weapon_reference_decode.py
 cmake -S tools/offline_retarget -B build/offline-retarget -G 'Visual Studio 17 2022' -A x64
 cmake --build build/offline-retarget --config Release
@@ -105,15 +105,15 @@ python tools/package.py --package-root build/development/package --validate-only
 python tools/package.py --package-root build/development/package
 ```
 
-先修改 `module.json` 与 native/CMake 的发布版本，再构建/生成目录/打包。产品目录与 `assets/build_provenance.json` 的版本必须与 ZIP manifest 相同。未通过检查时打包器拒绝生成包，不通过删缺失招式来掩盖缺口。
+先修改 `module.json` 的候选版本（CMake 自动读入并嵌入 DLL），再构建/生成目录/打包。产品目录与 `assets/build_provenance.json` 的版本必须与 ZIP manifest 相同。未通过检查时打包器拒绝生成包，不通过删缺失招式来掩盖缺口。
 
-包包含 LSM 身体、LSG 握持、LSF 手指、LSK 源武器 own-skin、地面/源挂点/命中/发射标记、PCM 和源模型/纹理，以及网页/配置/Markdown 文档。发行时六模式的 1185 个完整 LSG 文件合并到六个 LGB 银行，源挂点 JSON 的实际运行字段合并到六个 LSW 银行；源工作区的可编辑文件保留原格式。打包器校验路径、轨道帧/FPS/调色板、声音用途/时间界限、命令/hold/releases、六模式/33 角色/82 模型及全部网页图依赖。研究文件路径表示来源证据，原始解包研究不会作为运行依赖搬进 ZIP。
+包包含 LSM 身体、LSG 握持、LSF 手指、LSK 源武器 own-skin、地面/源挂点/命中/发射标记、PCM 和源模型/纹理，以及网页/配置/Markdown 文档。发行时六模式的 1185 个完整 LSG 文件合并到六个 LGB 银行，源挂点 JSON 的实际运行字段合并到六个 LSW 银行；源工作区的可编辑文件保留原格式。打包器校验路径、轨道帧/FPS/调色板、声音用途/时间界限、命令/hold/releases、六模式及当前角色／装备索引集合及全部网页图依赖。研究文件路径表示来源证据，原始解包研究不会作为运行依赖搬进 ZIP。
 
 `tools/mhw_package_banks.py` 的 `prepare(root, package_root)` 生成发行覆盖文件，也可单独运行 `python tools/mhw_package_banks.py --package-root build/development/package`。LSW1 银行头为 `<4sIII>`（magic、version=1、轨道数、每帧 152 字节），帧为 `<36fII>`，保留原 native 使用的 quaternion/support 与主副手/挂点原浮点，附件相对变换仍由原 C++ 计算。LGB1 银行头为 `<4sIII>`（magic、version=1、轨道数、0），载荷复制每份完整原 LSG1 文件；offset/size 和 source_file 来源记录在小 manifest。数值按原 native 的 binary32 精度保存，没有量化、裁帧或减少动作。转换器逐个浮点位模式、valid 标记和 LSG 字节进行精确回读，检查偏移无空洞、无重叠、结尾精确一致；结果写入 `build/development/runtime-bank-report.json`。当前源挂点 JSON 共 159,358,431 字节，发行 LSW 共 16,306,200 字节，LGB 共 1,735,488 字节。
 
 ## 网页与真实 EML 隔离检查
 
-只读 HTTP 服务在项目根目录提供 `127.0.0.1:8877`，运行 `tools/ui_browser_verify.cjs` 和 `tools/ui_catalog_browser_verify.cjs`。前者在独立页面注入显式 `?mock=1` 测试桥接；生产页面没有测试宿主。后者读取实际目录、PCM、源姿势和所有 198 个目标网格入口，检查资源依赖与默认键位。`tools/ui_final_controls_verify.cjs` 另验序列/循环/本地箭弹速度保存与全部 8 条特殊音源试听，`tools/ui_source_tours_verify.cjs` 检查六份实际源网格有声 MP4。网页/原生接口 mock 不能代替 EML 本身。
+只读 HTTP 服务在项目根目录提供 `127.0.0.1:8877`，运行 `tools/ui_browser_verify.cjs` 和 `tools/ui_catalog_browser_verify.cjs`。前者在独立页面注入显式 `?mock=1` 测试桥接；生产页面没有测试宿主。后者读取实际目录、PCM、源姿势和所有当前角色×模式的目标网格入口，检查资源依赖与默认键位。`tools/ui_final_controls_verify.cjs` 另验序列/循环/本地箭弹速度保存与全部 8 条特殊音源试听，`tools/ui_source_tours_verify.cjs` 检查六份实际源网格有声 MP4。网页/原生接口 mock 不能代替 EML 本身。
 
 最终 ZIP 还要通过真实 EML `ModuleStore` 的隔离导入和 `OfflineHost` 的初始化、配置/状态/模式/暂停/停止回执；做法见 [EML 离线宿主验证](implementation/eml-verification.md)。使用独立临时 module store，不写用户现用安装、游戏或服务端。浏览器/HTTP/OfflineHost 结束后关闭该记录创建的进程。
 

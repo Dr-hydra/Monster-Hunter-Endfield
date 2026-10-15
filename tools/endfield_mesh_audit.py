@@ -45,7 +45,14 @@ def oracle(cid,mode,directory=None):
   clips.append({'slot':slot,'fps':fps,'rotations':values[:,:bones*4].reshape(count,bones,4),'hip':values[:,bones*4:]})
  assert at==len(data);return meta,clips
 def setup(cid,update_profile=True):
- source=OUT/(cid+'.json') if cid=='chr_0038_purrche' else CACHE/'sweep-identities'/(cid+'.json');r=analyze(cid,read(source));g=r['graph'];model=cid+'_postmodel';to_model=np.linalg.inv(g.world(g.paths[model]));paths=sorted([p for p in g.paths if p==model or p.startswith(model+'/')],key=lambda p:(p.count('/'),p));index={p:i for i,p in enumerate(paths)};rest=[];parents=[];locals=[]
+ names={'chr_0003_endminf':'female_admin','chr_0016_laevat':'laevatain','chr_0034_typhoea':'typhoea'};profile=ROOT/'profiles'/(names.get(cid,cid)+'.json');data=read(profile)
+ recorded=data.get('evidence',{}).get('source_graph')
+ source=Path(recorded) if recorded else OUT/(cid+'.json')
+ if recorded and not source.is_absolute():source=ROOT/source
+ if not source.exists():
+  if data.get('evidence',{}).get('current_vfs_verified'):raise FileNotFoundError('Current qualified graph is unavailable: '+str(source))
+  source=CACHE/'sweep-identities'/(cid+'.json')
+ r=analyze(cid,read(source));g=r['graph'];model=cid+'_postmodel';to_model=np.linalg.inv(g.world(g.paths[model]));paths=sorted([p for p in g.paths if p==model or p.startswith(model+'/')],key=lambda p:(p.count('/'),p));index={p:i for i,p in enumerate(paths)};rest=[];parents=[];locals=[]
  for p in paths:
   m=r['skin_rest'].get(p,to_model@g.world(g.paths[p]));rest.append(m);parent=g.transforms[g.paths[p]]['parent']['id'];pp=g.path(parent) if parent in g.transforms else None;parents.append(index.get(pp,-1));locals.append(np.linalg.inv(rest[index[pp]])@m if pp in index else m)
  geometry_root=OUT/'geometry'/cid;geometries={x['id']:read(geometry_root/x['file']) for x in read(geometry_root/'inspection.json')};parts=[]

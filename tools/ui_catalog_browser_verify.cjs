@@ -6,8 +6,9 @@ async (page) => {
  await page.goto('http://127.0.0.1:8877/ui/index.html');
  await page.waitForFunction(()=>document.getElementById('catalog-state').textContent==='资源目录已载入');
  const data=await page.evaluate(async()=>({product:await(await fetch('../assets/product_catalog.json')).json(),audio:await(await fetch('../assets/audio_catalog.json')).json(),preview:await(await fetch('../assets/ui_modes_preview.json')).json()}));
- ensure(data.product.modes.length===6&&data.product.characters.length===33,'actual six modes / 33 profiles');
- ensure(data.product.weapons.length>=82,'actual 80 equipment plus two special profiles');
+ const roster=await page.evaluate(async()=>({characters:(await(await fetch('../profiles/index.json')).json()).characters.map(c=>c.character_id),weapons:(await(await fetch('../profiles/weapons/index.json')).json()).weapons.map(w=>w.id)}));
+ ensure(data.product.modes.length===6&&JSON.stringify(data.product.characters.map(c=>c.id).sort())===JSON.stringify(roster.characters.sort()),'actual six modes / current character profiles');
+ ensure(JSON.stringify(data.product.weapons.map(w=>w.id).sort())===JSON.stringify(roster.weapons.sort()),'actual current equipment and special profiles');
  ensure(data.preview.missing_source_previews.length===0,'all core source previews available');
  ensure(data.product.characters.every(c=>Object.values(c.modes).every(m=>m.runtime_status==='pending')),'no fabricated gameplay verification');
  const dependencies=[data.product.preview.file,...(data.product.source_tours?.modes||[]).map(m=>m.file),
@@ -15,7 +16,7 @@ async (page) => {
   ...Object.values(data.audio.modes).flatMap(m=>m.clips.map(c=>c.file))];
  const missing=await page.evaluate(async(paths)=>{const missing=[];for(let i=0;i<paths.length;i+=8){await Promise.all(paths.slice(i,i+8).map(async file=>{const r=await fetch('../assets/'+file,{method:'HEAD'});if(!r.ok||Number(r.headers.get('content-length'))<=0)missing.push(file);}));}return missing;},dependencies);
  ensure(missing.length===0,'complete sound / source-preview / target-image browser dependency closure');
- await page.locator('[data-page="loadout"]').click();ensure(await page.locator('#weapon-record option').count()>=82,'complete weapon metadata browsing');
+ await page.locator('[data-page="loadout"]').click();ensure(await page.locator('#weapon-record option').count()===roster.weapons.length,'complete weapon metadata browsing');
  for(const mode of data.product.modes){
   await page.locator(`[data-mode="${mode.id}"]`).click();await page.locator('[data-page="motion"]').click();
   ensure(await page.locator('#move-list .move').count()===mode.moves.length,`${mode.id}: actual command catalog`);
@@ -48,7 +49,7 @@ async (page) => {
    await page.locator('[data-page="loadout"]').click();
   }
  }
- ensure(checkedCells===198,'198 actual mesh references loaded through UI');
+ ensure(checkedCells===roster.characters.length*data.product.modes.length,'all current actual mesh references loaded through UI');
  await page.locator('#character-select').selectOption('chr_0034_typhoea');await page.locator('[data-mode="bow"]').click();await page.locator('[data-page="motion"]').click();await page.locator('#show-target-preview').click();
  ensure(await page.locator('#target-view option').count()>=3,'priority bow front / side / default mesh views');await page.locator('#target-view').selectOption({label:'侧面'});await page.waitForFunction(()=>document.getElementById('target-reference-image').naturalWidth>0);await page.screenshot({path:'output/playwright/workshop-priority-bow-side.png',fullPage:true});
  ensure(pageErrors.length===0,'no page JavaScript errors');ensure(failedResources.length===0,'no missing browser resources');

@@ -437,7 +437,10 @@
         "animation_tracks": 312,
         "animation_frames": 311,
         "original_animation_acl_verified": true
-      }
+      },
+      "source_game_version": "1.6.3",
+      "current_vfs_verified": true,
+      "current_vfs_evidence": "research/client-update-1.6.3/special-comparison.json"
     },
     "bow": {
       "schema": 2,
@@ -514,12 +517,15 @@
       },
       "vfx_status": "native string/flow material retained; index draw point is anatomical candidate; native limb charge curves unresolved",
       "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
-      "runtime_verified": false
+      "runtime_verified": false,
+      "source_game_version": "1.6.3",
+      "current_vfs_verified": true,
+      "current_vfs_evidence": "research/client-update-1.6.3/special-comparison.json"
     }
   },
   "evidence": {
     "source": "current local tables + reference-preserving native postmodel graph",
-    "source_graph": "G:\\Better Endfield\\research\\custom_model\\1.5.3\\shared\\postmodel-native-parser-history\\sweep-identities\\chr_0016_laevat.json",
+    "source_graph": "research\\character-coverage\\chr_0016_laevat.json",
     "manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
     "main_bones": 21,
     "main_palette_bone_count": 274,
@@ -527,7 +533,18 @@
     "runtime_verified": false,
     "primary_skin_palette_verified": true,
     "secondary_rig_excluded": true,
-    "runtime_rest_policy": "derive from actual renderer bindposes, never apply cached serialized matrices as live rest"
+    "runtime_rest_policy": "derive from actual renderer bindposes, never apply cached serialized matrices as live rest",
+    "source_manifest": "2954fa80-23c1-1579-2b22-4ecfd6d70418",
+    "game_version": "1.6.3",
+    "current_vfs_verified": true,
+    "overlay_order": [
+      "StreamingAssets",
+      "Persistent"
+    ],
+    "verification_report": "research\\client-update-1.6.3\\current-inputs\\summary.json",
+    "geometry_validation": "current graph and actual geometry exactly equal to prior audited inputs",
+    "geometry_comparison_report": "research/client-update-1.6.3/geometry-comparison.json",
+    "rig_comparison_report": "research/client-update-1.6.3/rig-comparison.json"
   },
   "visual_weapon": {
     "schema": 2,
@@ -660,7 +677,10 @@
       "animation_tracks": 312,
       "animation_frames": 311,
       "original_animation_acl_verified": true
-    }
+    },
+    "source_game_version": "1.6.3",
+    "current_vfs_verified": true,
+    "current_vfs_evidence": "research/client-update-1.6.3/special-comparison.json"
   },
   "ground_foot_probes": [
     {
@@ -1437,6 +1457,107 @@
     }
   ],
   "ground_foot_mesh_rest_min_y": -0.00028414465487003326,
+  "secondary_skin_roots": [
+    {
+      "root_path": "chr_0016_laevat_postmodel/Root/quan_jnt",
+      "root_name": "quan_jnt",
+      "driver_path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt",
+      "driver_name": "beijia_jnt",
+      "anchor_path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt",
+      "anchor_name": "beijia_jnt",
+      "anchor_relative_matrix": [
+        -0.8917949199676514,
+        -0.012642904184758663,
+        -0.45226120948791504,
+        0.0,
+        -0.019697856158018112,
+        -0.9975757002830505,
+        0.06672859191894531,
+        0.0,
+        -0.4520083963871002,
+        0.06841679662466049,
+        0.8893856406211853,
+        0.0,
+        -0.20936346054077148,
+        -0.01691741682589054,
+        -0.294793963432312,
+        1.0
+      ],
+      "root_rest_model_matrix": [
+        -5.761058332609537e-07,
+        -0.9710092544555664,
+        -0.2390417456626892,
+        0.0,
+        -1.0,
+        2.5604185793781653e-07,
+        1.3699986993742641e-06,
+        0.0,
+        -1.269076278731518e-06,
+        0.2390417754650116,
+        -0.9710092544555664,
+        0.0,
+        3.097301669185981e-05,
+        0.8135219216346741,
+        0.0008991911890916526,
+        1.0
+      ],
+      "driver_rest_model_matrix": [
+        0.01969897747039795,
+        0.7578938603401184,
+        0.6520820260047913,
+        0.0,
+        0.9975776076316833,
+        0.02863064967095852,
+        -0.06341267377138138,
+        0.0,
+        -0.06672946363687515,
+        0.6517502665519714,
+        -0.7554925084114075,
+        0.0,
+        0.0013602117542177439,
+        1.1648136377334595,
+        -0.08636609464883804,
+        1.0
+      ],
+      "shared_skin_vertices": 907,
+      "mesh_names": [
+        "S_actor_laevat_cloth_05_lod0"
+      ],
+      "paired_body_influences": [
+        {
+          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/L_Bone_Chain_1/L_Bone_Chain_2/L_Bone_Chain_3",
+          "weight": 34.62721907987725
+        },
+        {
+          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/R_Bone_Chain_1/R_Bone_Chain_2/R_Bone_Chain_3",
+          "weight": 34.3774353483459
+        },
+        {
+          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/R_Bone_Chain_1/R_Bone_Chain_2/R_Bone_Chain_3/R_Bone_Chain_4",
+          "weight": 32.78382366336882
+        },
+        {
+          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/L_Bone_Chain_1/L_Bone_Chain_2/L_Bone_Chain_3/L_Bone_Chain_4",
+          "weight": 32.2280031000264
+        },
+        {
+          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/L_Bone_Chain_1/L_Bone_Chain_2",
+          "weight": 8.838007227692287
+        },
+        {
+          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/R_Bone_Chain_1/R_Bone_Chain_2",
+          "weight": 8.121019379294012
+        },
+        {
+          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt",
+          "weight": 0.21769143734127283
+        }
+      ],
+      "evidence": "Actual exported indexed skin has vertices mixing independent root and main-skeleton influences; common body ancestor supplies a rigid presentation transport. Original spring/cloth driver is not emulated.",
+      "policy": "driverPose * inverse(driverBindRest) * externalRootBindRest; keep authored child local TRS",
+      "native_cloth_physics_verified": false
+    }
+  ],
   "rest_local_transforms": {
     "Bip001_Pelvis": {
       "position": [
@@ -4874,106 +4995,5 @@
   },
   "bind_registration_max_position_error_m": 7.432110862154876e-05,
   "bind_registration_policy": "offline raw native bindpose frame -> authored model frame; runtime apply only if actual bindposes still use that raw frame, never twice",
-  "rest_matrix_policy": "prefer live actual renderer bindposes; missing parent from palette child plus authored static local chain; offline matrices are client-version-qualified fallback",
-  "secondary_skin_roots": [
-    {
-      "root_path": "chr_0016_laevat_postmodel/Root/quan_jnt",
-      "root_name": "quan_jnt",
-      "driver_path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt",
-      "driver_name": "beijia_jnt",
-      "anchor_path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt",
-      "anchor_name": "beijia_jnt",
-      "anchor_relative_matrix": [
-        -0.8917949199676514,
-        -0.012642904184758663,
-        -0.45226120948791504,
-        0.0,
-        -0.019697856158018112,
-        -0.9975757002830505,
-        0.06672859191894531,
-        0.0,
-        -0.4520083963871002,
-        0.06841679662466049,
-        0.8893856406211853,
-        0.0,
-        -0.20936346054077148,
-        -0.01691741682589054,
-        -0.294793963432312,
-        1.0
-      ],
-      "root_rest_model_matrix": [
-        -5.761058332609537e-07,
-        -0.9710092544555664,
-        -0.2390417456626892,
-        0.0,
-        -1.0,
-        2.5604185793781653e-07,
-        1.3699986993742641e-06,
-        0.0,
-        -1.269076278731518e-06,
-        0.2390417754650116,
-        -0.9710092544555664,
-        0.0,
-        3.097301669185981e-05,
-        0.8135219216346741,
-        0.0008991911890916526,
-        1.0
-      ],
-      "driver_rest_model_matrix": [
-        0.01969897747039795,
-        0.7578938603401184,
-        0.6520820260047913,
-        0.0,
-        0.9975776076316833,
-        0.02863064967095852,
-        -0.06341267377138138,
-        0.0,
-        -0.06672946363687515,
-        0.6517502665519714,
-        -0.7554925084114075,
-        0.0,
-        0.0013602117542177439,
-        1.1648136377334595,
-        -0.08636609464883804,
-        1.0
-      ],
-      "shared_skin_vertices": 907,
-      "mesh_names": [
-        "S_actor_laevat_cloth_05_lod0"
-      ],
-      "paired_body_influences": [
-        {
-          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/L_Bone_Chain_1/L_Bone_Chain_2/L_Bone_Chain_3",
-          "weight": 34.62721907987725
-        },
-        {
-          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/R_Bone_Chain_1/R_Bone_Chain_2/R_Bone_Chain_3",
-          "weight": 34.3774353483459
-        },
-        {
-          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/R_Bone_Chain_1/R_Bone_Chain_2/R_Bone_Chain_3/R_Bone_Chain_4",
-          "weight": 32.78382366336882
-        },
-        {
-          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/L_Bone_Chain_1/L_Bone_Chain_2/L_Bone_Chain_3/L_Bone_Chain_4",
-          "weight": 32.2280031000264
-        },
-        {
-          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/L_Bone_Chain_1/L_Bone_Chain_2",
-          "weight": 8.838007227692287
-        },
-        {
-          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt/R_Bone_Chain_1/R_Bone_Chain_2",
-          "weight": 8.121019379294012
-        },
-        {
-          "path": "chr_0016_laevat_postmodel/Root/Bip001/Bip001_Pelvis/beijia_jnt",
-          "weight": 0.21769143734127283
-        }
-      ],
-      "evidence": "Actual exported indexed skin has vertices mixing independent root and main-skeleton influences; common body ancestor supplies a rigid presentation transport. Original spring/cloth driver is not emulated.",
-      "policy": "driverPose * inverse(driverBindRest) * externalRootBindRest; keep authored child local TRS",
-      "native_cloth_physics_verified": false
-    }
-  ]
+  "rest_matrix_policy": "prefer live actual renderer bindposes; missing parent from palette child plus authored static local chain; offline matrices are client-version-qualified fallback"
 }
