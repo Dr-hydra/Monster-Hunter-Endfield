@@ -2479,6 +2479,17 @@ void ReadMode(const std::string& id){
   activeAssetRoot=oldRoot;activeAudioRoot=oldAudioRoot;loadedMode=oldMode;configuredIdleSlot=oldIdle;config.keys=oldKeys;config.mode_keys=oldModeKeys;localMode=oldLocalMode;skinGeometry=std::move(oldSkinGeometry);skinMotions=std::move(oldSkinMotions);demoSequence=std::move(oldDemo);fullDemoSequence=std::move(oldFullDemo);motionLabels=std::move(oldLabels);projectileEvents=std::move(oldProjectiles);modeProps=std::move(oldProps);projectileProp=oldProjectileProp;soundDetail=oldSoundDetail;throw;
  }
 }
+void ReadProductCatalog(std::istream& input){
+ input>>productCatalog;
+ // These disk-only audit snapshots are checked by the packaging tools. Keep
+ // the UI catalog intact while staying within the host's JSON reply budget.
+ const auto characters=productCatalog.find("characters");
+ if(characters!=productCatalog.end()&&characters->is_array())for(auto& row:*characters)
+  if(row.is_object())row.erase("audit_profile_inputs");
+ const auto weapons=productCatalog.find("weapons");
+ if(weapons!=productCatalog.end()&&weapons->is_array())for(auto& row:*weapons)
+  if(row.is_object()){row.erase("audit_weapon_profile");row.erase("character_audits");}
+}
 void ReadAssets(){
  characterProfiles.clear();const auto profilesRoot=packageRoot/L"profiles";
  for(const auto& file:std::filesystem::recursive_directory_iterator(profilesRoot)){
@@ -2501,7 +2512,7 @@ void ReadAssets(){
  if(!modeDefinitions.contains("longsword"))modeDefinitions["longsword"]={{"id","longsword"},{"label","太刀"},{"data_root","assets"}};
  ReadMode(config.mode);
  const auto productPath=packageRoot/L"assets/product_catalog.json";
- if(std::filesystem::exists(productPath)){std::ifstream input(productPath);input>>productCatalog;}
+ if(std::filesystem::exists(productPath)){std::ifstream input(productPath);ReadProductCatalog(input);}
  else productCatalog={{"schema",1},{"modes",Json::array()},{"characters",Json::array()},{"weapons",Json::array()}};
 }
 bool pendingAssetInitialization=false;

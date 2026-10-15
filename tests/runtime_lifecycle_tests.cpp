@@ -98,13 +98,58 @@ void* Entry(void* target){std::lock_guard lock(nodeGate);for(const auto& node:no
 size_t Active(const char* owner){std::lock_guard lock(nodeGate);return std::count_if(nodes.begin(),nodes.end(),[&](const auto& node){return node.active&&node.owner==owner;});}
 void Tick(){attached=reinterpret_cast<void*>(static_cast<uintptr_t>(GetCurrentThreadId()));++frameNumber;
  reinterpret_cast<TailFn>(Entry(reinterpret_cast<void*>(OriginalTail)))(nullptr,.016f,nullptr);attached=nullptr;}
-BE_Result BE_CALL Reply(void*,const char*,BE_Result result,const char*){return result;}
+constexpr size_t HostJsonLimit=1024*1024;
+Json lastReply;size_t lastReplyBytes=0,lastEventBytes=0;bool eventDelivered=false;
+BE_Result BE_CALL Reply(void*,const char* request,BE_Result result,const char* body){
+ eventDelivered=false;
+ if(!request||!body||std::strlen(request)>128)return BE_Result_InvalidArgument;
+ lastReplyBytes=std::strlen(body);if(lastReplyBytes>HostJsonLimit)return BE_Result_InvalidArgument;
+ try{lastReply=Json::parse(body);lastEventBytes=Json{{"kind","reply"},{"request_id",request},{"result",result},{"body",lastReply}}.dump().size();
+  eventDelivered=lastEventBytes<=HostJsonLimit;return BE_Result_Ok;
+ }catch(...){return BE_Result_InvalidArgument;}
+}
 void BE_CALL Log(void*,const char*){}
 template<class Predicate>void Wait(Predicate predicate){const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(8);
  while(std::chrono::steady_clock::now()<deadline){{std::lock_guard lock(gate);if(predicate())return;}std::this_thread::sleep_for(std::chrono::milliseconds(5));}throw std::runtime_error("lifecycle fixture timed out");}
 bool IsReady(){return ready;}
+void CheckStatusCatalog(const BE_ThirdPartyModuleV1* entry,const Json& expected){
+ for(const auto action:{"status","catalog"}){
+  const auto message=Json{{"action",action},{"request_id","status-budget"}}.dump();
+  CHECK(entry->on_message("status-budget",message.c_str())==BE_Result_Ok);
+  CHECK(eventDelivered&&lastReplyBytes<=HostJsonLimit&&lastEventBytes<=HostJsonLimit);
+  CHECK(lastReply.at("accepted")==true&&lastReply.at("action")==action&&lastReply.at("catalog")==expected);
+ }
+}
+void StatusBudget(const char* realCatalog){
+ const std::string evidence(HostJsonLimit,'x');
+ const Json uiCharacter={{"id","chr_test"},{"name","角色"},{"modes",{{"bow",{{"offline_status","mesh_checked"},{"reference_images",Json::array({{{"file","reference.webp"}}})}}}}}};
+ const Json uiWeapon={{"id","test_bow"},{"modes",{"bow"}},{"offline_status","mesh_checked"},{"model_profile","profiles/weapons/test.json"}};
+ const Json expected={{"schema",1},{"modes",Json::array({{{"id","bow"},{"label","弓"}}})},{"characters",Json::array({uiCharacter})},{"weapons",Json::array({uiWeapon})},{"preview",{{"file","preview.json"}}}};
+ auto full=expected;full["characters"][0]["audit_profile_inputs"]={{"snapshots",evidence}};
+ full["weapons"][0]["audit_weapon_profile"]={{"snapshots",evidence}};full["weapons"][0]["character_audits"]={{"snapshots",evidence}};
+ const auto serialized=full.dump();CHECK(serialized.size()>3*HostJsonLimit);
+ CHECK(Reply(nullptr,"oversized",BE_Result_Ok,serialized.c_str())==BE_Result_InvalidArgument&&!eventDelivered);
+ std::istringstream input(serialized);ReadProductCatalog(input);CHECK(productCatalog==expected);
+ // Exercise the actual exported message callback with only source fixtures;
+ // no asset loading, bootstrap, managed calls, hooks or game process.
+ bridge={};bridge.reply=Reply;initialized=true;
+ const auto* entry=BetterEndfield_GetThirdPartyModuleV1();CheckStatusCatalog(entry,expected);
+ std::cout<<"Synthetic source-only status/catalog: body="<<lastReplyBytes<<" event="<<lastEventBytes<<" limit="<<HostJsonLimit<<'\n';
+ if(realCatalog){
+  const auto path=std::filesystem::path(realCatalog);const auto beforeSize=std::filesystem::file_size(path);const auto beforeTime=std::filesystem::last_write_time(path);
+  std::ifstream original(path);CHECK(original.good());Json disk;original>>disk;original.close();
+  auto projected=disk;for(auto& row:projected["characters"])row.erase("audit_profile_inputs");
+  for(auto& row:projected["weapons"]){row.erase("audit_weapon_profile");row.erase("character_audits");}
+  std::ifstream source(path);ReadProductCatalog(source);source.close();CHECK(productCatalog==projected);CheckStatusCatalog(entry,projected);
+  CHECK(std::filesystem::file_size(path)==beforeSize&&std::filesystem::last_write_time(path)==beforeTime);
+  std::ifstream unchanged(path);Json after;unchanged>>after;CHECK(after==disk);
+  std::cout<<"Actual catalog: disk="<<beforeSize<<" compact="<<disk.dump().size()<<" projected="<<projected.dump().size()<<" body="<<lastReplyBytes<<" event="<<lastEventBytes<<'\n';
+ }
+ initialized=false;
+}
 }
 int main(int argc,char** argv){try{
+ if(argc>=2&&std::strcmp(argv[1],"--status-budget")==0){CHECK(argc==2||argc==3);Fixture::StatusBudget(argc==3?argv[2]:nullptr);return 0;}
  CHECK(argc==2);using namespace Fixture;BE_HostApiV1 runtime{};
  runtime.abi_version=1;runtime.resolve_method=ResolveMethod;runtime.resolve_class=ResolveClass;runtime.resolve_field=ResolveField;
  runtime.runtime_invoke=Invoke;runtime.object_new=ObjectNew;runtime.object_unbox=Unbox;runtime.string_new=String;
@@ -127,6 +172,7 @@ int main(int argc,char** argv){try{
  Tick();CHECK(!cleanupPending&&!poseLease.Owned()&&Close(bone.rotation,Quat{}));Wait(IsReady);
  CHECK(loadedMode=="bow"&&!pendingAssetInitialization&&Active(FrameOwner)==1&&Active(ID)==13&&created==callbacksBefore+13);
  CHECK(entry->on_message("fixture","{\"action\":\"status\"}")==BE_Result_Ok);
+ CHECK(eventDelivered&&lastReplyBytes<=HostJsonLimit&&lastEventBytes<=HostJsonLimit);
  {std::lock_guard lock(gate);actor.model=&model;CHECK(poseLease.Acquire());}
  entry->shutdown();CHECK(entry->initialize(&host,"{}")==BE_Result_Ok&&pendingAssetInitialization);entry->shutdown();
  CHECK(!initialized&&!ready&&cleanupPending&&Active(ID)==0);Tick();CHECK(!cleanupPending&&!poseLease.Owned());

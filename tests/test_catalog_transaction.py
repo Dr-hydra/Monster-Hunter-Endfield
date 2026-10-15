@@ -14,7 +14,7 @@ import build_product_catalog as catalog
 class CatalogTransactionTests(unittest.TestCase):
     def test_failure_on_last_audio_publish_restores_the_entire_prior_catalog_batch(self):
         with tempfile.TemporaryDirectory() as folder:
-            root=Path(folder)
+            root=Path(folder).resolve()
             def put(name,value):
                 path=root/name;path.parent.mkdir(parents=True,exist_ok=True)
                 path.write_text(json.dumps(value),encoding='utf-8');return path

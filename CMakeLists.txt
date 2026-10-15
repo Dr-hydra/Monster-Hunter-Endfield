@@ -151,6 +151,8 @@ target_compile_options(runtime_lifecycle_tests PRIVATE /W4 /utf-8 /permissive-)
 target_link_libraries(runtime_lifecycle_tests PRIVATE user32 winmm gdi32)
 add_test(NAME runtime_lifecycle COMMAND runtime_lifecycle_tests "${CMAKE_CURRENT_SOURCE_DIR}")
 set_tests_properties(runtime_lifecycle PROPERTIES LABELS "local-assets")
+add_test(NAME runtime_status_budget COMMAND runtime_lifecycle_tests --status-budget)
+set_tests_properties(runtime_status_budget PROPERTIES LABELS "source")
 
 # Source-only checks have no dependency on ignored game assets. Keep their label
 # explicit so adding an asset test cannot silently expand the clean-clone gate.
