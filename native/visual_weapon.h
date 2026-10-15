@@ -180,7 +180,9 @@ class ManagedVisualWeapon {
   m(RendererMaterials,"Renderer","get_sharedMaterials",nullptr,"UnityEngine.Material[]",0);m(RendererSetMaterials,"Renderer","set_sharedMaterials","UnityEngine.Material[]","System.Void",1);
   m(RendererBones,"SkinnedMeshRenderer","get_bones",nullptr,"UnityEngine.Transform[]",0);m(RendererSetBones,"SkinnedMeshRenderer","set_bones","UnityEngine.Transform[]","System.Void",1);
   m(RendererRoot,"SkinnedMeshRenderer","get_rootBone",nullptr,"UnityEngine.Transform",0);m(RendererSetRoot,"SkinnedMeshRenderer","set_rootBone","UnityEngine.Transform","System.Void",1);
-  m(RendererBounds,"SkinnedMeshRenderer","get_localBounds",nullptr,"UnityEngine.Bounds",0);m(RendererSetBounds,"SkinnedMeshRenderer","set_localBounds","UnityEngine.Bounds","System.Void",1);
+  // These accessors are declared by Renderer. EML enumerates the requested
+  // class's methods without an inherited-member fallback.
+  m(RendererBounds,"Renderer","get_localBounds",nullptr,"UnityEngine.Bounds",0);m(RendererSetBounds,"Renderer","set_localBounds","UnityEngine.Bounds","System.Void",1);
   m(RendererSetOffscreen,"SkinnedMeshRenderer","set_updateWhenOffscreen","System.Boolean","System.Void",1);m(RendererSetEnabled,"Renderer","set_enabled","System.Boolean","System.Void",1);
   // Rendering-layer helpers are optional across Unity/client versions.
   Resolve(RendererLayers,Core,"UnityEngine","Renderer","get_renderingLayerMask",nullptr,"System.UInt32",0);Resolve(RendererSetLayers,Core,"UnityEngine","Renderer","set_renderingLayerMask","System.UInt32","System.Void",1);

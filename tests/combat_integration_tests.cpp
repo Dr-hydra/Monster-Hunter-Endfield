@@ -1,5 +1,6 @@
 #include "../native/module.cpp"
 #include "test_support.h"
+#include "source_weapon_fixture.h"
 #include <thread>
 
 // Exercise the real asset loader and module entry points with an in-memory
@@ -31,9 +32,19 @@ void* BE_CALL ReadField(void*,const void* field,void*){
  case ListItems:return &enemies;case ListSize:count=int(enemies.size());return &count;
  default:return nullptr;}
 }
-void* BE_CALL Unbox(void*,void* value){return value;}
-void BE_CALL Free(void*,uint32_t){}
-void* BE_CALL Invoke(void*,const void* token,void* self,void** args,void** exception){
+void* BE_CALL Unbox(void* context,void* value){
+ if(context){auto& mock=*static_cast<SourceWeaponFixture::SourceMock*>(context);for(const auto& object:mock.objects)if(object.get()==value)return object->box.data();}return value;
+}
+void BE_CALL Free(void* context,uint32_t id){if(context)SourceWeaponFixture::SourceMock::Free(context,id);}
+void* BE_CALL Invoke(void* context,const void* token,void* self,void** args,void** exception){
+ if(context){auto& mock=*static_cast<SourceWeaponFixture::SourceMock*>(context);
+  for(const auto& method:mock.methods)if(method.get()==token){
+   if(method->name=="op_Implicit"&&std::none_of(mock.objects.begin(),mock.objects.end(),[&](const auto& object){return object.get()==args[0];})){
+    static bool alive;alive=args[0]&&static_cast<Object*>(args[0])->alive;return &alive;
+   }
+   return SourceWeaponFixture::SourceMock::Invoke(context,token,self,args,exception);
+  }
+ }
  ++invokes;*exception=nullptr;auto* o=static_cast<Object*>(self);
  switch(Index(reinterpret_cast<uintptr_t>(token)-1)){
  case AllEnemies:return &unorderedTag;
@@ -232,6 +243,8 @@ void LiveSnapshots(){
  renderer.bounds.extents={0,1,.4f};CHECK(QueryPracticeTargets());CHECK(practice.targets.at(17).hurt.front().part==0);
  renderer.bounds.extents={.3f,1,.4f};enemy.alive=false;CHECK(QueryPracticeTargets()&&practice.targets.empty());enemy.alive=true;
 }
+std::filesystem::path projectileFixtureRoot;
+void UseProjectileFixture(){projectileProp=SourceWeaponFixture::Fixture();activeAssetRoot=projectileFixtureRoot;}
 void ActualTrainingPump(){
  ReadMode("longsword");config.local_practice=true;config.practice_target="monsters";config.target_lock=false;
  config.root_motion=false;config.sound_enabled=false;config.speed=1;practiceResetRequest=false;autoDemo=false;
@@ -260,7 +273,7 @@ void ActualTrainingPump(){
  // Source marker at the end of a substep emits an unmoved projectile. Its
  // first real movement occurs after birth; source identity uses the marker.
  ReadMode("light_bowgun");config.target_lock=false;practice.Clear();localProjectiles.Clear();enemies.clear();
- localMode.Reset("light_bowgun");localMode.combatEnabled=true;projectileProp=Json::object();
+ localMode.Reset("light_bowgun");localMode.combatEnabled=true;UseProjectileFixture();
  const int fire=controller.moves.at(Command::Fire).front();projectileEvents[fire]={.01f};
  CHECK(controller.start(configuredIdleSlot));CHECK(controller.transitionToSlot(fire));controller.tick(.01f);
  projectileMotion=std::numeric_limits<uint64_t>::max();PumpTrainingStep(.01f);
@@ -355,7 +368,7 @@ void FourWeaponDamageAndRelease(){
  CHECK(localMode.blocks==1&&controller.slot==stance.second.counterFullSlot&&!controller.holding(Command::Counter));
  CHECK(Near(localMode.energy,localMode.rules.staminaMax-localMode.rules.guardHitCost)); // Periodic dummy attack uses the same automatic-release outcome path.
  controller.held(Command::Counter,false);
- ReadMode("bow");config.practice_target="monsters";const int fire=controller.moves.at(Command::Fire).front();
+ ReadMode("bow");UseProjectileFixture();config.practice_target="monsters";const int fire=controller.moves.at(Command::Fire).front();
  const auto bow=localMode.rules.motions.at(fire);CHECK(bow.projectileTiers.size()==4&&!bow.projectileMarkers.empty());
  const int powerSlot=controller.moves.at(Command::Spirit).front();const auto powerRule=localMode.rules.motions.at(powerSlot);
  CHECK(powerSlot!=fire&&powerRule.projectileTiers.size()==4&&!powerRule.projectileMarkers.empty());
@@ -393,8 +406,8 @@ void FourWeaponDamageAndRelease(){
   for(size_t i=0;i<LocalProjectiles::Capacity-remaining;++i)CHECK(localProjectiles.Launch({100,100,100},{1,0,0},30,0,false));
   CHECK(controller.start(configuredIdleSlot));controller.held(Command::Charge,true);controller.tick(.001f);controller.held(Command::Charge,false);
   projectileMotion=std::numeric_limits<uint64_t>::max();TickProjectiles(0);
-  if(remaining==0){CHECK(localProjectiles.active.size()==LocalProjectiles::Capacity&&Near(localMode.energy,localMode.rules.staminaMax)&&localMode.BowTier()==0);}
-  else{CHECK(localProjectiles.active.size()==LocalProjectiles::Capacity-1&&Near(localMode.energy,localMode.rules.staminaMax-localMode.rules.bowShotCost)&&localMode.BowTier()==1);}
+  if(remaining==0){CHECK(localProjectiles.active.empty()&&Near(localMode.energy,localMode.rules.staminaMax)&&localMode.BowTier()==0);}
+  else{CHECK(localProjectiles.active.size()==1&&Near(localMode.energy,localMode.rules.staminaMax-localMode.rules.bowShotCost)&&localMode.BowTier()==1);}
  }
  localProjectiles.Clear();practice.Clear();ReadMode("longsword");config.local_practice=false;config.target_lock=true;
 }
@@ -419,6 +432,30 @@ void CameraLifecycle(){
  // Restoration is performed on the owner thread; the message only queues it.
  Cleanup();CHECK(!ownedCamera&&!targetLock.Selected()&&!controller.active&&Close(camera.rotation,Quat{}));
  initialized=ready=false;bridge={};unityThread=0;
+}
+void ProjectileVisualTransactions(){
+ ReadMode("light_bowgun");UseProjectileFixture();ResetTrainingTransient();config.local_practice=true;autoDemo=presentationPreview=false;
+ localMode.Reset("light_bowgun");localMode.combatEnabled=true;CHECK(controller.start(configuredIdleSlot));practice.Clear();
+ auto& source=*static_cast<SourceWeaponFixture::SourceMock*>(api->context);const ProjectileTier tier{1,0,100,30,90,.02f};
+ CHECK(projectileVisuals.size()==LocalProjectiles::Capacity);
+ CHECK(ReserveProjectileVisuals(128,{100,100,100},{0,0,1})&&localProjectiles.active.empty()&&projectileReservations.size()==128);
+ for(int i=0;i<128;++i)CHECK(LaunchReservedProjectile({100,100,100},{0,0,1},tier,uint32_t(i),0,0));
+ CHECK(localProjectiles.active.size()==128&&projectileReservations.empty());
+ CHECK(std::count_if(projectileVisuals.begin(),projectileVisuals.end(),[](const auto& v){return v.id&&v.mesh&&v.mesh->Visible();})==128);
+ CHECK(!ReserveProjectileVisuals(1,{},{0,0,1}));TickProjectiles(0);CHECK(localProjectiles.active.size()==128&&practice.hits==0);
+ projectileVisuals[0].mesh->Reset();TickProjectiles(0);CHECK(localProjectiles.active.size()==127&&practice.hits==0);
+ ResetTrainingTransient();for(auto& visual:projectileVisuals){if(visual.mesh)visual.mesh->Reset();visual.mesh.reset();}
+ CHECK(source.Clean());
+ const int fire=controller.moves.at(Command::Fire).front();projectileEvents[fire]={.01f};
+ for(const char* failure:{"set_vertices","set_position","SetActive"}){
+  localMode.Reset("light_bowgun");localMode.combatEnabled=true;CHECK(controller.start(configuredIdleSlot));CHECK(controller.transitionToSlot(fire));controller.tick(.01f);
+  source.fail=failure;projectileMotion=std::numeric_limits<uint64_t>::max();TickProjectiles(0);source.fail.clear();
+  CHECK(localProjectiles.active.empty()&&projectileReservations.empty()&&localMode.ammo==localMode.rules.ammoCapacity&&source.Clean());
+ }
+ // A destroyed or unposable mesh is removed before any collision can credit a hit.
+ CHECK(ReserveProjectileVisuals(1,{0,1,2},{0,0,1}));CHECK(LaunchReservedProjectile({0,1,2},{0,0,1},tier,0,0,.1f));
+ source.fail="set_position";TickProjectiles(.1f);source.fail.clear();CHECK(localProjectiles.active.empty()&&practice.hits==0&&source.Clean());
+ ResetTrainingTransient();ReadMode("longsword");config.local_practice=false;
 }
 void PresentationPreview(){
  ReadMode("longsword");config.enabled=true;config.local_practice=true;config.combat_rules=true;config.practice_target="monsters";
@@ -445,7 +482,7 @@ void PresentationPreview(){
  autoDemo=true;controller.transitionToSlot(1000,1.5f);localMode.level=3;localMode.energy=100;
  CHECK(!ManualCombatActive()&&TakeManualControl()&&controller.resting()&&localMode.level==0&&localMode.energy==0);
  paused=true;CHECK(!ManualCombatActive());paused=false;hudEditing=true;CHECK(!ManualCombatActive());hudEditing=false;
- ReadMode("bow");localMode.Reset("bow");localMode.combatEnabled=false;autoDemo=true;practice.Clear();localProjectiles.Clear();CHECK(QueryPracticeTargets());
+ ReadMode("bow");UseProjectileFixture();localMode.Reset("bow");localMode.combatEnabled=false;autoDemo=true;practice.Clear();localProjectiles.Clear();CHECK(QueryPracticeTargets());
  const auto bowHP=practice.targets.at(17).hp;const int fire=controller.moves.at(Command::Fire).front();
  CHECK(controller.start(configuredIdleSlot));controller.input(Command::Fire);CHECK(controller.slot==fire);
  controller.tick(localMode.rules.motions.at(fire).projectileMarkers.back()+.001f);projectileMotion=std::numeric_limits<uint64_t>::max();TickProjectiles(0);
@@ -458,8 +495,10 @@ void PresentationPreview(){
 }
 int main(int argc,char** argv){try{
  CHECK(argc==2);packageRoot=std::filesystem::path(argv[1]);ReadAssets();LoadContracts();ManualCombat();SwordShieldPhysicalTiming();HardwareCameraControls();
- BE_HostApiV1 mock{};mock.runtime_invoke=Invoke;mock.object_unbox=Unbox;mock.field_get_value_object=ReadField;mock.gchandle_free=Free;api=&mock;
+ projectileFixtureRoot=std::filesystem::temp_directory_path()/("mhe-projectile-fixture-"+std::to_string(GetCurrentProcessId()));std::filesystem::create_directories(projectileFixtureRoot);
+ {constexpr unsigned char rgba[]{19,37,91,255};std::ofstream file(projectileFixtureRoot/"source-fixture.rgba",std::ios::binary);file.write(reinterpret_cast<const char*>(rgba),4);}
+ SourceWeaponFixture::SourceMock sourceMock;BE_HostApiV1 mock=sourceMock.host;mock.runtime_invoke=Invoke;mock.object_unbox=Unbox;mock.field_get_value_object=ReadField;mock.gchandle_free=Free;api=&mock;
  for(size_t i=0;i<std::size(methods);++i)methods[i].r.method_info=reinterpret_cast<const void*>(i+1);
- LiveSnapshots();ActualTrainingPump();FourWeaponDamageAndRelease();PresentationPreview();CHECK(controller.start(configuredIdleSlot));CameraLifecycle();api=nullptr;
+ LiveSnapshots();ActualTrainingPump();FourWeaponDamageAndRelease();PresentationPreview();ProjectileVisualTransactions();CHECK(controller.start(configuredIdleSlot));CameraLifecycle();CHECK(sourceMock.Clean());std::filesystem::remove_all(projectileFixtureRoot);api=nullptr;
  std::cout<<"combat integration: six modes, manual dispatch, camera keys, source substeps, projectile birth, live snapshots and camera lifecycle passed (simulated host)\n";return 0;
 }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

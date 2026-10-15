@@ -12,6 +12,7 @@
 #include "fingers.h"
 #include "grounding.h"
 #include "runtime_contracts.h"
+#include "il2cpp_thread_scope.h"
 #include "practice.h"
 #include "target_geometry.h"
 #include "projectiles.h"
@@ -99,8 +100,9 @@ std::map<int,std::vector<float>> projectileEvents;size_t projectileEventCursor=0
 ProjectileRelease activeProjectileRelease;
 float localResource=0;int localAmmo=6;
 ModeState localMode;
-struct ProjectileVisual {uint64_t id=0;std::unique_ptr<VisualWeapon::ManagedSourceWeapon> mesh;};
-std::array<ProjectileVisual,16> projectileVisuals;
+struct ProjectileVisual {uint64_t id=0;bool reserved=false;std::unique_ptr<VisualWeapon::ManagedSourceWeapon> mesh;};
+std::array<ProjectileVisual,LocalProjectiles::Capacity> projectileVisuals;
+std::deque<size_t> projectileReservations;
 uint64_t demoConditionMotion=0;
 struct SkinGeometry {std::vector<Vec3> vertices;std::vector<SourceSkin::Indices> indices;std::vector<SourceSkin::Weights> weights;size_t bones=0;};
 std::map<std::string,SkinGeometry> skinGeometry;
@@ -659,7 +661,7 @@ void Cleanup() {
  demoHeld=false;demoChargeLevel=0;
  demoElapsed=0;demoFinalTail=false;
  localProjectiles.Clear();projectileMotion=std::numeric_limits<uint64_t>::max();
- for(auto& visual:projectileVisuals){if(visual.mesh)visual.mesh->Reset();visual.mesh.reset();visual.id=0;}
+ for(auto& visual:projectileVisuals){if(visual.mesh)visual.mesh->Reset();visual.mesh.reset();visual.id=0;visual.reserved=false;}projectileReservations.clear();
  soundPlayer.Stop();soundTimeline.Reset();themeTimeline.Reset();activeTheme.clear();themeClock=0;themeBowMotion=0;themeBowCharging=false;
  if(!practice.targets.empty())practiceSummary=PracticeTargets();
  practice.Suspend();practice.targets.clear();enemyRefresh=0;practiceDetail=config.local_practice?"演示结束，已保留本轮统计":"本地练习未开启";
@@ -750,7 +752,7 @@ void CreateProp() {
  struct Color{float r,g,b,a;} color{.86f,.93f,1,1};SetValue(MaterialColor,material,color);
 }
 
-bool Bind() try {
+bool Bind(bool presentationOnly=false) try {
  Cleanup();practiceSummary=Json::array();practice.Clear();auto entity=Call(MainCharacter);bool valid=false,alive=false;
  if(!entity||!Value(Valid,entity,valid)||!valid||!Value(AliveEntity,entity,alive)||!alive){detail="当前角色尚未就绪";return false;}
  auto data=Call(Template,entity);auto id=data?api->field_get_value_object(api->context,templateId.field_info,data):nullptr;
@@ -948,9 +950,14 @@ bool Bind() try {
  if(!controller.start(configuredIdleSlot))throw std::runtime_error("Idle clip unavailable");
  localMode.Reset(loadedMode);
 #ifdef MHE_MODULE_EXTENSION_HEADER
- moduleExtension.Activate(actor.entity);
+ if(!presentationOnly&&!moduleExtension.Activate(actor.entity)){const auto reason=moduleExtension.StopReason();Cleanup();detail=reason;return false;}
 #endif
  suppressInput=true;phase="active";detail="动作演示已接管输入";
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ if(!presentationOnly){suppressInput=moduleExtension.ControlReady();if(!suppressInput){phase="pending";detail=moduleExtension.StopReason();}}
+#else
+ (void)presentationOnly;
+#endif
  Log("Bound "+character+" from main skinned bindposes; skeleton="+actor.skeletonPath+" bones=21");return true;
 }catch(...){Cleanup();throw;}
 
@@ -1402,10 +1409,61 @@ void TickPractice(float dt){
  }else delayedContact.Suspend();
  practiceDetail=practice.targets.empty()?"20 米内暂无可用怪物":config.practice_target=="dummy"?"本地练习目标；独立模拟血量":"本地模拟中；不修改怪物真实血量";
 }
+Quat ProjectileRotation(Vec3 forward){
+ Vec3 axis{0,0,1};if(projectileProp.contains("source_forward_axis")){
+  const auto values=projectileProp.at("source_forward_axis").get<std::vector<float>>();
+  if(values.size()==3&&Finite(Vec3{values[0],values[1],values[2]})&&Retarget::Len({values[0],values[1],values[2]})>.001f)axis={values[0],values[1],values[2]};
+ }
+ return Retarget::FromTo(axis,Retarget::Normalize(forward));
+}
+void ReleaseProjectileReservations(){
+ for(const auto index:projectileReservations){auto& visual=projectileVisuals[index];if(visual.mesh)visual.mesh->SetVisible(false);visual.reserved=false;}
+ projectileReservations.clear();
+}
+void RetireProjectileVisuals(){
+ for(auto& visual:projectileVisuals)if(visual.id&&std::none_of(localProjectiles.active.begin(),localProjectiles.active.end(),[&](const auto& p){return p.id==visual.id;})){
+  if(visual.mesh)visual.mesh->SetVisible(false);visual.id=0;
+ }
+}
+bool ReserveProjectileVisuals(size_t count,Vec3 origin,Vec3 forward){
+ if(!count||count>LocalProjectiles::Capacity||!projectileReservations.empty()||!localProjectiles.CanLaunch(count)||!projectileProp.is_object()||projectileProp.empty()||!Finite(origin)||!Finite(forward)||Retarget::Len(forward)<1e-5f)return false;
+ RetireProjectileVisuals();
+ if(size_t(std::count_if(projectileVisuals.begin(),projectileVisuals.end(),[](const auto& v){return !v.id&&!v.reserved;}))<count)return false;
+ // Lazily reserve the whole authored release before stamina/ammo is spent.
+ // A constructed, posed and visibility-tested mesh is required for every arrow.
+ for(size_t i=0;i<projectileVisuals.size()&&projectileReservations.size()<count;++i){auto& visual=projectileVisuals[i];if(visual.id||visual.reserved)continue;
+  if(!visual.mesh)visual.mesh=std::make_unique<VisualWeapon::ManagedSourceWeapon>();
+  if((!visual.mesh->Ready()&&!visual.mesh->Bind(api,projectileProp,activeAssetRoot))||!visual.mesh->Tick(actor.root,0)||!visual.mesh->SetWorldPose(origin,ProjectileRotation(forward))||!visual.mesh->SetVisible(true)||!visual.mesh->SetVisible(false)){
+   visual.mesh->Reset();visual.mesh.reset();ReleaseProjectileReservations();return false;
+  }
+  visual.reserved=true;projectileReservations.push_back(i);
+ }
+ return projectileReservations.size()==count;
+}
+bool LaunchReservedProjectile(Vec3 origin,Vec3 forward,const ProjectileTier& parameters,uint32_t window,float emittedAt,float firstAdvance){
+ if(projectileReservations.empty())return false;const auto index=projectileReservations.front();projectileReservations.pop_front();auto& visual=projectileVisuals[index];visual.reserved=false;
+ if(!visual.mesh||!visual.mesh->Tick(actor.root,0)||!visual.mesh->SetWorldPose(origin,ProjectileRotation(forward))||!visual.mesh->SetVisible(true)){
+  if(visual.mesh){visual.mesh->Reset();visual.mesh.reset();}return false;
+ }
+ if(!localProjectiles.Launch(origin,forward,parameters.speed,config.local_practice&&!autoDemo?config.practice_damage*parameters.motionValue/100.f:0,loadedMode=="bow",controller.motionSerial,controller.slot,window,emittedAt,firstAdvance,parameters.radius,parameters.range)){
+  visual.mesh->SetVisible(false);return false;
+ }
+ visual.id=localProjectiles.active.back().id;return true;
+}
+void ValidateProjectileVisuals(float dt){
+ std::erase_if(localProjectiles.active,[&](const auto& p){
+  const auto found=std::find_if(projectileVisuals.begin(),projectileVisuals.end(),[&](const auto& v){return v.id==p.id&&v.mesh;});if(found==projectileVisuals.end())return true;
+  const float speed=Retarget::Len(p.velocity),requested=p.firstAdvance>=0?std::min(dt,p.firstAdvance):dt;
+  const float advance=speed>0?std::max(0.f,std::min({requested,p.lifetime-p.age,(p.range-p.traveled)/speed})):0;
+  const auto next=Retarget::Add(p.position,Retarget::Scale(p.velocity,advance));
+  if(found->mesh->Tick(actor.root,0)&&found->mesh->SetWorldPose(next,ProjectileRotation(p.velocity))&&found->mesh->SetVisible(true))return false;
+  found->mesh->Reset();found->mesh.reset();found->id=0;return true;
+ });
+}
 void TickProjectiles(float dt){
  if(presentationPreview)return;
  if(loadedMode=="bow"||loadedMode=="light_bowgun"){
-  if(projectileMotion!=controller.motionSerial){projectileMotion=controller.motionSerial;projectileEventCursor=0;activeProjectileRelease={};}
+  if(projectileMotion!=controller.motionSerial){ReleaseProjectileReservations();projectileMotion=controller.motionSerial;projectileEventCursor=0;activeProjectileRelease={};}
   auto events=projectileEvents.find(controller.slot);
   if(events!=projectileEvents.end())while(projectileEventCursor<events->second.size()&&events->second[projectileEventCursor]<=controller.seconds+1e-6f){
    const float emittedAt=events->second[projectileEventCursor];const auto window=uint32_t(projectileEventCursor);++projectileEventCursor;
@@ -1417,36 +1475,24 @@ void TickProjectiles(float dt){
    if(localMode.combatEnabled){
     if(!activeProjectileRelease.accepted){
      const auto peek=localMode.PeekProjectile(controller);if(!peek.accepted)continue;
-     if(!localProjectiles.CanLaunch(size_t(peek.parameters.arrows)*events->second.size()))continue;
-     activeProjectileRelease=localMode.ReleaseProjectile(controller);if(!activeProjectileRelease.accepted)continue;
+     if(!ReserveProjectileVisuals(size_t(peek.parameters.arrows)*events->second.size(),origin,forward))continue;
+     activeProjectileRelease=localMode.ReleaseProjectile(controller);if(!activeProjectileRelease.accepted){ReleaseProjectileReservations();continue;}
     }
     if(!localProjectiles.CanLaunch(size_t(activeProjectileRelease.parameters.arrows)))continue;
     parameters=activeProjectileRelease.parameters;
-    // Light bowgun shell travel is still a teaching parameter when no source
-    // projectile tier exists; source bow tiers always supply physical values.
     if(parameters.speed<=0)parameters={1,0,100,config.projectile_speed,config.projectile_speed*3,.02f};
-   }else if(!localMode.ReleaseProjectile())continue;
-   for(int arrow=0;arrow<parameters.arrows;++arrow){
-   if(localProjectiles.Launch(origin,forward,parameters.speed,config.local_practice&&!autoDemo?config.practice_damage*parameters.motionValue/100.f:0,loadedMode=="bow",controller.motionSerial,controller.slot,window,emittedAt,std::clamp(controller.seconds-emittedAt,0.f,dt),parameters.radius,parameters.range)&&projectileProp.is_object()&&!projectileProp.empty()){
-    auto free=std::find_if(projectileVisuals.begin(),projectileVisuals.end(),[](const auto& v){return v.id==0;});
-    if(free!=projectileVisuals.end()){
-     if(!free->mesh){free->mesh=std::make_unique<VisualWeapon::ManagedSourceWeapon>();free->mesh->Bind(api,projectileProp,activeAssetRoot);}
-     if(free->mesh->Tick(actor.root,0)){free->id=localProjectiles.active.back().id;free->mesh->SetVisible(true);}
-    }
+   }else{
+    if(!ReserveProjectileVisuals(1,origin,forward))continue;
+    if(!localMode.ReleaseProjectile()){ReleaseProjectileReservations();continue;}
    }
-   }
+   for(int arrow=0;arrow<parameters.arrows;++arrow)LaunchReservedProjectile(origin,forward,parameters,window,emittedAt,std::clamp(controller.seconds-emittedAt,0.f,dt));
   }
-  localProjectiles.Update(std::clamp(dt,0.f,.1f),practice,[](Vec3 from,Vec3 to,float& fraction){
+  const float advance=std::clamp(dt,0.f,.1f);ValidateProjectileVisuals(advance);
+  localProjectiles.Update(advance,practice,[](Vec3 from,Vec3 to,float& fraction){
    const auto delta=Retarget::Sub(to,from);const auto length=Retarget::Len(delta);if(length<1e-6f)return false;TerrainHit hit;
    if(!TerrainQuery(from,Retarget::Scale(delta,1/length),length,.02f,hit))return false;fraction=hit.distance/length;return true;
   },[](const LocalProjectile&,uint32_t){});
-  for(auto& visual:projectileVisuals)if(visual.id&&visual.mesh){auto current=std::find_if(localProjectiles.active.begin(),localProjectiles.active.end(),[&](const auto& p){return p.id==visual.id;});
-   if(current==localProjectiles.active.end()){visual.mesh->SetVisible(false);visual.id=0;}
-   else if(projectileProp.contains("source_forward_axis")){
-    const auto a=projectileProp.at("source_forward_axis").get<std::vector<float>>();
-    if(a.size()==3&&Retarget::Len({a[0],a[1],a[2]})>.001f)visual.mesh->SetWorldPose(current->position,Retarget::FromTo({a[0],a[1],a[2]},Retarget::Normalize(current->velocity)));
-   }
-  }
+  RetireProjectileVisuals();
  }
 }
 std::string RoundedAmount(double value){char buffer[64]{};std::snprintf(buffer,sizeof(buffer),"%.0f",value);return buffer;}
@@ -1640,11 +1686,11 @@ void InstallPracticeCallbacks(){
   return hit.damage*rule->MotionValue(hit.windowId,localMode.DamageLevel(controller))/100.f*localMode.ContactMultiplier(controller,EventFromContact(hit));
  };
  practice.acceptedHit=[](const PracticeHit& hit){
+#ifdef MHE_MODULE_EXTENSION_HEADER
+  if(moduleExtension.OnContact(hit))return;
+#endif
   if(localMode.combatEnabled)ApplyCombatOutcome(EventFromContact(hit),localMode.Consume(EventFromContact(hit),controller));
   else{localMode.Hit(controller);soundTimeline.Condition("hit",config.sound_enabled&&config.sound_volume>0&&soundReady,EmitSound);}
-#ifdef MHE_MODULE_EXTENSION_HEADER
-  moduleExtension.OnContact(hit);
-#endif
  };
 }
 #ifdef MHE_MODULE_EXTENSION_IMPLEMENTATION
@@ -1652,13 +1698,16 @@ void InstallPracticeCallbacks(){
 #endif
 void ResetTrainingTransient(){
  practice.Suspend();delayedHits.Clear();delayedContact.Suspend();localProjectiles.Clear();
- for(auto& visual:projectileVisuals){if(visual.mesh)visual.mesh->SetVisible(false);visual.id=0;}
+ for(auto& visual:projectileVisuals){if(visual.mesh)visual.mesh->SetVisible(false);visual.id=0;visual.reserved=false;}projectileReservations.clear();
  projectileMotion=std::numeric_limits<uint64_t>::max();projectileEventCursor=0;
  combatFollowupSlot=0;combatFollowupMotion=0;combatFollowupSeconds=0;pumpedMotionSerial=0;practiceAttackRequest=false;
  localMode.SuspendCombatTracking();
 }
 bool BeginPresentationPreview(int slot){
  if(!controller.clips.contains(slot)||controller.clips.at(slot).frames.empty())return false;
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ moduleExtension.Deactivate();
+#endif
  RestoreStageMotion();RestoreOwned();ResetTrainingTransient();autoDemo=false;demoHeld=false;
  presentationPreview=true;localMode.combatEnabled=false;controller.specialSheatheSeconds=0;
  detail="动作预览中；攻击键将从待机开始手动练习";
@@ -1668,7 +1717,12 @@ bool TakeManualControl(){
  if(presentationPreview||autoDemo){const bool wasDemo=autoDemo;RestoreStageMotion();RestoreOwned();ResetTrainingTransient();presentationPreview=false;
   if(wasDemo)localMode.Reset(loadedMode);
   if(!controller.start(configuredIdleSlot))return false;}
- autoDemo=false;localMode.combatEnabled=ManualCombatActive();return true;
+ autoDemo=false;localMode.combatEnabled=ManualCombatActive();
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ if(!moduleExtension.Activated()&&!moduleExtension.Activate(actor.entity)){detail=moduleExtension.StopReason();return false;}
+ suppressInput=moduleExtension.ControlReady();localMode.combatEnabled=suppressInput&&ManualCombatActive();
+#endif
+ return true;
 }
 void PumpTrainingStep(float dt) {
  practice.BeginFrame();
@@ -1684,7 +1738,14 @@ void PumpTrainingStep(float dt) {
   const auto pulses=delayedHits.Update(std::clamp(dt,0.f,.25f),practice.Geometry(),SceneBlocked);
   for(const auto& pulse:pulses){CombatContact contact;contact.key={pulse.hit.targetId,pulse.hit.generation};contact.part=pulse.hit.partId;contact.strike=uint64_t(pulse.hit.windowId)+1;
    contact.seconds=pulse.hit.seconds;contact.point=pulse.hit.point;
-   if(practice.ApplyContact(contact,pulse.hit.motionSerial,pulse.hit.slot,pulse.hit.damage))localMode.CreditDelayedHelmPulse(pulse.hit.slot,pulse.hit.windowId,pulse.originalLevel);
+#ifdef MHE_MODULE_EXTENSION_HEADER
+   moduleExtension.BeginDelayedContact(pulse.originalLevel);
+#endif
+   const bool contacted=practice.ApplyContact(contact,pulse.hit.motionSerial,pulse.hit.slot,pulse.hit.damage);
+#ifdef MHE_MODULE_EXTENSION_HEADER
+   if(moduleExtension.EndDelayedContact())continue;
+#endif
+   if(contacted)localMode.CreditDelayedHelmPulse(pulse.hit.slot,pulse.hit.windowId,pulse.originalLevel);
   }
  }else delayedHits.Clear();
  const bool audible=config.sound_enabled&&config.sound_volume>0&&soundReady;
@@ -1717,6 +1778,7 @@ bool AdvanceShowcaseFrame(float dt){
     controller.tick(0);actor.visualFrameSeconds=0;RestoreStageMotion();
 #ifdef MHE_MODULE_EXTENSION_HEADER
     moduleExtension.Frame(0);
+    if(!moduleExtension.ControlReady())return false;
 #endif
     if(!ApplyPose())return false;const auto source=controller.motionSerial;PumpTrainingStep(0);pumpedMotionSerial=source;
    }
@@ -1725,6 +1787,7 @@ bool AdvanceShowcaseFrame(float dt){
    actor.entrySeconds+=sub;actor.visualFrameSeconds=sub/std::max(.25f,config.speed);RestoreStageMotion();
 #ifdef MHE_MODULE_EXTENSION_HEADER
    moduleExtension.Frame(sub/std::max(.25f,config.speed));
+   if(!moduleExtension.ControlReady())return false;
 #endif
    if(!controller.active||!ApplyPose())return false;
    const auto source=controller.motionSerial;PumpTrainingStep(sub);pumpedMotionSerial=source;
@@ -1768,9 +1831,13 @@ void Frame(float dt) {
  if(toggleRequest){toggleRequest=false;if(actor.model){Cleanup();return;}if(!Bind())return;previousBits=KeyBits();}
  if(demoRequest){demoRequest=false;
   const bool startDemo=!autoDemo;
-  if((presentationPreview||autoDemo)&&!TakeManualControl()){Cleanup();return;}
-  if(!actor.model){if(!Bind())return;previousBits=KeyBits();}
-  if(startDemo){ResetTrainingTransient();localMode.combatEnabled=false;}
+  if(!actor.model){if(!Bind(startDemo))return;previousBits=KeyBits();}
+  if(startDemo){
+#ifdef MHE_MODULE_EXTENSION_HEADER
+   moduleExtension.Deactivate();
+#endif
+   RestoreStageMotion();RestoreOwned();ResetTrainingTransient();presentationPreview=false;localMode.combatEnabled=false;suppressInput=true;
+  }else if(!TakeManualControl()){Cleanup();return;}
   autoDemo=startDemo;demoStep=0;demoClock=0;demoDelay=.6f;demoChargeLevel=0;demoElapsed=0;demoFinalTail=false;
   if(demoHeld){controller.held(demoHeldCommand,false);demoHeld=false;}
   if(autoDemo&&controller.idleSlot!=configuredIdleSlot)controller.start(configuredIdleSlot);
@@ -1779,6 +1846,12 @@ void Frame(float dt) {
  if(!actor.model)return;
  auto current=Call(MainCharacter);
  if(!ActorIdentityIsCurrent(current)){Cleanup();detail="角色切换或模型替换，演示已退出";return;}
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ if(!autoDemo&&!presentationPreview&&!moduleExtension.ControlReady()){
+  suppressInput=false;localMode.combatEnabled=false;commands.clear();previousBits=KeyBits();detail=moduleExtension.StopReason();
+  std::string reason;if(moduleExtension.RebindRequested(reason)){Cleanup();detail=std::move(reason);}else{phase="pending";UpdateHud();}return;
+ }
+#endif
  if(targetReleaseRequest||!config.target_lock){targetReleaseRequest=false;targetLock.Release();RestoreTargetCamera();lockRequest=focusRequest=cycleRequest=false;}
  if(paused||hudEditing){previousBits=KeyBits();commands.clear();previewRequest=-1;actor.visualFrameSeconds=0;
   if(!ApplyPose()){Cleanup();detail="暂停期间姿势失效，已退出";}UpdateHud();return;}
@@ -1789,7 +1862,16 @@ void Frame(float dt) {
  previousLock=lockDown;previousFocus=focusDown;previousCycle=cycleDown;
  auto bits=KeyBits();const auto edges=bits&~previousBits;
  if(edges||!commands.empty()){if(!TakeManualControl()){Cleanup();return;}if(demoHeld){controller.held(demoHeldCommand,false);demoHeld=false;}detail="手动演示中，F9 可切换自动演示";}
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ if(!autoDemo&&!presentationPreview){
+  if(!moduleExtension.ControlReady()){suppressInput=false;localMode.combatEnabled=false;commands.clear();previousBits=bits;detail=moduleExtension.StopReason();return;}
+  suppressInput=true;phase="active";
+ }
+#endif
  localMode.combatEnabled=ManualCombatActive();
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ if(localMode.combatEnabled)moduleExtension.DrainConfirmations();
+#endif
  controller.specialSheatheSeconds=loadedMode=="longsword"&&!autoDemo&&!presentationPreview&&config.combat_rules?localMode.rules.specialSheatheSeconds:0;
  if(!autoDemo)controller.hardwareInput(edges,bits);previousBits=bits;
  for(auto c:commands)controller.input(c);commands.clear();
@@ -2422,29 +2504,54 @@ void ReadAssets(){
  if(std::filesystem::exists(productPath)){std::ifstream input(productPath);input>>productCatalog;}
  else productCatalog={{"schema",1},{"modes",Json::array()},{"characters",Json::array()},{"weapons",Json::array()}};
 }
-BE_Result BE_CALL Initialize(const BE_ThirdPartyHostV1* host,const char* raw) {
- if(!host||host->version!=1||host->struct_size<sizeof(BE_ThirdPartyHostV1)||!host->package_root||!host->reply)return BE_Result_InvalidArgument;
- std::lock_guard lock(gate);if(initialized||cleanupPending)return BE_Result_Conflict;
- try {bridge=*host;packageRoot=std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(host->package_root)));Configure(raw);ReadAssets();}
- catch(const std::exception& e){if(host->log)host->log(host->context,e.what());bridge={};return BE_Result_InvalidArgument;}
- initialized=true;exitBootstrap=false;ready=false;phase="waiting";detail="等待游戏运行时";ResetKeys();resyncFocusKeys=true;
-#ifdef MHE_MODULE_EXTENSION_HEADER
- moduleExtension.Configure();
-#endif
- practiceHud.Start();
+bool pendingAssetInitialization=false;
+void StartBootstrap(){
  bootstrap=std::thread([]{unsigned attempts=0;while(!exitBootstrap){
   {std::lock_guard lock(gate);if(!initialized)return;
-   if(!api)api=bridge.runtime?bridge.runtime:(bridge.get_runtime?bridge.get_runtime(bridge.context):nullptr);
-   if(api){ready=Resolve();if(ready){phase="ready";
+   // The previous generation owns Unity objects until its resident frame
+   // restores them. Re-enabling is accepted while this cleanup is pending.
+   if(cleanupPending){phase="waiting_cleanup";detail="等待上一轮主线程清理完成";}
+   else{
+    if(pendingAssetInitialization){
+     try{ReadAssets();pendingAssetInitialization=false;
 #ifdef MHE_MODULE_EXTENSION_HEADER
-    detail=ModuleExtension::ReadyPrompt();
-#else
-    detail="女管理员动作演示就绪，按 F8 开始";
+      moduleExtension.Configure();
 #endif
-    Log(detail);return;}
-    if(++attempts==1){for(int i=0;i<MethodCount;++i)if(methods[i].required&&!methods[i].r.method_info)Log(std::string("Missing contract: ")+methods[i].d.class_name+"."+methods[i].d.method_name);}}}
+     }catch(const std::exception& error){pendingAssetInitialization=false;phase="failed";detail=std::string("资源初始化失败：")+error.what();Log(detail);return;}
+    }
+    if(!api)api=bridge.runtime?bridge.runtime:(bridge.get_runtime?bridge.get_runtime(bridge.context):nullptr);
+    if(api){
+     Il2CppThreadScope runtimeThread(Il2CppThreadApi::Load());
+     if(!runtimeThread.Ready()){phase="waiting";detail=runtimeThread.Error();}
+     else{
+      try{ready=Resolve();}catch(const std::exception& error){ready=false;detail=std::string("运行时绑定失败：")+error.what();Log(detail);}
+      if(ready){phase="ready";
+#ifdef MHE_MODULE_EXTENSION_HEADER
+       detail=ModuleExtension::ReadyPrompt();
+#else
+       detail="女管理员动作演示就绪，按 F8 开始";
+#endif
+       Log(detail);return;
+      }
+      if(++attempts==1){for(int i=0;i<MethodCount;++i)if(methods[i].required&&!methods[i].r.method_info)Log(std::string("Missing contract: ")+methods[i].d.class_name+"."+methods[i].d.method_name);}
+     }
+    }
+   }
+  }
   for(int n=0;n<10&&!exitBootstrap;++n)std::this_thread::sleep_for(std::chrono::milliseconds(100));
- }});return BE_Result_Ok;
+ }});
+}
+BE_Result BE_CALL Initialize(const BE_ThirdPartyHostV1* host,const char* raw) {
+ if(!host||host->version!=1||host->struct_size<sizeof(BE_ThirdPartyHostV1)||!host->package_root||!host->reply)return BE_Result_InvalidArgument;
+ std::lock_guard lock(gate);if(initialized)return BE_Result_Conflict;
+ try {bridge=*host;packageRoot=std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(host->package_root)));Configure(raw);pendingAssetInitialization=cleanupPending;if(!pendingAssetInitialization)ReadAssets();}
+ catch(const std::exception& e){if(host->log)host->log(host->context,e.what());bridge={};return BE_Result_InvalidArgument;}
+ initialized=true;exitBootstrap=false;ready=false;phase=cleanupPending?"waiting_cleanup":"waiting";detail=cleanupPending?"等待上一轮主线程清理完成":"等待游戏运行时";ResetKeys();resyncFocusKeys=true;
+#ifdef MHE_MODULE_EXTENSION_HEADER
+ if(!pendingAssetInitialization)moduleExtension.Configure();
+#endif
+ practiceHud.Start();
+ StartBootstrap();return BE_Result_Ok;
 }
 BE_Result BE_CALL ConfigurationChanged(const char* raw) {std::lock_guard lock(gate);const auto previous=config;const auto revision=configRevision;const auto applied=appliedConfigRevision;const auto pending=pendingMode;
  try{Configure(raw);return BE_Result_Ok;}catch(...){config=previous;configRevision=revision;appliedConfigRevision=applied;pendingMode=pending;return BE_Result_InvalidArgument;}}
@@ -2487,7 +2594,7 @@ void BE_CALL Shutdown() {
  moduleExtension.Deactivate();
 #endif
  exitBootstrap=true;
- {std::lock_guard lock(gate);suppressInput=false;initialized=false;ready=false;toggleRequest=stopRequest=demoRequest=false;autoDemo=false;
+ {std::lock_guard lock(gate);suppressInput=false;initialized=false;ready=false;pendingAssetInitialization=false;toggleRequest=stopRequest=demoRequest=false;autoDemo=false;
   soundPlayer.Stop();soundTimeline.Reset();practiceHud.Update(false,"");
   commands.clear();previewRequest=-1;controller.stop();cleanupPending=actor.model!=nullptr;
   // A retired module retains its lease until its resident Unity frame has

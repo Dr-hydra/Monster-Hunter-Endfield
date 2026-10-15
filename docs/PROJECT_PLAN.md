@@ -1,6 +1,6 @@
 # Monster Hunter Endfield 项目计划
 
-更新：2026-10-15。当前开发版本 `1.0.0-compat-1.6.3-rc1` 面向终末地 1.6.3，适配与未闭环项见 [版本记录](implementation/client-1.6.3.md)；正式 1.0 仍需游戏内验收。版本状态见 [战斗候选版记录](implementation/combat-rc2.md)，历史离线结果见 [offline-rc1](implementation/offline-rc1.md)。
+更新：2026-10-15。当前开发版本 `1.0.0-compat-1.6.3-rc2` 面向终末地 1.6.3，适配基线见 [版本记录](implementation/client-1.6.3.md)，本轮修复见 [rc2 缺口处理](implementation/client-1.6.3-rc2.md)；正式 1.0 仍需游戏内验收。历史离线结果见 [战斗候选版记录](implementation/combat-rc2.md) 和 [offline-rc1](implementation/offline-rc1.md)。
 
 ## 成品范围
 

@@ -115,7 +115,7 @@ target_compile_definitions(packed_tracks_tests PRIVATE WIN32_LEAN_AND_MEAN NOMIN
 target_compile_options(packed_tracks_tests PRIVATE /W4 /utf-8 /permissive-)
 target_link_libraries(packed_tracks_tests PRIVATE user32 winmm gdi32)
 add_test(NAME packed_tracks COMMAND packed_tracks_tests "${CMAKE_CURRENT_SOURCE_DIR}" "${PACKAGE_DIR}" "${CMAKE_BINARY_DIR}/test-fixtures/packed")
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter)
 add_test(NAME prepare_runtime_banks COMMAND "${Python3_EXECUTABLE}"
  "${CMAKE_CURRENT_SOURCE_DIR}/tools/mhw_package_banks.py"
  --source-root "${CMAKE_CURRENT_SOURCE_DIR}" --package-root "${PACKAGE_DIR}"
@@ -138,3 +138,42 @@ foreach(COMBAT_TEST targeting combat_collision combat_rules target_geometry)
  target_compile_options(${COMBAT_TEST}_tests PRIVATE /W4 /utf-8 /permissive-)
  add_test(NAME ${COMBAT_TEST} COMMAND ${COMBAT_TEST}_tests)
 endforeach()
+
+add_executable(il2cpp_thread_tests tests/il2cpp_thread_tests.cpp)
+target_compile_definitions(il2cpp_thread_tests PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_compile_options(il2cpp_thread_tests PRIVATE /W4 /utf-8 /permissive-)
+add_test(NAME il2cpp_thread_scope COMMAND il2cpp_thread_tests)
+set_tests_properties(il2cpp_thread_scope PROPERTIES LABELS "source")
+add_executable(runtime_lifecycle_tests tests/runtime_lifecycle_tests.cpp)
+target_include_directories(runtime_lifecycle_tests PRIVATE "${SDK_INCLUDE}")
+target_compile_definitions(runtime_lifecycle_tests PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_compile_options(runtime_lifecycle_tests PRIVATE /W4 /utf-8 /permissive-)
+target_link_libraries(runtime_lifecycle_tests PRIVATE user32 winmm gdi32)
+add_test(NAME runtime_lifecycle COMMAND runtime_lifecycle_tests "${CMAKE_CURRENT_SOURCE_DIR}")
+set_tests_properties(runtime_lifecycle PROPERTIES LABELS "local-assets")
+
+# Source-only checks have no dependency on ignored game assets. Keep their label
+# explicit so adding an asset test cannot silently expand the clean-clone gate.
+add_test(NAME core_contract COMMAND core_tests)
+set_tests_properties(core_contract pose_lease longsword_runtime longsword_audio
+ longsword_retarget longsword_practice longsword_weapon character_binding
+ visual_weapon ui_hud source_weapon local_projectiles local_mode_state source_skin
+ targeting combat_collision combat_rules target_geometry
+ PROPERTIES LABELS "source")
+set_tests_properties(longsword_core delayed_hits combat_integration module_assets
+ prepare_runtime_banks packed_tracks PROPERTIES LABELS "local-assets")
+add_test(NAME python_source COMMAND "${Python3_EXECUTABLE}" -m unittest discover
+ -s "${CMAKE_CURRENT_SOURCE_DIR}/tests" -p "test_*.py" -v)
+set_tests_properties(python_source PROPERTIES LABELS "source" TIMEOUT 180
+ WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+option(MHE_SOURCE_GATE "Require all tools for the clean-source verification gate" OFF)
+find_program(MHE_NODE_EXECUTABLE NAMES node)
+if(MHE_SOURCE_GATE AND NOT MHE_NODE_EXECUTABLE)
+ message(FATAL_ERROR "Node.js is required for MHE_SOURCE_GATE (CI uses Node 24)")
+endif()
+if(MHE_NODE_EXECUTABLE)
+ foreach(UI_CHECK ui_verify_rules ui_combat_rules_verify)
+  add_test(NAME ${UI_CHECK} COMMAND "${MHE_NODE_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/${UI_CHECK}.cjs")
+  set_tests_properties(${UI_CHECK} PROPERTIES LABELS "source" TIMEOUT 30)
+ endforeach()
+endif()

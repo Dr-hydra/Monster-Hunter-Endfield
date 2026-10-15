@@ -34,7 +34,15 @@ struct Mock {
  Object*Go(std::string name,Object*parent,bool created=false){auto go=Add("GameObject");go->name=std::move(name);go->created=created;auto t=Add("Transform");t->go=go;t->name=go->name;t->parent=parent;go->transform=t;if(parent)parent->children.push_back(t);return go;}
  template<class T>Object*Box(T value){auto o=Add("Box");std::memcpy(o->bytes.data(),&value,sizeof(value));return o;}
  static Mock&Self(void*c){return *static_cast<Mock*>(c);}
- static BE_Result BE_CALL Resolve(void*c,const BE_MethodDescriptorV1*d,BE_ResolvedMethodV1*r){auto&m=Self(c);if(m.missing==d->method_name)return BE_Result_NotFound;auto method=std::make_unique<Descriptor>();method->cls=d->class_name;method->name=d->method_name;r->method_info=method.get();m.methods.push_back(std::move(method));return BE_Result_Ok;}
+ static BE_Result BE_CALL Resolve(void*c,const BE_MethodDescriptorV1*d,BE_ResolvedMethodV1*r){auto&m=Self(c);if(m.missing==d->method_name)return BE_Result_NotFound;
+  const std::string name=d->method_name;
+  if(name=="get_localBounds"||name=="set_localBounds"){
+   const bool setter=name=="set_localBounds";
+   if(std::string(d->assembly_name)!="UnityEngine.CoreModule.dll"||std::string(d->namespace_name)!="UnityEngine"||std::string(d->class_name)!="Renderer"||
+      std::string(d->return_type)!=(setter?"System.Void":"UnityEngine.Bounds")||d->parameter_count!=(setter?1u:0u)||
+      (setter?(!d->parameter_types||std::string(d->parameter_types)!="UnityEngine.Bounds"):d->parameter_types!=nullptr))return BE_Result_NotFound;
+  }
+  auto method=std::make_unique<Descriptor>();method->cls=d->class_name;method->name=d->method_name;r->method_info=method.get();m.methods.push_back(std::move(method));return BE_Result_Ok;}
  static BE_Result BE_CALL Class(void*c,const char*,const char*,const char*n,BE_ResolvedClassV1*r){auto&m=Self(c);std::string*p=nullptr;if(n==m.classGo)p=&m.classGo;else if(n==m.classTr)p=&m.classTr;else if(n==m.classRenderer)p=&m.classRenderer;else{m.extraClasses[n]=n;p=&m.extraClasses[n];}r->class_info=p;r->type_object=p;return BE_Result_Ok;}
  static void* BE_CALL New(void*c,const void*cls){auto&m=Self(c);auto kind=*static_cast<const std::string*>(cls);auto go=m.Add(kind=="MaterialPropertyBlock"?"PropertyBlock":"GameObject");go->created=kind!="MaterialPropertyBlock";return go;}
  static void* BE_CALL String(void*c,const char*s){auto o=Self(c).Add("String");o->name=s;return o;}

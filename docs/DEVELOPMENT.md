@@ -20,13 +20,22 @@ ctest --test-dir build/development -C Release --output-on-failure
 
 CTest 会先为 `packed_tracks` 生成当前构建目录的运行资源银行，不依赖另一个构建目录的旧缓存。DLL 内嵌模块 ID 和 manifest 版本，打包时拒绝旧 DLL 或混用模块。
 
-完整回归会读取本地 `assets/`、已生成 profile 和测试素材；新克隆未准备这些输入时，资源相关测试无法通过。目标选择、碰撞、规则和几何等独立测试可在构建后单独运行：
+新克隆先运行统一的无游戏素材检查。依赖 Windows x64、VS 2022 C++、CMake 3.25+、Python 3.12 和 Node.js 24；Python 测试依赖版本固定在 `requirements-dev.txt`，静态网页没有 npm 依赖：
 
 ```powershell
-ctest --test-dir build/development -C Release -R '^(targeting|combat_collision|combat_rules|target_geometry|pose_lease)$' --output-on-failure
+python -m pip install -r requirements-dev.txt
+./tools/check_source.ps1
 ```
 
-源码自带的资源研究脚本仍依赖 ignored 本地工具、游戏文件、对象图及部分既有缓存；部分脚本保留工作区路径约定。它们没有统一的自动依赖安装和从零重建入口，不能承诺克隆后即可完成全量素材重建。运行前按 [素材重建](RESOURCE_REBUILD.md) 核对各脚本输入和工具来源。
+该入口构建公开 DLL，并运行 CTest `source` 标签的独立 C++ 测试、`tests/test_*.py` 合成输入回归及两组网页规则检查。缺少 Node 时会在配置阶段失败；不会因工具缺失静默跳过网页检查。GitHub Actions 使用同一入口，不携带游戏素材，也不构建本地扩展。工作流的 action 用法依据官方 [checkout](https://github.com/actions/checkout)、[setup-python](https://github.com/actions/setup-python)、[setup-node](https://github.com/actions/setup-node) 说明。
+
+完整回归会读取本地 `assets/`、已生成 profile 和测试素材，使用 `local-assets` 标签单独执行；当前构建目录的银行准备 fixture 会自动先运行：
+
+```powershell
+ctest --test-dir build/development -C Release -L '^local-assets$' --output-on-failure --no-tests=error
+```
+
+运行资源生成前按 [素材重建](RESOURCE_REBUILD.md) 核对外部工具、游戏输入和首次生成条件。无素材源码门禁通过不代表完整素材包或实机验证通过。
 
 ## 完整包
 
@@ -40,7 +49,7 @@ python tools/package.py --package-root build/development/package --validate-only
 python tools/package.py --package-root build/development/package
 ```
 
-`tools/package.py` 从 `module.json` 读取版本，默认输出 `dist/endfield.longsword.showcase-1.0.0-compat-1.6.3-rc1-win-x64.zip`。`--package-root` 指向该记录 CMake 输出目录；`--output` 可另选 ZIP 路径。`--validate-only` 检查完整包依赖，不写 ZIP。
+`tools/package.py` 从 `module.json` 读取版本，默认输出 `dist/endfield.longsword.showcase-1.0.0-compat-1.6.3-rc2-win-x64.zip`。`--package-root` 指向该记录 CMake 输出目录；`--output` 可另选 ZIP 路径。`--validate-only` 检查完整包依赖，不写 ZIP。
 
 当前完整素材覆盖六模式、1185 动作槽、34 角色、84 普通装备和两把特殊模型、196 PCM 及全部网页依赖。打包器检查模式／角色／模型覆盖、完整资源引用、轨道、派生、来源和 EML 文件限额；缺素材时会拒绝生成完整包。大型资源、构建目录和 ZIP 均留在本地。
 

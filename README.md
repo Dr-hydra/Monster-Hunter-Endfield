@@ -2,7 +2,7 @@
 
 为《明日方舟：终末地》提供《怪物猎人：世界／冰原》的连续动作、自动演示、独立展示武器和本地练习。通过 E Mod Loader 运行，支持 Windows x64、EML format 1 / Native ABI 1。
 
-当前开发版本为 **`1.0.0-compat-1.6.3-rc1`**，面向终末地 **1.6.3**。本轮版本来源、兼容修正和未闭环项见 [1.6.3 适配记录](docs/implementation/client-1.6.3.md)；历史 `combat-rc2` 的验证结果不代替本轮验收，**尚未进行游戏内验证**。
+当前开发版本为 **`1.0.0-compat-1.6.3-rc2`**，面向终末地 **1.6.3**。版本来源与适配基线见 [1.6.3 适配记录](docs/implementation/client-1.6.3.md)，后续修复见 [rc2 缺口处理](docs/implementation/client-1.6.3-rc2.md)；历史 `combat-rc2` 的验证结果不代替本轮验收，**尚未进行游戏内验证**。
 
 ## 功能与覆盖
 
@@ -29,7 +29,7 @@
 
 取得完整构建包后：
 
-1. 将 `endfield.longsword.showcase-1.0.0-compat-1.6.3-rc1-win-x64.zip` 导入 E Mod Loader。
+1. 将 `endfield.longsword.showcase-1.0.0-compat-1.6.3-rc2-win-x64.zip` 导入 E Mod Loader。
 2. 打开模组设置页，选择怪猎模式与展示武器并保存；游戏角色在游戏中另行选择。
 3. 升级前停止旧演示。模块 ID 保持 `endfield.longsword.showcase`，沿用 schema 2 配置迁移。
 
@@ -61,7 +61,7 @@
 | [使用说明](docs/USER_GUIDE.md) | 安装、键位、声音、HUD、练习与卸载 |
 | [开发与构建](docs/DEVELOPMENT.md) | 依赖、原生构建、测试与完整包条件 |
 | [素材重建](docs/RESOURCE_REBUILD.md) | 本地来源、烘焙、配置与资源依赖 |
-| [覆盖表](docs/ADAPTATION_COVERAGE.md) | 33 角色、80 普通装备与两把特殊模型 |
+| [覆盖表](docs/ADAPTATION_COVERAGE.md) | 34 角色、84 普通装备与两把特殊模型 |
 | [战斗候选版记录](docs/implementation/combat-rc2.md) | `combat-rc2` 实现、离线验证和边界 |
 | [项目计划](docs/PROJECT_PLAN.md) | 正式 1.0 的范围与验收要求 |
 | `native/`、`tests/`、`tools/`、`ui/` | C++ 模块、回归、资源工具和网页 |
