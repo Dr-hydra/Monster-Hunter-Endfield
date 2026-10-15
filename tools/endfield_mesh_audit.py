@@ -10,6 +10,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 from PIL import Image,ImageDraw
 from endfield_profiles import read,write,analyze,CACHE,ROOT
+from resource_audit_contract import input_contract, validate_current
 from endfield_pose_projection import mode_root,solve_grip,ground_pose,resources,posed_source_parts
 
 OUT=ROOT/'research/character-coverage';P0={'chr_0016_laevat','chr_0034_typhoea','chr_0018_dapan'}
@@ -204,8 +205,8 @@ def audit(cid,mode,scene,meta,clips,stride,*,selections=None,gallery_directory=N
  oracle_path=(oracle_directory or OUT/'oracle')/cid/(mode+'.json')
  return {'character_id':cid,'mode':mode,'status':'offline_mesh_checked' if finite and not bad else 'offline_mesh_failed','evidence':[str(image_path.relative_to(ROOT)).replace('\\','/'),str(oracle_path.relative_to(ROOT)).replace('\\','/')],'source_slots':[c['slot'] for c in clips],'frames':fk_frames,'mesh_frames':mesh_frames,'mesh_sample_policy':('explicit per-clip frame selection' if selections is not None else 'all core frames' if cid in P0 else f'every {stride}th frame plus clip boundaries'),'mesh_parts':len(scene['parts']),'mesh_vertices':sum(len(p['vertices']) for p in scene['parts']),'finger_mesh_frames':finger_frames,'source_weapon_mesh_frames':weapon_frames,'source_weapon_mesh_parts':sorted(weapon_parts),'supporting_hand_solver':'exact native retarget.h DLL; bow supports right hand, other modes left','skin_min_y':minimum,'skin_max_y':maximum,'minimum_mesh_frame':minimum_evidence,'minimum_foot_mesh_y':minimum_foot,'foot_penetration_samples':foot_penetration,'errors':bad,'warnings':warnings,'runtime_verified':False,'visual_quality_certified':False,'ground_policy':'actual target weighted shoe vertices matched to source actual sole clearance; upright root basis; no real scenario simulation'}
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--characters',nargs='*');p.add_argument('--modes',nargs='*');p.add_argument('--stride',type=int,default=12);p.add_argument('--sole-only',action='store_true');p.add_argument('--resume-log',type=Path);a=p.parse_args();index=read(ROOT/'profiles/index.json');combinations=[];start=time.time()
- existing=OUT/'coverage.json'
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--characters',nargs='*');p.add_argument('--modes',nargs='*');p.add_argument('--stride',type=int,default=12);p.add_argument('--sole-only',action='store_true');p.add_argument('--resume-log',type=Path);p.add_argument('--report',type=Path);p.add_argument('--gallery',type=Path);a=p.parse_args();index=read(ROOT/'profiles/index.json');combinations=[];start=time.time()
+ existing=a.report or OUT/'coverage.json'
  if existing.exists():combinations=read(existing).get('combinations',[])
  completed=set()
  if a.resume_log:
@@ -219,15 +220,22 @@ def main():
    print(cid,'actual weighted footwear probes',len(scene['probes']),flush=True);continue
   for mode in a.modes or index['modes']:
    meta,clips=oracle(cid,mode);inputs=audit_inputs(scene,meta)
+   profile=read(ROOT/'profiles'/next(item['profile'] for item in index['characters'] if item['character_id']==cid))
+   current_contract=input_contract(ROOT,cid,mode,profile)
    previous=next((c for c in combinations if (c['character_id'],c['mode'])==(cid,mode)),None)
    if (cid,mode) in completed and previous:
+    validate_current(ROOT,cid,mode,profile,previous)
     assert previous['source_slots']==[c['slot'] for c in clips]
     assert previous['frames']==sum(len(c['rotations']) for c in clips)
     assert 'upright root basis' in previous['ground_policy']
     image=ROOT/previous['evidence'][0]
     assert image.stat().st_mtime>=(OUT/'oracle'/cid/(mode+'.json')).stat().st_mtime
     item=previous;item['resume_evidence']=str(a.resume_log.resolve().relative_to(ROOT)).replace('\\','/')
-   else:item=audit(cid,mode,scene,meta,clips,max(1,a.stride))
+   else:
+    item=audit(cid,mode,scene,meta,clips,max(1,a.stride),gallery_directory=a.gallery)
+    latest_profile=read(ROOT/'profiles'/next(item['profile'] for item in index['characters'] if item['character_id']==cid))
+    if current_contract!=input_contract(ROOT,cid,mode,latest_profile):raise ValueError('Audit inputs changed during evaluation: '+cid+'/'+mode)
+    item['input_contract']=current_contract
    item['audit_revision']=AUDIT_REVISION;item['audit_inputs']=inputs
    combinations=[c for c in combinations if (c['character_id'],c['mode'])!=(cid,mode)]+[item];write(existing,{'schema':2,'audit_revision':AUDIT_REVISION,'combinations':combinations,'summary':{'combinations':len(combinations),'offline_mesh_checked':sum(c['status']=='offline_mesh_checked' for c in combinations),'current_revision':sum(c.get('audit_revision')==AUDIT_REVISION for c in combinations),'runtime_verified':0,'visual_quality_certified':0},'source_manifest':index['source_manifest'],'operation':'exact native retarget.h oracle + registered actual target skin/bindpose/indices; actual indexed mesh snapshot; no game process','runtime_verified':False});print(cid,mode,'cached' if (cid,mode) in completed else 'mesh',item['mesh_frames'],'parts',item['mesh_parts'],'errors',len(item['errors']),'elapsed',round(time.time()-start),flush=True)
 if __name__=='__main__':main()

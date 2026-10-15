@@ -6,16 +6,17 @@ below are offline evidence, not a hard-coded replacement for the live skeleton.
 """
 import argparse
 import json
+import os
 import subprocess
 from pathlib import Path
 import numpy as np
 from scipy.spatial.transform import Rotation
+from resource_transaction import ResourceTransaction
 from laevat_profile import Graph, PRIMARY, SEMANTICS, matrix
 
 ROOT=Path(__file__).resolve().parents[1]
-BE=Path(r'G:\Better Endfield')
+BE=Path(os.environ.get('MHE_BE_ROOT', str(ROOT.parent/'Better Endfield'))).expanduser().resolve()
 CACHE=BE/'research/custom_model/1.5.3/shared/postmodel-native-parser-history'
-TABLES=BE/'inputs/1.5.3/Windows/tables/Table'
 MODES=['longsword','sword_shield','greatsword','lance','light_bowgun','bow']
 DEFAULT={1:'longsword',2:'bow',3:'greatsword',5:'lance',6:'light_bowgun'}
 
@@ -98,7 +99,13 @@ def main():
  p.add_argument('--table-report',type=Path,required=True,help='Fresh decoded current roster/text comparison report')
  p.add_argument('--allow-backend-warnings',action='store_true',help='Retain explicit decoder gaps after target bone/mesh references validate')
  p.add_argument('--characters',nargs='+',help='Incrementally replace only these IDs; preserve every other existing profile')
- a=p.parse_args();tables=a.input_root/'tables/Table'
+ a=p.parse_args()
+ with ResourceTransaction(ROOT) as transaction:
+  generate(a,transaction)
+  transaction.commit()
+
+def generate(a,transaction):
+ tables=a.input_root/'tables/Table'
  metadata=read(a.input_root/'tables/source-metadata.json')
  if metadata.get('gameVersion')!=a.game_version or metadata.get('kind')!='persistent+base':raise ValueError('Table source must match the requested version and effective VFS')
  table_proof=read(a.table_report)
@@ -147,11 +154,13 @@ def main():
    if path.exists():profile['visual_weapons'][mode]=read(path)
   if 'visual_weapon' in profile and 'longsword' in profile['visual_weapons']:
    profile['visual_weapon']=profile['visual_weapons']['longsword']
-  write(ROOT/'profiles'/(basename+'.json'),profile)
-  write(out/(cid+'-rig.json'),{'schema':1,'character_id':cid,'manifest':data['snapshot']['manifest_version'],'serialized_model_rest':r['rest'],'registered_model_rest':{path:m.tolist() for path,m in r['skin_rest'].items()},'bind_registration_by_renderer':r['registrations'],'renderers':r['renderers'],'body_proportions':r['lengths'],'runtime_verified':False,'main_skeleton_root':r['skeleton']})
+  transaction.write_json(ROOT/'profiles'/(basename+'.json'),profile)
+  transaction.write_json(out/(cid+'-rig.json'),{'schema':1,'character_id':cid,'manifest':data['snapshot']['manifest_version'],'serialized_model_rest':r['rest'],'registered_model_rest':{path:m.tolist() for path,m in r['skin_rest'].items()},'bind_registration_by_renderer':r['registrations'],'renderers':r['renderers'],'body_proportions':r['lengths'],'runtime_verified':False,'main_skeleton_root':r['skeleton']})
   if a.export_geometry:
-   dest=out/'geometry'/cid
+   dest=transaction.directory(out/'geometry'/cid)
    subprocess.run(['dotnet',str(ROOT/'tools/endfield_weapon_inspector/bin/Release/net8.0-windows/EndfieldWeaponInspector.dll'),str(inputs),str(dest),'S_actor_'+cid.split('_',2)[2]+'.*lod0$'],check=True,stdout=subprocess.DEVNULL)
+   if not (dest/'inspection.json').is_file():raise ValueError('Geometry export produced no inspection manifest: '+cid)
+   transaction.add_directory(out/'geometry'/cid)
   item={'character_id':cid,'label':label,'profile':basename+'.json','default_mode':profile['mode'],'supported_modes':MODES,'status':'offline-profile-qualified','runtime_verified':False,'source_mesh_available':True,'finger_bones':len(r['fingers'])};entries.append(item)
   analysis.append({'character_id':cid,'main_bones':21,'main_palette_bones':len(r['palette']),'finger_bones':len(r['fingers']),'renderers':len(r['renderers']),'arm_lengths':r['lengths'],'full_path_isolation':True})
   print(f'{cid}: 21 primary, {len(r["fingers"])} finger bones, {len(r["renderers"])} body renderers',flush=True)
@@ -159,8 +168,8 @@ def main():
  entries.sort(key=lambda r:r['character_id'])
  if {r['character_id'] for r in entries}!=playable:raise ValueError('Profile registry does not cover the current playable table')
  source={'game_version':a.game_version,'manifest_version':data['snapshot']['manifest_version'],'overlay_order':overlay['overlay_order'],'character_ids':sorted(playable),'equipment_ids':sorted(equipment),'resource_catalog_only_ids':sorted(set(cc)-playable),'verification_report':str(a.overlay_report),'table_verification_report':str(a.table_report)}
- write(ROOT/'profiles/index.json',{'schema':2,'source_manifest':data['snapshot']['manifest_version'],'current_source':source,'characters':entries,'modes':MODES,'runtime_verified':False})
- write(out/'profile-validation.json',{'schema':2,'characters':analysis,'registry_character_count':len(entries),'validated_character_count':len(analysis),'validated_combinations':len(analysis)*len(MODES),'scope':'exact named primary bones in actual skin palettes, actual full paths, native sockets and rest topology; not a motion or runtime validation'})
+ transaction.write_json(ROOT/'profiles/index.json',{'schema':2,'source_manifest':data['snapshot']['manifest_version'],'current_source':source,'characters':entries,'modes':MODES,'runtime_verified':False})
+ transaction.write_json(out/'profile-validation.json',{'schema':2,'characters':analysis,'registry_character_count':len(entries),'validated_character_count':len(analysis),'validated_combinations':len(analysis)*len(MODES),'scope':'exact named primary bones in actual skin palettes, actual full paths, native sockets and rest topology; not a motion or runtime validation'})
  weapon_rows=[]
  for wid,row in equipment.items():
   model=row.get('modelPath','');path='assets/beyond/dynamicassets/'+model.lower()
@@ -171,6 +180,6 @@ def main():
   if previous.get('model_path')==row['model_path']:
    for key in ['asset_path_hash','asset_exists']:
     if key in previous:row[key]=previous[key]
- write(ROOT/'profiles/weapons/equipment-index.json',{'schema':1,'current_source':source,'equipment':weapon_rows,'equipment_count':len(weapon_rows),'shared_model_count':len({x['model_path'] for x in weapon_rows}),'runtime_verified':False})
+ transaction.write_json(ROOT/'profiles/weapons/equipment-index.json',{'schema':1,'current_source':source,'equipment':weapon_rows,'equipment_count':len(weapon_rows),'shared_model_count':len({x['model_path'] for x in weapon_rows}),'runtime_verified':False})
 
 if __name__=='__main__':main()

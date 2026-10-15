@@ -9,6 +9,23 @@ from pathlib import Path, PurePosixPath
 import re
 import struct
 import zipfile
+_audit_spec = importlib.util.spec_from_file_location('mhe_resource_audit_contract', Path(__file__).with_name('resource_audit_contract.py'))
+_audit_contract = importlib.util.module_from_spec(_audit_spec)
+_audit_spec.loader.exec_module(_audit_contract)
+validate_catalog_status = _audit_contract.validate_catalog_status
+validate_special_catalog = _audit_contract.validate_special_catalog
+_native_spec = importlib.util.spec_from_file_location('mhe_audit_native_build', Path(__file__).with_name('audit_native_build.py'))
+_native_build = importlib.util.module_from_spec(_native_spec)
+_native_spec.loader.exec_module(_native_build)
+_oracle_spec = importlib.util.spec_from_file_location('mhe_audit_oracle_provenance', Path(__file__).with_name('audit_oracle_provenance.py'))
+_oracle_provenance = importlib.util.module_from_spec(_oracle_spec)
+_oracle_spec.loader.exec_module(_oracle_provenance)
+
+
+def validate_current_mesh_audits(root):
+    _native_build.validate_native_build(root, _audit_contract.NATIVE_INPUTS)
+    _oracle_provenance.verify_oracle_provenance(root)
+    return _audit_contract.validate_all(root)
 
 PROJECT = Path(__file__).resolve().parents[1]
 MODES = {'longsword', 'sword_shield', 'greatsword', 'lance', 'light_bowgun', 'bow'}
@@ -794,7 +811,7 @@ def validate_product(entries, manifest):
     audio = read(required(entries, 'assets/audio_catalog.json', '.json'))
     if set(unique_records(product.get('modes'), 'id', 'Product modes')) != MODES:
         raise ValueError('Product catalog must cover the current six modes')
-    validate_rosters(read(required(entries, 'profiles/index.json', '.json')),
+    character_registry, _, _ = validate_rosters(read(required(entries, 'profiles/index.json', '.json')),
                      read(required(entries, 'profiles/weapons/index.json', '.json')),
                      read(required(entries, 'profiles/weapons/equipment-index.json', '.json')), product)
     if product.get('version') != manifest['version']:
@@ -825,16 +842,22 @@ def validate_product(entries, manifest):
             raise ValueError('Incomplete original source reference provenance')
     if {name for name in entries if name.endswith('.mp4')} != {relative_reference('assets', tour['file']) for tour in tours}:
         raise ValueError('Video package contents must equal the six declared source references')
+    character_profiles = {}
     for character in product['characters']:
+        profile = read(required(entries, relative_reference('profiles', character_registry[character['id']]['profile']), '.json'))
+        character_profiles[character['id']] = profile
         if set(character.get('modes', {})) != MODES:
             raise ValueError('Incomplete character coverage metadata: ' + character['id'])
         for status in character['modes'].values():
+            validate_catalog_status(status, profile, character.get('audit_profile_inputs'))
             if not status.get('reference_images'):
                 raise ValueError('Missing actual target mesh reference for ' + character['id'])
             for image in status.get('reference_images', []):
                 required(entries, relative_reference('assets', image['file']), '.webp')
     for weapon in product.get('weapons', []):
-        required(entries, weapon['model_profile'], '.json')
+        profile = read(required(entries, weapon['model_profile'], '.json'))
+        if weapon['id'] in _audit_contract.SPECIAL:
+            validate_special_catalog(weapon, profile, character_profiles)
         if weapon['id'] in ('laevatain_blade', 'typhoea_bow') and weapon['modes'] != (['longsword'] if weapon['id'] == 'laevatain_blade' else ['bow']):
             raise ValueError('Special model mode metadata differs from native adapters')
     for mode in MODES:
@@ -847,6 +870,7 @@ def validate_product(entries, manifest):
 
 def package(root: Path, package_root: Path, output: Path | None, validate_only=False) -> Path | None:
     root = root.resolve()
+    validate_current_mesh_audits(root)
     manifest_path = root / 'module.json'
     manifest = read(manifest_path)
     if manifest.get('format') != 1 or manifest.get('abi') != 1 or len(manifest.get('libraries', {})) != 1:

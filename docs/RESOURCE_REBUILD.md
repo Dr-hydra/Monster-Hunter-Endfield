@@ -15,7 +15,7 @@
 | Windows 构建 | CMake ≥3.25、Visual Studio 2022 C++ x64，`third_party/include` 的 EML ABI 1/format 1 SDK 与 JSON 头 |
 | 网页检查 | Node/npx、`@playwright/cli`、本机 Edge；只读本地 HTTP 用于资源加载 |
 
-工具和原游戏素材不在源码 Git 中。新机器先按 [第三方来源说明](../THIRD_PARTY_NOTICES.md) 获取对应工具，再提供合法取得的匹配版本资料。部分脚本仍有本地绝对路径、tooling 目录和既有缓存约定，新机器先核对各脚本顶部 `ROOT`／`BE`／缓存路径；不能只复制 Git 后把缺素材误认为构建器能自动创造。
+工具和原游戏素材不在源码 Git 中。先按 [资源工具链准备](RESOURCE_TOOLCHAIN.md) 获取已核定的 BE、Endfield 与 MHW 解析器固定源码及补丁，构建 Reader/Inspector/ResConv/ooz，并运行 `python tools/check_resource_toolchain.py --be-root '<BE资源工具目录>'`。新机器还需 [第三方来源说明](../THIRD_PARTY_NOTICES.md) 所列工具与匹配版本资料。部分脚本仍有本地绝对路径、tooling 目录和缓存约定；不能把源码来源核证、预检通过或复制 Git 等同于完整素材重建。
 
 ## 数据流水线及边界
 
@@ -25,9 +25,13 @@
 
 源控制/派生证据包括 FSM、MBD、COL 作者招式名称及 LMT TIML。音频按 `TIML → WWEV ReqNo → Wwise HIRC → Media → PCM` 发布。部分原生 C++ 控制分支已有来源核证（见 [控制来源核证](implementation/combat-source-closure.md)）；完整原战斗控制器、Wwise RTPC／容器选择和武器 carry 状态未重放；未找到源 own-skin 触发的动作保留规范化绑定姿势，不补猜测动画。
 
-`tools/endfield_profiles.py` 和 `tools/endfield_weapon_profiles.py` 读取 BE 的完整引用图，生成 33 角色与 80 装备/两把特殊模型配置。主骨、30 指骨、鞋底 probe、按 renderer 的 bind 注册矩阵分别保存。`tools/weapon_reference_decode.py` 按真实 RefTypes 完整解码角色 CharacterData 的 `ReferencedObjectData`；禁止省略后再把错位字段当挂点证据。
+`tools/endfield_profiles.py` 和 `tools/endfield_weapon_profiles.py` 读取 BE 的完整引用图；当前 1.6.3 为 34 角色、84 装备和两把特殊模型配置，集合以当前三表与索引为准。主骨、30 指骨、鞋底 probe、按 renderer 的 bind 注册矩阵分别保存。`tools/weapon_reference_decode.py` 按真实 RefTypes 完整解码角色 CharacterData 的 `ReferencedObjectData`；禁止省略后再把错位字段当挂点证据。
 
-精确重定向 oracle 直接调用当前 `native/retarget.h`，由 `tools/endfield_mesh_audit.py` 用实际蒙皮网格扫描并产图；`tools/endfield_special_previews.py` 补重点组合多角度。198 个角色×模式采样入口只是网格检查，不是 198 个完整视觉通过。原生 shader、布料/链条动态、P0 动态装配、场景和实际输入/声音留待游戏检查。
+角色生成先在 `output/resource-staging/` 准备整批 profile、rig、geometry 和索引，所有导出与最终集合检查成功后才替换；准备失败保留旧产物，发布中的可处理异常回滚已替换文件。它不是跨目录文件系统的断电原子性保证。纹理重跑按完整源资源路径区分同名文件，并把当前尺寸、PNG、RGBA 和元数据一起发布；旧 RGBA 存在不再跳过像素更新。
+
+`build_product_catalog.py` 同样把 WEBP 参考图、源预览和 provenance / product / audio 三个目录 JSON 放入同一批事务。任何准备或末尾发布失败都会保留上一批完整产物，避免目录版本已更新而声音索引仍是旧版。
+
+精确重定向 oracle 直接调用当前 `native/retarget.h`，由 `tools/endfield_mesh_audit.py` 扫描当前 204 个角色×模式组合并产图；`tools/endfield_special_mesh_audit.py` 另扫描全部 68 个角色×特殊武器组合。P0 使用每个核心帧，其余为默认 stride 12 加片段边界；这是网格数值检查，原生 shader、布料/链条动态、P0 动态装配、场景和实际输入/声音留待游戏检查。
 
 ## 从原始资源重建六模式
 
@@ -81,14 +85,29 @@ python tools/endfield_profiles.py --input-root "<当前版本 Windows 输入目�
 python tools/endfield_weapon_profiles.py --game-version 1.6.3 --manifest "<当前manifest.json>" --raw "<当前装备对象图>" --geometry "<当前装备几何目录>" --overlay-report "<当前装备提取报告>"
 python tools/weapon_reference_decode.py
 cmake -S tools/offline_retarget -B build/offline-retarget -G 'Visual Studio 17 2022' -A x64
-cmake --build build/offline-retarget --config Release
+cmake --build build/offline-retarget --config Release --clean-first
+python tools/endfield_mesh_audit.py --sole-only
 $mheRoot = (Get-Location).Path
 & 'build/offline-retarget/Release/endfield_retarget_oracle.exe' $mheRoot (Join-Path $mheRoot 'research/character-coverage/oracle')
+python tools/audit_oracle_provenance.py --rebuild-compare
 python tools/endfield_mesh_audit.py
+python tools/endfield_special_mesh_audit.py
 python tools/endfield_special_previews.py
 ```
 
+`mhw_publish_baseline.py` 首次发布只需要原版烘焙 staging，不读取或要求旧 `assets/catalog.json`。合成在临时副本进行，不反写原始 baked 输入；默认排除被旧发布器写入 staging catalog 的 `Legacy` 条目。升级时只有显式传 `--preserve-existing-legacy` 才保留旧发布 catalog 中已标明 Legacy 且文件真实存在的条目，保持原来源，不把未知旧动作改标 Legacy。干净原版首发不自动制造历史四个 Legacy 槽，不能仅凭原版首发命令宣称重建了含它们的历史 1185 槽候选；使用已有 bake 副本的首发验证也不等于从游戏全新烘焙。
+
 原生包/类型布局变化时先重导出、核对完整引用解析，再生成 profile。角色每个 renderer 的坐标注册需分别保留；不能把一个全局旋转重复应用到已转成 Y-up 的头部。重点动态挂点的最新配置来源和未决项看各 `profiles/weapons/*.json`，不要用重新生成的静态默认挂点覆盖已确认的专项证据。
+
+两种 mesh 扫描都会保存 schema 2 `input_contract`：直接记录运行相关 profile 值，并记录实际图、geometry、源轨道、rig、oracle、实际 solver / oracle 二进制和完整本地数值代码链的路径、大小、纳秒修改时间；包括 `analyze`、`Graph`、矩阵实现、`native/core.h`、oracle/solver C++、CMake 和 JSON 头。另记录 CPython 版本/实现/位数/平台、NumPy/SciPy/Pillow 版本及 OpenBLAS 标识，排除构建机临时路径；special 另记录特殊图、网格和完整武器 profile。无需哈希，也不构成密码学完整性证明。修改时间被手动伪造且文件大小不变时不保证发现；普通重生成或参数改变会保守失效。旧报告不能补贴当前合同冒充重新验证，`--resume-log` 也必须核对原已保存合同。扫描期间不要重写这些输入。
+
+全量扫描可在重建当前 solver / oracle 并重新生成 oracle 后，改用 `python tools/run_mesh_audits.py --workers 4 --output output/mesh-audit-current`。输出目录必须为空；每角色只有一个 worker，P0 仍扫所有核心帧，其他角色仍为 stride 12 加边界。各 worker 的 `--report` / `--gallery` 独立落盘；严格核对 204 / 68 集合及全部当前合同后才成批替换两份正式覆盖报告，任一失败保留之前报告，不降低精度或补贴旧结果。
+
+扫描编排器、目录生成器和公共/私有打包共用 native 构建时间门禁：实际选择的 solver DLL 与 oracle EXE 都不得早于声明的 C++/CMake/JSON 头输入，缺失或过期时要求 `--clean-first` 重建。该时间检查同样不是密码学来源证明；它用于阻止忘记重编译后重新审计旧算法。若存在 `build/offline-retarget-dual/Release/endfield_pose_solver.dll`，实际加载优先使用此目录，重建和生成 oracle 时也必须使用同一目录。
+
+此外，`audit_oracle_provenance.py --rebuild-compare` 用当前 EXE、实际输入和 profile 字段在独立临时目录重生全部 JSON/LTP，逐字节等于已审计缓存后才写 `oracle-generation-proof.json`，不改已审计的 oracle 文件。该独立证明绑定真实生成输入、二进制和输出身份；后续 runner/catalog/公共与私有打包都要求它仍有效。仅重编译 native 后沿用旧 oracle，或更新 LSM/LSF/rig/profile 后只重跑网格扫描，都不能被当成新生成结果。首次准备先运行 `--sole-only`，让真实 mesh foot-height 在生成 oracle scale 前进入 profile；重复审计写入相同数值不因 profile 文件时间变化被误判。
+
+完整产品/打包要求普通和特殊组合均明确通过且 `errors == []`，当前角色集合完整，实际输入合同仍一致。存在旧参考图、profile 文件或空缺状态都不能替代资格；`failed`、`pending`、遗漏 errors、任意非空错误和过期输入均拒绝。产品保留一份角色 profile 输入快照，特殊角色行引用该快照，避免重复大块数据；打包前仍从研究目录逐个核对 204 + 68 份真实合同。
 
 ## 编译、检查与打包
 

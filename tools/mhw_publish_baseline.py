@@ -3,7 +3,7 @@ Does not overwrite hand rotations with a blade direction, replay MHW damage,
 or claim that the local descent is the native FSM flight implementation.
 """
 from pathlib import Path
-import json,struct,math,shutil
+import argparse,json,struct,math,shutil,tempfile
 import numpy as np
 ROOT=Path(__file__).resolve().parents[1]
 STAGE=ROOT/'research/mhw-original/baked'
@@ -27,9 +27,64 @@ def slerp(a,b,t):
     return (q/np.linalg.norm(q)).tolist()
 
 
+def previous_catalog(root, preserve_existing=False):
+    """First publication consumes only freshly baked original sources.
+
+    Reusing local Legacy clips is an explicit upgrade operation, never an input
+    needed to bootstrap an original-only catalog on a clean checkout.
+    """
+    if not preserve_existing:return []
+    path=Path(root)/'assets/catalog.json'
+    if not path.is_file():raise FileNotFoundError('Explicit Legacy preservation requires an existing local catalog: '+str(path))
+    catalog=read(path)
+    if not isinstance(catalog,list):raise ValueError('Existing Legacy catalog must be a list')
+    retained=[]
+    for row in catalog:
+        if not isinstance(row,dict):raise ValueError('Invalid existing catalog record')
+        if not str(row.get('source','')).startswith('Legacy'):continue
+        relative=Path(row.get('file',''))
+        if not relative.parts or relative.is_absolute() or '..' in relative.parts or ':' in str(relative):raise ValueError('Invalid Legacy clip path')
+        clip=(Path(root)/'assets'/relative).resolve();clip.relative_to((Path(root)/'assets').resolve())
+        if not clip.is_file():raise FileNotFoundError('Explicit Legacy input is unavailable: '+str(clip))
+        retained.append(row)
+    return retained
+
 def main():
-    assets=STAGE/'assets';rig=read(assets/'source_rig.json');height=rig['source_rest_hip_height']
-    data={s:read(STAGE/f'preview/slot_{s:03d}.json') for s in (170,171,172,173)}
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--preserve-existing-legacy',action='store_true',help='Upgrade only: retain explicitly labelled local Legacy clips; never needed for first publication')
+    args=parser.parse_args();previous=previous_catalog(ROOT,args.preserve_existing_legacy)
+    scratch=ROOT/'output/resource-staging';scratch.mkdir(parents=True,exist_ok=True)
+    # Earlier publishers mutated baked input, including appending Legacy rows.
+    # Compose only in a private copy so a second first-publication run has the
+    # same source inputs and cannot inherit publication state from the last run.
+    with tempfile.TemporaryDirectory(prefix='baseline-',dir=scratch) as folder:
+        stage=Path(folder)/'baked';shutil.copytree(STAGE,stage)
+        publish(previous,stage)
+
+
+def original_catalog(rows):
+    return [row for row in rows if row['slot']!=1000 and not str(row.get('source','')).startswith('Legacy')]
+
+
+def validate_publication_controls(moves,catalog):
+    from package import validate_controls
+    motions={row['slot']:row for row in catalog};commands=moves.get('commands',{})
+    if len(motions)!=len(catalog) or moves.get('idle') not in motions:raise ValueError('Baseline catalog has duplicate slots or missing idle')
+    for command,slots in commands.items():
+        if not isinstance(slots,list) or not slots or any(slot not in motions for slot in slots):
+            raise ValueError('Baseline command references unpublished source: '+command)
+    for field in ('experimental_commands','demo'):
+        if any(command not in commands for command in moves.get(field,[])):
+            raise ValueError('Baseline '+field+' references absent command')
+    if any(command not in commands for field in ('inputs','chords') for command in moves.get(field,{}).values()):
+        raise ValueError('Baseline input references absent command')
+    validate_controls(moves,motions,'baseline')
+
+
+def publish(previous,stage):
+    (ROOT/'assets').mkdir(parents=True,exist_ok=True);(ROOT/'preview').mkdir(parents=True,exist_ok=True)
+    assets=stage/'assets';rig=read(assets/'source_rig.json');height=rig['source_rest_hip_height']
+    data={s:read(stage/f'preview/slot_{s:03d}.json') for s in (170,171,172,173)}
     clips={}
     for slot in data:
         raw=(assets/f'clip_{slot:03d}.lsm').read_bytes();count=struct.unpack_from('<I',raw,4)[0]
@@ -94,11 +149,11 @@ def main():
     (assets/'grip_1000.lsg').write_bytes(struct.pack('<4sIII',b'LSG1',count,60,4)+struct.pack('<%df'%len(contacts),*contacts))
     ground['tracks']['1000']=dict(fps=60,clearance=clearance);grip['tracks']['1000']='grip_1000.lsg';weapon['tracks']['1000']=dict(fps=60,frames=source_frames)
     for name,value in [('ground_tracks',ground),('grip_tracks',grip),('source_weapon_tracks',weapon)]:write(assets/f'{name}.json',value)
-    cat=[r for r in read(assets/'catalog.json') if r['slot']!=1000]
+    cat=original_catalog(read(assets/'catalog.json'))
     cat.append(dict(slot=1000,file='clip_1000.lsm',frames=count,duration=(count-1)/60,source='Original MHW skeletal stages with explicit local cosmetic descent',experimental=True,
          limitation='Native flight control/mount not reconstructed; no manually fitted wrist/blade rotations'))
     write(assets/'catalog.json',cat)
-    write(STAGE/'preview/slot_1000.json',dict(bones=ORDER,positions=points,up_axis='y',fps=60,experimental=True,
+    write(stage/'preview/slot_1000.json',dict(bones=ORDER,positions=points,up_axis='y',fps=60,experimental=True,
           source='Original source stages, measured posture joins, local showcase descent'))
     moves=read(assets/'moves.json');moves['commands']['helm']=[1000];moves['commands']['fade']=[113];write(assets/'moves.json',moves)
     evidence=dict(phases=phase_evidence,frames=count,duration=(count-1)/60,descent_peak_frame=peak_frame,
@@ -108,17 +163,18 @@ def main():
         source_states='FSM nodes45->55->56->58->57; ActionNo87->89->90->91->92',
         lmt_phase_assignment='Source pose continuity + original MBD corresponding LMT entries; mapping to native C++ actions remains an inference',
         low_ground_frames=int(sum(c<.02 for c in clearance)),max_source_clearance=float(max(clearance)),stage_map=stage_map)
-    write(ROOT/'research/mhw-original/helmbreaker-composition.json',evidence)
     # Preserve legacy NeedsParent/alternate slots which do not yet have qualified
     # original context. They are explicitly marked, never presented as originals.
-    previous=read(ROOT/'assets/catalog.json');known={r['slot'] for r in cat}
+    known={r['slot'] for r in cat}
     kept=[]
     for r in previous:
         if r['slot'] in known or not (ROOT/'assets'/r['file']).is_file():continue
-        r=dict(r,source='Legacy Rise-style MOD retained; original base context not qualified',experimental=True);cat.append(r);kept.append(r['slot'])
+        r=dict(r,experimental=True);cat.append(r);kept.append(r['slot'])
+    validate_publication_controls(moves,cat)
+    write(ROOT/'research/mhw-original/helmbreaker-composition.json',evidence)
     write(assets/'catalog.json',sorted(cat,key=lambda r:r['slot']))
     for file in assets.iterdir():shutil.copyfile(file,ROOT/'assets'/file.name)
-    for file in (STAGE/'preview').iterdir():shutil.copyfile(file,ROOT/'preview'/file.name)
+    for file in (stage/'preview').iterdir():shutil.copyfile(file,ROOT/'preview'/file.name)
     # Ground the explicitly retained legacy actions from their existing source FK.
     legacy_slots=[r['slot'] for r in cat if str(r.get('source','')).startswith('Legacy')]
     for slot in legacy_slots:

@@ -15,6 +15,7 @@ from laevat_profile import Graph
 from endfield_mesh_audit import setup,oracle,fk,probe_floor,skin,render,OUT,P0,AUDIT_REVISION,audit_inputs
 from endfield_pose_projection import ground_pose,resources,transported_attachment
 from endfield_special_previews import geometry
+from resource_audit_contract import SPECIAL,special_input_contract,validate_special_current
 
 def pose_parts(scene,meta,clip,frames,world,graph,parts,mode):
  resource='wpn_misc_0016' if mode=='longsword' else 'wpn_misc_0051'
@@ -64,7 +65,7 @@ def audit(cid,mode,graph,parts,stride,gallery):
  return {'character_id':cid,'mode':mode,'weapon':'wpn_misc_0016' if mode=='longsword' else 'wpn_misc_0051','source_slots':[c['slot'] for c in clips],'source_frames':sum(len(c['rotations'])for c in clips),'actual_mesh_frames':count,'sample_policy':'every core frame' if cid in P0 else f'every {stride}th frame plus clip boundaries','own_skin_parts':len(parts),'own_skin_vertices':sum(len(p['vertices'])for p in parts),'own_palette_bones':len(set(p for part in parts for p in part['palette'])),'weapon_root_to_holding_hand_max_m':mount_distance,'posed_skin_bounds_min':bounds_min.tolist(),'posed_skin_bounds_max':bounds_max.tolist(),'errors':bad,'status':'offline_special_mesh_checked' if not bad else 'offline_special_mesh_failed','evidence':evidence,'geometry_scale_policy':'authored native weapon scale1; attachment translation uses measured character scale','mount_evidence':'actual MHW main attachment47 + native/source measured +Y/+X identity geometry adapter' if mode=='longsword' else 'decoded CharacterTemplateData index10 point84 IK_Weapon_L_001 + actual per-character hand-relative socket','body_fingers_secondary_roots':'exact retarget.h oracle and own actual target main/secondary palettes','string_contact_policy':'actual target R_Finger22 candidate until actual projectile release; native animation draw contact remains unknown' if mode=='bow' else None,'native_skill_mount_verified':mode=='bow','runtime_verified':False,'visual_quality_certified':False,'limitations':['native shader/cloth/VFX execution not simulated','native bow limb charge curves not invented','finite geometry and direct hand contact do not certify absence of all mesh intersections']}
 
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--characters',nargs='*');parser.add_argument('--modes',nargs='*',choices=['longsword','bow']);parser.add_argument('--stride',type=int,default=12);parser.add_argument('--resume-log',type=Path);a=parser.parse_args();start=time.time();base=ROOT/'research/expansion-20261013';sword=Graph(read(base/'laevat-weapon-raw.json'));bow=Graph(read(base/'special-weapon-model-raw.json'));graphs={'longsword':sword,'bow':bow};parts={'longsword':geometry(sword,ROOT/'research/weapon-coverage/laevat-geometry','wpn_misc_0016'),'bow':geometry(bow,ROOT/'research/typhoea/geometry','wpn_misc_0051')};index=read(ROOT/'profiles/index.json');characters=a.characters or [c['character_id']for c in index['characters']];gallery=OUT/'special-cross-gallery';gallery.mkdir(exist_ok=True);path=OUT/'special-cross-coverage.json';rows=read(path)['combinations'] if path.exists() else []
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--characters',nargs='*');parser.add_argument('--modes',nargs='*',choices=['longsword','bow']);parser.add_argument('--stride',type=int,default=12);parser.add_argument('--resume-log',type=Path);parser.add_argument('--report',type=Path);parser.add_argument('--gallery',type=Path);a=parser.parse_args();start=time.time();base=ROOT/'research/expansion-20261013';sword=Graph(read(base/'laevat-weapon-raw.json'));bow=Graph(read(base/'special-weapon-model-raw.json'));graphs={'longsword':sword,'bow':bow};parts={'longsword':geometry(sword,ROOT/'research/weapon-coverage/laevat-geometry','wpn_misc_0016'),'bow':geometry(bow,ROOT/'research/typhoea/geometry','wpn_misc_0051')};index=read(ROOT/'profiles/index.json');characters=a.characters or [c['character_id']for c in index['characters']];gallery=a.gallery or OUT/'special-cross-gallery';gallery.mkdir(parents=True,exist_ok=True);path=a.report or OUT/'special-cross-coverage.json';rows=read(path)['combinations'] if path.exists() else []
  completed=set()
  if a.resume_log:
   for line in a.resume_log.read_text(encoding='utf-8-sig').splitlines():
@@ -73,11 +74,16 @@ def main():
  for cid in characters:
   for mode in a.modes or ['longsword','bow']:
    scene=setup(cid,update_profile=False);meta,clips=oracle(cid,mode);meta['contact_model']='wpn_misc_0016' if mode=='longsword' else 'wpn_misc_0051';previous=next((r for r in rows if (r['character_id'],r['mode'])==(cid,mode)),None)
+   weapon_id=next(key for key,value in SPECIAL.items() if value[0]==mode);profile=read(ROOT/'profiles'/next(c['profile'] for c in index['characters'] if c['character_id']==cid));contract=special_input_contract(ROOT,cid,weapon_id,profile)
    if (cid,mode) in completed and previous:
+    validate_special_current(ROOT,cid,weapon_id,profile,previous)
     assert previous['source_frames']==sum(len(c['rotations']) for c in clips)
     assert all((ROOT/p).stat().st_mtime>=(OUT/'oracle'/cid/(mode+'.json')).stat().st_mtime for p in previous['evidence'])
     row=previous;row['resume_evidence']=str(a.resume_log.resolve().relative_to(ROOT)).replace('\\','/')
-   else:row=audit(cid,mode,graphs[mode],parts[mode],max(1,a.stride),gallery)
+   else:
+    row=audit(cid,mode,graphs[mode],parts[mode],max(1,a.stride),gallery)
+    if contract!=special_input_contract(ROOT,cid,weapon_id,read(ROOT/'profiles'/next(c['profile'] for c in index['characters'] if c['character_id']==cid))):raise ValueError('Special audit inputs changed during scan')
+    row['input_contract']=contract
    row['audit_revision']=AUDIT_REVISION;row['audit_inputs']=audit_inputs(scene,meta)
    rows=[r for r in rows if (r['character_id'],r['mode'])!=(cid,mode)]+[row];write(path,{'schema':2,'audit_revision':AUDIT_REVISION,'source_manifest':index['source_manifest'],'combinations':rows,'summary':{'combinations':len(rows),'checked':sum(r['status']=='offline_special_mesh_checked'for r in rows),'current_revision':sum(r.get('audit_revision')==AUDIT_REVISION for r in rows),'runtime_verified':0,'visual_quality_certified':0},'operation':'actual indexed target/finger meshes with exact retarget oracle; actual special weapon mesh/bindpose/palette; no game/server process'});print(cid,mode,'native cached' if (cid,mode) in completed else 'native mesh frames',row['actual_mesh_frames'],'errors',len(row['errors']),'elapsed',round(time.time()-start),flush=True)
 if __name__=='__main__':main()

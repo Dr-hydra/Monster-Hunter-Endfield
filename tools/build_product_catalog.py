@@ -6,11 +6,16 @@ Raw models, audio and source files remain in place; output is package-relative m
 from __future__ import annotations
 import argparse
 import json
+import io
 import os
 import math
 from pathlib import Path
 from collections import defaultdict
 from PIL import Image
+from resource_audit_contract import validate_current, profile_inputs, SPECIAL, validate_special_current, NATIVE_INPUTS
+from audit_native_build import validate_native_build
+from resource_transaction import ResourceTransaction
+from audit_oracle_provenance import verify_oracle_provenance
 
 MODE_ORDER = ['longsword', 'sword_shield', 'greatsword', 'lance', 'light_bowgun', 'bow']
 NAMES = {'longsword': ('太刀', 'LONG SWORD', '／', '单手剑'),
@@ -44,7 +49,10 @@ def read(path: Path, default=None):
         return json.load(stream)
 
 
-def write_atomic(path: Path, value):
+def write_atomic(path: Path, value, transaction=None):
+    if transaction is not None:
+        transaction.write_json(path, value)
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + '.building')
     temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
@@ -326,7 +334,7 @@ def theme_audio_product(root, mode):
     return output
 
 
-def character_product(root, index, audit):
+def character_product(root, index, audit, transaction=None):
     combinations = {(row['character_id'], row['mode']): row for row in audit.get('combinations', [])}
     result = []
     for source in index.get('characters', []):
@@ -342,16 +350,19 @@ def character_product(root, index, audit):
         if identifier == 'chr_0034_typhoea':
             name = '提夫罗斯'
         modes = {}
+        verified_profile = profile_inputs(profile)
         for mode in MODE_ORDER:
             row = combinations.get((identifier, mode), {})
+            validate_current(root, identifier, mode, profile, row)
             errors = row.get('errors', [])
             audit_status = row.get('status', 'pending')
             passed = audit_status in {'passed', 'pass', 'offline-qualified', 'offline-mesh-qualified',
                                       'offline-lbs-qualified', 'offline-lbs-passed', 'offline-mesh-passed'} and not errors
             checked = audit_status == 'offline_mesh_checked' and not errors
-            images = publish_reference_images(root, row, identifier, mode)
+            images = publish_reference_images(root, row, identifier, mode, transaction)
             image = images[0]['file'] if images else None
             modes[mode] = {'offline_status': 'passed' if passed else 'mesh_checked' if checked else 'failed' if errors or audit_status == 'failed' else 'pending',
+                           'current_inputs_verified': True,
                            'host_status': row.get('host_status', 'pending'),
                            'runtime_status': 'pending', 'audit_status': audit_status,
                            'evidence': row.get('evidence', ''), 'frames': row.get('frames', 0),
@@ -364,6 +375,7 @@ def character_product(root, index, audit):
         result.append({'id': identifier, 'name': name, 'category': NAMES.get(default, NAMES['longsword'])[3],
                        'default_mode': default, 'supported_modes': source.get('supported_modes', MODE_ORDER),
                        'profile_status': source.get('status', 'pending'),
+                       'audit_profile_inputs': verified_profile,
                        'source_game_version': source_evidence.get('game_version', ''),
                        'current_vfs_verified': source_evidence.get('current_vfs_verified') is True,
                        'source_mesh_available': bool(source.get('source_mesh_available')),
@@ -371,7 +383,7 @@ def character_product(root, index, audit):
     return result
 
 
-def publish_reference_images(root, row, identifier, mode):
+def publish_reference_images(root, row, identifier, mode, transaction=None):
     evidence = row.get('evidence', [])
     if isinstance(evidence, str):
         evidence = [evidence]
@@ -385,10 +397,15 @@ def publish_reference_images(root, row, identifier, mode):
         if not candidate.is_file():
             continue
         output = root / 'assets/ui_reference' / f'{identifier}-{mode}{suffix}.webp'
-        output.parent.mkdir(parents=True, exist_ok=True)
         if not output.is_file() or output.stat().st_mtime < candidate.stat().st_mtime:
             with Image.open(candidate) as image:
-                image.convert('RGB').save(output, format='WEBP', quality=90, method=4)
+                encoded = io.BytesIO()
+                image.convert('RGB').save(encoded, format='WEBP', quality=90, method=4)
+            if transaction is not None:
+                transaction.write_bytes(output, encoded.getvalue())
+            else:
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_bytes(encoded.getvalue())
         images.append({'label': label, 'file': output.relative_to(root / 'assets').as_posix(),
                        'evidence': candidate.relative_to(root).as_posix()})
     return images
@@ -396,6 +413,9 @@ def publish_reference_images(root, row, identifier, mode):
 
 def weapons_product(root, index):
     result = []
+    character_index = read(root/'profiles/index.json', {})
+    special_rows = read(root/'research/character-coverage/special-cross-coverage.json', {}).get('combinations', [])
+    special_audits = {(row['character_id'], row['mode']): row for row in special_rows}
     for item in index.get('weapons', []):
         path = within(root, 'profiles/weapons/' + item['profile'])
         profile = read(path, {})
@@ -414,10 +434,20 @@ def weapons_product(root, index):
                        'offline_status': 'available' if profile else 'missing', 'host_status': 'pending', 'runtime_status': 'pending',
                        'detail': profile.get('vfx_status', '') or profile.get('mount_evidence', ''),
                        'mount_evidence': profile.get('mount_evidence', ''), 'model_profile': path.relative_to(root).as_posix()})
+        if identifier in SPECIAL:
+            target = result[-1]
+            target.update(offline_status='mesh_checked', audit_weapon_profile=profile, character_audits={})
+            for character in character_index['characters']:
+                cid = character['character_id']
+                character_profile = read(within(root, 'profiles/' + character['profile']))
+                row = special_audits.get((cid, SPECIAL[identifier][0]), {})
+                validate_special_current(root, cid, identifier, character_profile, row)
+                target['character_audits'][cid] = {'status': row['status'], 'errors': row['errors'],
+                    'current_inputs_verified': True, 'character_profile_ref': cid}
     return result
 
 
-def build_preview(root, entries):
+def build_preview(root, entries, transaction=None):
     """Use the actual Blender evaluated source positions, never guessed wrist FK."""
     parents = [-1, 0, 1, 2, 3, 2, 5, 6, 7, 2, 9, 10, 11, 0, 13, 14, 15, 0, 17, 18, 19]
     clips = []
@@ -477,12 +507,12 @@ def build_preview(root, entries):
                'source': 'Actual Blender evaluated MHW source positions; every third frame. Source skeleton only, not Endfield mesh or gameplay.',
                'bones': [{'name': name, 'parent': parents[i]} for i, name in enumerate(names or [])],
                'clips': clips, 'missing_source_previews': missing}
-    write_atomic(root / 'assets/ui_modes_preview.json', preview)
+    write_atomic(root / 'assets/ui_modes_preview.json', preview, transaction)
     return {'file': 'ui_modes_preview.json', 'clips': len(clips), 'missing': missing,
             'scope': 'actual evaluated MHW source main bones; no target mesh / no gameplay'}
 
 
-def build_provenance(root, registry, character_index, audit, manifest):
+def build_provenance(root, registry, character_index, audit, manifest, transaction=None):
     """Small distributable evidence summary; never copy raw game research into Git."""
     modes = []
     for entry in registry.get('modes', []):
@@ -546,11 +576,20 @@ def build_provenance(root, registry, character_index, audit, manifest):
               'unresolved': ['Original shader/VFX, clothing dynamics, scene constraints and actual input/audio timing require game checks.',
                              'Source command mappings and mounting evidence remain explicitly qualified in each mode/profile.',
                              'Offline mesh sampling does not certify aesthetic quality.']}
-    write_atomic(root / 'assets/build_provenance.json', result)
+    write_atomic(root / 'assets/build_provenance.json', result, transaction)
 
 
 def build(root: Path, allow_partial=False):
     root = root.resolve()
+    validate_native_build(root, NATIVE_INPUTS)
+    verify_oracle_provenance(root)
+    with ResourceTransaction(root) as transaction:
+        result = build_in_transaction(root, allow_partial, transaction)
+        transaction.commit()
+    return result
+
+
+def build_in_transaction(root, allow_partial, transaction):
     registry = read(root / 'assets/modes/index.json', {})
     character_index = read(root / 'profiles/index.json', {})
     weapon_index = read(root / 'profiles/weapons/index.json', {})
@@ -572,13 +611,13 @@ def build(root: Path, allow_partial=False):
     package_manifest = read(root / 'module.json', {})
     product = {'schema': 1, 'version': package_manifest.get('version', 'unknown'),
                'verification_scope': 'Local source / offline mesh audit only; no game launched',
-               'modes': products, 'characters': character_product(root, character_index, audit),
+               'modes': products, 'characters': character_product(root, character_index, audit, transaction),
                'weapons': weapons_product(root, weapon_index),
                'default_by_mode': weapon_index.get('default_by_mode', {}),
                'coverage_audit_present': bool(audit), 'coverage_summary': audit.get('summary', {}),
                'source_metadata': ['assets/modes/index.json', 'profiles/index.json', 'profiles/weapons/index.json'],
                'partial_inputs': missing}
-    product['preview'] = build_preview(root, entries)
+    product['preview'] = build_preview(root, entries, transaction)
     tours = read(root / 'assets/previews/source-tours/index.json', {})
     if tours:
         product['source_tours'] = {'file': 'previews/source-tours/index.json',
@@ -587,9 +626,9 @@ def build(root: Path, allow_partial=False):
     sound = {'schema': 1, 'processing': {'sample_rate': 48000, 'channels': 2, 'resample': 'linear',
               'balance_rms': .18, 'balance_peak': .92, 'maximum_balance_gain': 3,
               'source_pcm_already_balanced': False}, 'modes': audio}
-    build_provenance(root, registry, character_index, audit, package_manifest)
-    write_atomic(root / 'assets/product_catalog.json', product)
-    write_atomic(root / 'assets/audio_catalog.json', sound)
+    build_provenance(root, registry, character_index, audit, package_manifest, transaction)
+    write_atomic(root / 'assets/product_catalog.json', product, transaction)
+    write_atomic(root / 'assets/audio_catalog.json', sound, transaction)
     return {'modes': len(products), 'characters': len(product['characters']), 'weapons': len(product['weapons']),
             'audio_clips': sum(len(entry['clips']) for entry in audio.values()),
             'coverage_audit_present': bool(audit),
