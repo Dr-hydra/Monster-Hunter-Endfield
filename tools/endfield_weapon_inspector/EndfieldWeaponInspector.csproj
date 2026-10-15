@@ -4,4 +4,7 @@
     <Reference Include="AnimeStudio"><HintPath>$(AnimeStudioDir)/AnimeStudio.dll</HintPath></Reference>
     <Content Include="$(AnimeStudioDir)/*.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <Target Name="CheckBackend" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(AnimeStudioDir)' == '' Or !Exists('$(AnimeStudioDir)/AnimeStudio.dll')" Text="Supply -p:AnimeStudioDir=&lt;compatible backend directory containing AnimeStudio.dll&gt;; see docs/RESOURCE_TOOLCHAIN.md." />
+  </Target>
 </Project>

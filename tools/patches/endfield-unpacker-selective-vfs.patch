@@ -1,0 +1,51 @@
+--- a/decrypt_vfs.py
++++ b/decrypt_vfs.py
+@@ -63,5 +63,5 @@
+     return c.decrypt(data)
+ 
+-def process_blc(blc_path, dp, chk_map, dry_run):
++def process_blc(blc_path, dp, chk_map, dry_run, name_filter=None):
+     """Process one BLC file, extracting all files with per-file decryption."""
+     try:
+@@ -144,4 +144,6 @@
+                 fn_rel = fn_rel[len('Data/'):]
+             if not fn_rel or len(fn_rel) < 2:
++                continue
++            if name_filter is not None and not name_filter.search(fn_rel):
+                 continue
+ 
+@@ -171,5 +173,5 @@
+     return total
+ 
+-def extract_vfs(dry_run=True):
++def extract_vfs(dry_run=True, name_filter=None):
+     total_files = 0
+     dirs = sorted(os.listdir(VFS))
+@@ -195,5 +197,5 @@
+             continue
+ 
+-        total_files += process_blc(blc_path, dp, chk_map, dry_run)
++        total_files += process_blc(blc_path, dp, chk_map, dry_run, name_filter)
+ 
+     return total_files
+@@ -201,12 +203,13 @@
+ if __name__ == '__main__':
+     mode = sys.argv[1] if len(sys.argv) > 1 else 'dry'
++    name_filter = re.compile(sys.argv[2], re.IGNORECASE) if len(sys.argv) > 2 else None
+     if mode == 'dry':
+         print('=== DRY RUN ===', flush=True)
+-        total = extract_vfs(dry_run=True)
++        total = extract_vfs(dry_run=True, name_filter=name_filter)
+         print(f'\nTotal files: {total}', flush=True)
+     elif mode == 'extract':
+         print('=== EXTRACTING FILES ===', flush=True)
+         os.makedirs(OUT, exist_ok=True)
+-        total = extract_vfs(dry_run=False)
++        total = extract_vfs(dry_run=False, name_filter=name_filter)
+         print(f'\nTotal files extracted: {total}', flush=True)
+     elif mode == 'test':
+@@ -273,3 +276,3 @@
+         print(f'\nTested {found} encrypted files')
+     else:
+-        print(f'Usage: {sys.argv[0]} [dry|extract|test]', flush=True)
++        print(f'Usage: {sys.argv[0]} [dry|extract|test] [name-regex]', flush=True)
